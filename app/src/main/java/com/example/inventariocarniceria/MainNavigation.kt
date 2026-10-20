@@ -1,35 +1,47 @@
 package com.example.inventariocarniceria
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AddBusiness
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LocalShipping
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MergeType
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.NavigationBarItemDefaults
 import com.example.inventariocarniceria.theme.SgniaTheme
-import com.example.inventariocarniceria.ui.screens.admin.AdminDashboardScreen
+import com.example.inventariocarniceria.ui.components.SgniaCerhanSidebar
+import com.example.inventariocarniceria.ui.components.SgniaCerhanTopBar
+import com.example.inventariocarniceria.ui.components.SgniaSidebarItem
+import com.example.inventariocarniceria.ui.screens.admin.AdminBranchesScreen
+import com.example.inventariocarniceria.ui.screens.admin.AdminCatalogScreen
+import com.example.inventariocarniceria.ui.screens.admin.AdminSecurityScreen
+import com.example.inventariocarniceria.ui.screens.admin.AdminSuppliersScreen
+import com.example.inventariocarniceria.ui.screens.admin.MasterOrderUnificationScreen
 import com.example.inventariocarniceria.ui.screens.auth.SecurityVaultScreen
 import com.example.inventariocarniceria.ui.screens.dashboard.ExecutiveOwnerDashboardScreen
 import com.example.inventariocarniceria.ui.screens.manager.ManagerInvestmentScreen
@@ -39,12 +51,15 @@ import com.example.inventariocarniceria.ui.screens.scale.IndustrialScaleVisorScr
 import com.example.inventariocarniceria.ui.screens.settings.SettingsScreen
 import com.example.inventariocarniceria.ui.screens.splash.SplashScreen
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainNavigation(viewModel: InventoryViewModel) {
     var showSplash by remember { mutableStateOf(true) }
     val uiState by viewModel.uiState.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+    val allProducts by viewModel.allProducts.collectAsState()
+    val pendingOrders by viewModel.pendingOrders.collectAsState()
 
     SgniaTheme(themeMode = themeMode) {
         if (showSplash) {
@@ -52,7 +67,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 onSplashFinished = { showSplash = false }
             )
         } else if (!uiState.isLoggedIn) {
-            // BÓVEDA MILITAR DE ACCESO (PIN DUEÑO / TIENDA ENCARGADO)
+            // LOGIN EJECUTIVO ADAPTADO A LA PLANTILLA CERHAN (NEGRO MATE Y CREMA)
             SecurityVaultScreen(
                 viewModel = viewModel,
                 themeMode = themeMode,
@@ -60,27 +75,12 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 onLoginSuccess = { }
             )
         } else if (uiState.currentUserRole == "ADMIN") {
-            // CONSOLA EJECUTIVA DEL DUEÑO (VIP) CON SWITCH A GESTIÓN
-            var showManagementConsole by remember { mutableStateOf(false) }
-
-            if (showManagementConsole) {
-                AdminDashboardScreen(
-                    viewModel = viewModel,
-                    onLogout = { viewModel.logout() },
-                    onBackToVipConsole = { showManagementConsole = false }
-                )
-            } else {
-                ExecutiveOwnerDashboardScreen(
-                    viewModel = viewModel,
-                    themeMode = themeMode,
-                    onToggleTheme = { viewModel.toggleTheme() },
-                    onLogout = { viewModel.logout() },
-                    onOpenAdminConsole = { showManagementConsole = true }
-                )
-            }
-        } else {
-            // TERMINAL DE MOSTRADOR PARA ENCARGADO DE SUCURSAL
-            var selectedTab by remember { mutableIntStateOf(0) }
+            // =========================================================================
+            // CONSOLA DEL DUEÑO: MENÚ DESPLEGABLE AL COSTADO (SIN BOTONES ARRIBA)
+            // =========================================================================
+            var selectedOwnerSection by remember { mutableStateOf("home") }
+            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+            val scope = rememberCoroutineScope()
             val snackbarHostState = remember { SnackbarHostState() }
 
             LaunchedEffect(uiState.snackbarMessage) {
@@ -90,66 +90,149 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 }
             }
 
-            Scaffold(
-                containerColor = SgniaTheme.colors.backgroundPrimary,
-                snackbarHost = { SnackbarHost(snackbarHostState) },
-                bottomBar = {
-                    NavigationBar(
-                        containerColor = SgniaTheme.colors.backgroundSecondary,
-                        contentColor = SgniaTheme.colors.textPrimary,
-                        modifier = Modifier.clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+            val ownerSidebarItems = remember(allProducts.size, pendingOrders.size) {
+                listOf(
+                    SgniaSidebarItem("home", "Inicio / Resumen", Icons.Default.Home),
+                    SgniaSidebarItem("catalogo", "Catálogo de Cortes", Icons.Default.Inventory2, "${allProducts.size}"),
+                    SgniaSidebarItem("unificacion", "Unificación Pedidos", Icons.Default.MergeType, if (pendingOrders.isNotEmpty()) "${pendingOrders.size}" else null),
+                    SgniaSidebarItem("sucursales", "Sucursales y Tiendas", Icons.Default.Business),
+                    SgniaSidebarItem("proveedores", "Proveedores", Icons.Default.LocalShipping),
+                    SgniaSidebarItem("seguridad", "Seguridad y PIN", Icons.Default.Lock)
+                )
+            }
+
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    SgniaCerhanSidebar(
+                        brandTitle = "SGNIA",
+                        subtitle = "CONSOLA DEL DUEÑO",
+                        items = ownerSidebarItems,
+                        selectedItemId = selectedOwnerSection,
+                        onSelectItem = { sectionId ->
+                            selectedOwnerSection = sectionId
+                            scope.launch { drawerState.close() }
+                        },
+                        onLogout = {
+                            scope.launch { drawerState.close() }
+                            viewModel.logout()
+                        },
+                        supportText = "Administrador Principal"
+                    )
+                }
+            ) {
+                Scaffold(
+                    containerColor = SgniaTheme.colors.backgroundPrimary,
+                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                ) { innerPadding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(SgniaTheme.colors.backgroundPrimary)
+                            .padding(innerPadding)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        val navColors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF141210),
-                            selectedTextColor = SgniaTheme.colors.accentPrimary,
-                            indicatorColor = SgniaTheme.colors.accentPrimary,
-                            unselectedIconColor = SgniaTheme.colors.textMuted,
-                            unselectedTextColor = SgniaTheme.colors.textMuted
+                        SgniaCerhanTopBar(
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            searchPlaceholder = "Buscar en catálogo o sucursal...",
+                            onSearchClick = { selectedOwnerSection = "catalogo" },
+                            onToggleTheme = { viewModel.toggleTheme() }
                         )
-                        NavigationBarItem(
-                            selected = selectedTab == 0,
-                            onClick = { selectedTab = 0 },
-                            icon = { Icon(Icons.Default.Scale, contentDescription = "Báscula Industrial") },
-                            label = { Text("Báscula", fontWeight = if (selectedTab == 0) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Normal) },
-                            colors = navColors
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 1,
-                            onClick = { selectedTab = 1 },
-                            icon = { Icon(Icons.Default.AddBusiness, contentDescription = "Recepción de Stock") },
-                            label = { Text("Recepción", fontWeight = if (selectedTab == 1) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Normal) },
-                            colors = navColors
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 2,
-                            onClick = { selectedTab = 2 },
-                            icon = { Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "Pedidos Faltantes") },
-                            label = { Text("Pedidos", fontWeight = if (selectedTab == 2) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Normal) },
-                            colors = navColors
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 3,
-                            onClick = { selectedTab = 3 },
-                            icon = { Icon(Icons.Default.CardGiftcard, contentDescription = "Mi Inversión") },
-                            label = { Text("Mi Inversión", fontWeight = if (selectedTab == 3) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Normal) },
-                            colors = navColors
-                        )
-                        NavigationBarItem(
-                            selected = selectedTab == 4,
-                            onClick = { selectedTab = 4 },
-                            icon = { Icon(Icons.Default.Settings, contentDescription = "Ajustes Sistema") },
-                            label = { Text("Ajustes", fontWeight = if (selectedTab == 4) androidx.compose.ui.text.font.FontWeight.Black else androidx.compose.ui.text.font.FontWeight.Normal) },
-                            colors = navColors
-                        )
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            when (selectedOwnerSection) {
+                                "home" -> ExecutiveOwnerDashboardScreen(
+                                    viewModel = viewModel,
+                                    themeMode = themeMode,
+                                    onToggleTheme = { viewModel.toggleTheme() },
+                                    onLogout = { viewModel.logout() },
+                                    onOpenAdminConsole = { selectedOwnerSection = "catalogo" },
+                                    onNavigateToSection = { section -> selectedOwnerSection = section }
+                                )
+                                "catalogo" -> AdminCatalogScreen(viewModel = viewModel)
+                                "unificacion" -> MasterOrderUnificationScreen(viewModel = viewModel)
+                                "sucursales" -> AdminBranchesScreen(viewModel = viewModel)
+                                "proveedores" -> AdminSuppliersScreen(viewModel = viewModel)
+                                "seguridad" -> AdminSecurityScreen(viewModel = viewModel)
+                            }
+                        }
                     }
                 }
-            ) { innerPadding ->
-                when (selectedTab) {
-                    0 -> IndustrialScaleVisorScreen(viewModel = viewModel, modifier = Modifier.padding(innerPadding))
-                    1 -> StockReceptionScreen(viewModel = viewModel, modifier = Modifier.padding(innerPadding))
-                    2 -> OrdersScreen(viewModel = viewModel, modifier = Modifier.padding(innerPadding))
-                    3 -> ManagerInvestmentScreen(viewModel = viewModel, modifier = Modifier.padding(innerPadding))
-                    4 -> SettingsScreen(viewModel = viewModel, modifier = Modifier.padding(innerPadding))
+            }
+        } else {
+            // =========================================================================
+            // PANEL DE TIENDA: BÁSCULAS COMO MENÚ PRINCIPAL + RESTO EN MENÚ DESPLEGABLE
+            // =========================================================================
+            var selectedStoreSection by remember { mutableStateOf("basculas") }
+            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+            val scope = rememberCoroutineScope()
+            val snackbarHostState = remember { SnackbarHostState() }
+
+            LaunchedEffect(uiState.snackbarMessage) {
+                uiState.snackbarMessage?.let { message ->
+                    snackbarHostState.showSnackbar(message)
+                    viewModel.clearSnackbarMessage()
+                }
+            }
+
+            val storeSidebarItems = remember(pendingOrders.size) {
+                listOf(
+                    SgniaSidebarItem("basculas", "Básculas (Principal)", Icons.Default.Scale),
+                    SgniaSidebarItem("recepcion", "Recepción Mercancía", Icons.Default.AddBusiness),
+                    SgniaSidebarItem("pedidos", "Pedidos de Surtido", Icons.AutoMirrored.Filled.ReceiptLong, if (pendingOrders.isNotEmpty()) "${pendingOrders.size}" else null),
+                    SgniaSidebarItem("inversion", "Mi Inversión Local", Icons.Default.CardGiftcard),
+                    SgniaSidebarItem("ajustes", "Ajustes de Sistema", Icons.Default.Settings)
+                )
+            }
+
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    SgniaCerhanSidebar(
+                        brandTitle = "SGNIA",
+                        subtitle = uiState.currentBranch.uppercase(),
+                        items = storeSidebarItems,
+                        selectedItemId = selectedStoreSection,
+                        onSelectItem = { sectionId ->
+                            selectedStoreSection = sectionId
+                            scope.launch { drawerState.close() }
+                        },
+                        onLogout = {
+                            scope.launch { drawerState.close() }
+                            viewModel.logout()
+                        },
+                        supportText = "2 Básculas TCP/IP"
+                    )
+                }
+            ) {
+                Scaffold(
+                    containerColor = SgniaTheme.colors.backgroundPrimary,
+                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                ) { innerPadding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(SgniaTheme.colors.backgroundPrimary)
+                            .padding(innerPadding)
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        SgniaCerhanTopBar(
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            searchPlaceholder = "Buscar corte o código...",
+                            onSearchClick = { selectedStoreSection = "basculas" },
+                            onToggleTheme = { viewModel.toggleTheme() }
+                        )
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            when (selectedStoreSection) {
+                                "basculas" -> IndustrialScaleVisorScreen(viewModel = viewModel)
+                                "recepcion" -> StockReceptionScreen(viewModel = viewModel)
+                                "pedidos" -> OrdersScreen(viewModel = viewModel)
+                                "inversion" -> ManagerInvestmentScreen(viewModel = viewModel)
+                                "ajustes" -> SettingsScreen(viewModel = viewModel)
+                            }
+                        }
+                    }
                 }
             }
         }

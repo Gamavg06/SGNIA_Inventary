@@ -5,10 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.lifecycleScope
 import com.example.inventariocarniceria.data.scale.TcpScaleManager
 import com.example.inventariocarniceria.data.local.AppDatabase
@@ -65,7 +68,10 @@ class MainActivity : ComponentActivity() {
             val themeMode by viewModel.themeMode.collectAsState()
             SgniaTheme(themeMode = themeMode) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF141312))
+                        .systemBarsPadding(),
                     color = SgniaTheme.colors.backgroundPrimary
                 ) {
                     MainNavigation(viewModel = viewModel)

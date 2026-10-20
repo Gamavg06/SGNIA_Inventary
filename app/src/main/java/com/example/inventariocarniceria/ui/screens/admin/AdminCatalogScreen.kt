@@ -1,6 +1,7 @@
 package com.example.inventariocarniceria.ui.screens.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,17 +18,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,11 +40,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.ProductEntity
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
+import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import java.util.Locale
 
@@ -56,6 +62,13 @@ fun AdminCatalogScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf("Todas") }
+
+    val matteBg = Color(0xFF0F0E0D)
+    val cardBorder = Color(0xFF282623)
+    val creamPrimary = Color(0xFFF3EFE6)
+    val creamWarm = Color(0xFFEEDDC8)
+    val textMuted = Color(0xFF8C857B)
+    val darkText = Color(0xFF141312)
 
     val categories = listOf("Todas", "Res", "Cerdo", "Pollo", "Embutidos", "Otros")
 
@@ -73,92 +86,131 @@ fun AdminCatalogScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = matteBg,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.openNewProductEditor() },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White,
+                containerColor = creamPrimary,
+                contentColor = darkText,
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Corte")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("NUEVO CORTE", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                }
             }
         }
     ) { padding ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "ADMINISTRACIÓN DE CATÁLOGO",
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(matteBg)
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SgniaCerhanGreetingHeader(
+                userName = "Catálogo de Cortes",
+                subtitle = "Gestión de PLUs, Precios por Kilo y Presentaciones"
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "01.",
+                    title = "Total PLUs",
+                    subtitle = "${allProducts.size} cortes registrados",
+                    icon = Icons.Default.Inventory2,
+                    showWaveChart = true
+                )
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "02.",
+                    title = "Filtrados",
+                    subtitle = "${filteredProducts.size} en vista ($selectedCategoryFilter)",
+                    icon = Icons.Default.Category,
+                    showWaveChart = false
+                )
+            }
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Buscar por código (ej. 24) o nombre...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = creamWarm) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = creamPrimary,
+                    unfocusedBorderColor = cardBorder,
+                    focusedTextColor = creamPrimary,
+                    unfocusedTextColor = creamPrimary,
+                    focusedPlaceholderColor = textMuted,
+                    unfocusedPlaceholderColor = textMuted
+                )
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                items(categories) { cat ->
+                    val isSelected = selectedCategoryFilter == cat
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { selectedCategoryFilter = cat },
+                        label = {
+                            Text(
+                                text = cat,
+                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = creamPrimary,
+                            selectedLabelColor = darkText,
+                            containerColor = Color(0xFF181715),
+                            labelColor = textMuted
                         )
-                        Text(
-                            text = "Gestión de productos, códigos, precios y existencias máximas",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                    )
+                }
+            }
+
+            if (filteredProducts.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No se encontraron productos en el catálogo.",
+                        color = textMuted
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(filteredProducts) { product ->
+                        AdminProductItem(
+                            product = product,
+                            onEdit = { viewModel.openProductEditor(product) },
+                            onDelete = { viewModel.deleteProduct(product) }
                         )
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Buscador
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Buscar por código (ej. 24) o nombre...") },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Categorías FilterChips
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            items(categories) { cat ->
-                                FilterChip(
-                                    selected = selectedCategoryFilter == cat,
-                                    onClick = { selectedCategoryFilter = cat },
-                                    label = { Text(cat) }
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Lista de productos
-                        if (filteredProducts.isEmpty()) {
-                            Box(
-                                modifier = Modifier.weight(1f).fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No se encontraron productos en el catálogo.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Gray
-                                )
-                            }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                items(filteredProducts) { product ->
-                                    AdminProductItem(
-                                        product = product,
-                                        onEdit = { viewModel.openProductEditor(product) },
-                                        onDelete = { viewModel.deleteProduct(product) }
-                                    )
-                                }
-                            }
-                        }
                     }
-        // Modal Dialog for adding/editing product
+                }
+            }
+        }
+
         if (uiState.isEditorOpen) {
             ProductEditDialog(
                 product = uiState.editingProduct,
@@ -177,140 +229,100 @@ fun AdminProductItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val darkRed = Color(0xFFB71C1C)
+    val cardBg = Color(0xFF181715)
+    val cardBorder = Color(0xFF282623)
+    val creamPrimary = Color(0xFFF3EFE6)
+    val creamWarm = Color(0xFFEEDDC8)
+    val textMuted = Color(0xFF8C857B)
+    val darkText = Color(0xFF141312)
+
     val priceFormatted = String.format(Locale.US, "$%.2f", product.price)
     val maxStockFormatted = String.format(Locale.US, "%.2f", product.maxStock)
 
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .background(creamPrimary, shape = RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "#${product.code}",
+                        color = darkText,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 11.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = product.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = creamPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    text = "Precio: $priceFormatted/kg",
+                    fontSize = 12.sp,
+                    color = creamWarm,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Máx: $maxStockFormatted kg",
+                    fontSize = 12.sp,
+                    color = textMuted
+                )
+                Text(
+                    text = product.category,
+                    fontSize = 12.sp,
+                    color = creamPrimary
+                )
+            }
+
+            if (product.orderUnitType != "KG" || product.parentProductCode != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (product.orderUnitType != "KG") {
                         Text(
-                            text = "#${product.code}",
-                            color = Color.White,
+                            text = "${product.orderUnitType} (~${product.weightPerBoxKg}kg)",
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            color = creamWarm
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = product.name,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "Precio: $priceFormatted/kg",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF2E7D32),
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Max: $maxStockFormatted kg",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = product.category,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                // Packaging and Derivative Badges
-                if (product.orderUnitType != "KG" || product.parentProductCode != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        when (product.orderUnitType) {
-                            "BARRA" -> {
-                                val wBar = if (product.weightPerBoxKg > 0) "~${product.weightPerBoxKg}kg" else ""
-                                val stock = if (product.currentStockUnits > 0) " • ${product.currentStockUnits.toInt()} barras" else ""
-                                Text(
-                                    text = "🥖 BARRA $wBar$stock",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFD84315)
-                                )
-                            }
-                            "PAQUETE" -> {
-                                val wPqte = if (product.weightPerBoxKg > 0) "~${product.weightPerBoxKg}kg" else ""
-                                val stock = if (product.currentStockUnits > 0) " • ${product.currentStockUnits.toInt()} pqtes" else ""
-                                Text(
-                                    text = "📦 PAQUETE $wPqte$stock",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0277BD)
-                                )
-                            }
-                            "BOLSA" -> {
-                                val wBolsa = if (product.weightPerBoxKg > 0) "~${product.weightPerBoxKg}kg" else ""
-                                val perBox = if (product.unitsPerBox > 1) " (${product.unitsPerBox} b/caja)" else ""
-                                val stock = if (product.currentStockUnits > 0) " • ${product.currentStockUnits.toInt()} bolsas" else ""
-                                Text(
-                                    text = "🛍️ BOLSA $wBolsa$perBox$stock",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF2E7D32)
-                                )
-                            }
-                            "CAJA" -> {
-                                val wBox = if (product.weightPerBoxKg > 0) "~${product.weightPerBoxKg}kg" else ""
-                                val pzas = if (product.unitsPerBox > 1) " (${product.unitsPerBox} pzas)" else ""
-                                val stock = if (product.currentStockUnits > 0) " • ${product.currentStockUnits.toInt()} cajas" else ""
-                                Text(
-                                    text = "📦 CAJA $wBox$pzas$stock",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFE65100)
-                                )
-                            }
-                            "PIEZA" -> {
-                                Text(
-                                    text = "🥩 POR PIEZA (${product.currentStockUnits.toInt()} en exist.)",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0277BD)
-                                )
-                            }
-                        }
-                        if (product.parentProductCode != null) {
-                            Text(
-                                text = "🧬 Derivado de #${product.parentProductCode}",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF6A1B9A)
-                            )
-                        }
+                    if (product.parentProductCode != null) {
+                        Text(
+                            text = "Derivado de #${product.parentProductCode}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textMuted
+                        )
                     }
                 }
             }
+        }
 
-            Row {
-                IconButton(onClick = onEdit) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", tint = darkRed)
-                }
+        Row {
+            IconButton(onClick = onEdit) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = creamWarm)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", tint = textMuted)
             }
         }
     }

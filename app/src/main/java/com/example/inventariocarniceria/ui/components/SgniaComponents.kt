@@ -1206,3 +1206,947 @@ fun SgniaArtisanalProductCard(
         }
     }
 }
+
+// =========================================================================
+// 13. PLANTILLA EJECUTIVA CERHAN (NEGRO MATE & CREMA MARFIL)
+// =========================================================================
+
+data class SgniaSidebarItem(
+    val id: String,
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val badge: String? = null
+)
+
+data class SgniaQuickActionItem(
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val onClick: () -> Unit
+)
+
+/**
+ * Menú Lateral Izquierdo (Sidebar) idéntico a la plantilla CERHAN en Negro Mate y Crema.
+ */
+@Composable
+fun SgniaCerhanSidebar(
+    brandTitle: String = "SGNIA",
+    subtitle: String = "POS & INVENTARIO",
+    items: List<SgniaSidebarItem>,
+    selectedItemId: String,
+    onSelectItem: (String) -> Unit,
+    onLogout: () -> Unit,
+    supportText: String = "Red TCP/IP Activa",
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    Column(
+        modifier = modifier
+            .width(265.dp)
+            .fillMaxSize()
+            .background(Color(0xFF141312))
+            .border(width = 1.dp, color = Color(0xFF2B2824))
+            .padding(vertical = 20.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Cabecera con Logo SGNIA + Nombre
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 22.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFF3EFE6))
+                        .padding(5.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.example.inventariocarniceria.R.drawable.logo),
+                        contentDescription = "Logo SGNIA",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = brandTitle,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 19.sp,
+                        letterSpacing = 1.5.sp,
+                        color = Color(0xFFF3EFE6)
+                    )
+                    Text(
+                        text = subtitle,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 9.sp,
+                        color = Color(0xFFA89F91)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Lista vertical de pestañas laterales con pestaña crema a la derecha
+            items.forEach { item ->
+                val isSelected = item.id == selectedItemId
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onSelectItem(item.id)
+                        }
+                        .background(
+                            if (isSelected) Color(0xFF23201D) else Color.Transparent
+                        )
+                        .padding(start = 22.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            tint = if (isSelected) Color(0xFFF3EFE6) else Color(0xFF9E9589),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Text(
+                            text = item.label,
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
+                            fontSize = 14.sp,
+                            color = if (isSelected) Color(0xFFF3EFE6) else Color(0xFFB5ACA0)
+                        )
+                        if (item.badge != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFF3EFE6).copy(alpha = 0.18f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = item.badge,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    color = Color(0xFFF3EFE6)
+                                )
+                            }
+                        }
+                    }
+
+                    // Indicador crema en el borde derecho (idéntico a la imagen 1 de CERHAN)
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .width(6.dp)
+                                .height(30.dp)
+                                .clip(RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
+                                .background(Color(0xFFF3EFE6))
+                        )
+                    }
+                }
+            }
+        }
+
+        // Pie de menú lateral: Estado y Cerrar Sesión (Logout)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 22.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.NetworkWifi,
+                    contentDescription = null,
+                    tint = Color(0xFF9E9589),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = supportText,
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 12.sp,
+                    color = Color(0xFF9E9589)
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF23201D))
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLogout()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Backspace,
+                    contentDescription = "Cerrar Sesión",
+                    tint = Color(0xFFF3EFE6),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Cerrar Sesión",
+                    fontFamily = FontFamily.SansSerif,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = Color(0xFFF3EFE6)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Barra superior estilo CERHAN con botón de Menú Lateral (al costado), barra de búsqueda y controles.
+ */
+@Composable
+fun SgniaCerhanTopBar(
+    onOpenDrawer: () -> Unit,
+    searchPlaceholder: String = "Buscar corte, código o caja...",
+    onSearchClick: (() -> Unit)? = null,
+    onToggleTheme: (() -> Unit)? = null,
+    rightActionIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onRightActionClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Botón para abrir el menú desplegable del costado
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(0xFF1A1816))
+                    .border(1.dp, Color(0xFFEEDDC8).copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onOpenDrawer()
+                    }
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "☰",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFF3EFE6)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "MENÚ",
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        letterSpacing = 0.8.sp,
+                        color = Color(0xFFF3EFE6)
+                    )
+                }
+            }
+        }
+
+        // Píldora de búsqueda rápida + Iconos derechos
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            if (onSearchClick != null) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF1F1D1A))
+                        .border(1.dp, Color(0xFF38332D), RoundedCornerShape(20.dp))
+                        .clickable { onSearchClick() }
+                        .padding(horizontal = 14.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "🔍",
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = searchPlaceholder,
+                            fontSize = 12.sp,
+                            color = Color(0xFFA89F91),
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+
+            if (rightActionIcon != null && onRightActionClick != null) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF1F1D1A))
+                        .border(1.dp, Color(0xFF38332D), CircleShape)
+                        .clickable { onRightActionClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = rightActionIcon,
+                        contentDescription = null,
+                        tint = Color(0xFFF3EFE6),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            if (onToggleTheme != null) {
+                SgniaThemeToggle(
+                    currentMode = SgniaTheme.mode,
+                    onToggle = onToggleTheme
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Encabezado de saludo estilo CERHAN ("Buenas tardes, Administrador Principal")
+ */
+@Composable
+fun SgniaCerhanGreetingHeader(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = title,
+            fontFamily = FontFamily.SansSerif,
+            fontWeight = FontWeight.Black,
+            fontSize = 23.sp,
+            color = SgniaTheme.colors.textPrimary
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = subtitle,
+            fontFamily = FontFamily.SansSerif,
+            fontWeight = FontWeight.Normal,
+            fontSize = 12.sp,
+            color = SgniaTheme.colors.textSecondary
+        )
+    }
+}
+
+@Composable
+fun SgniaCerhanGreetingHeader(
+    userName: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    greetingPrefix: String = "Buenas tardes,"
+) {
+    SgniaCerhanGreetingHeader(
+        title = "$greetingPrefix $userName",
+        subtitle = subtitle,
+        modifier = modifier
+    )
+}
+
+/**
+ * Tarjeta Numerada Horizontal (01., 02., 03., 04.) con iconos y gráfica integrada estilo CERHAN.
+ */
+@Composable
+fun SgniaCerhanNumberedCard(
+    numberPrefix: String,
+    title: String,
+    description: String,
+    bottomMetric: String,
+    primaryIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    secondaryIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    showChart: Boolean = true,
+    isHighlighted: Boolean = false,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF181715))
+            .border(
+                width = if (isHighlighted) 1.8.dp else 1.dp,
+                color = if (isHighlighted) Color(0xFFEEDDC8) else Color(0xFF2E2B27),
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            }
+            .padding(horizontal = 18.dp, vertical = 16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Columna izquierda: 01. Título, descripción y métrica inferior
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = numberPrefix,
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 21.sp,
+                        color = Color(0xFFD6CEC2)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = title,
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = Color(0xFFFAF6F0)
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = description,
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 12.sp,
+                    color = Color(0xFFB5ACA0),
+                    lineHeight = 16.sp
+                )
+                if (bottomMetric.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = bottomMetric,
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = Color(0xFFF3EFE6)
+                    )
+                }
+            }
+
+            // Columna derecha: Iconos superiores y mini gráfica vectorial inferior
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = primaryIcon,
+                        contentDescription = null,
+                        tint = Color(0xFFEEDDC8),
+                        modifier = Modifier.size(26.dp)
+                    )
+                    if (secondaryIcon != null) {
+                        Icon(
+                            imageVector = secondaryIcon,
+                            contentDescription = null,
+                            tint = Color(0xFFD6CEC2),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                if (showChart) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    androidx.compose.foundation.Canvas(
+                        modifier = Modifier
+                            .width(72.dp)
+                            .height(24.dp)
+                    ) {
+                        val barWidth = size.width / 9f
+                        val heights = listOf(0.35f, 0.55f, 0.45f, 0.75f, 0.9f)
+                        heights.forEachIndexed { idx, ratio ->
+                            val barH = size.height * ratio
+                            val x = idx * (barWidth * 1.8f) + 6f
+                            drawRect(
+                                color = Color(0xFF8A8175).copy(alpha = 0.55f),
+                                topLeft = Offset(x, size.height - barH),
+                                size = androidx.compose.ui.geometry.Size(barWidth, barH)
+                            )
+                        }
+                        val path = androidx.compose.ui.graphics.Path().apply {
+                            moveTo(0f, size.height * 0.75f)
+                            cubicTo(
+                                size.width * 0.3f, size.height * 0.2f,
+                                size.width * 0.6f, size.height * 0.8f,
+                                size.width, size.height * 0.15f
+                            )
+                        }
+                        drawPath(
+                            path = path,
+                            color = Color(0xFFEEDDC8),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SgniaCerhanNumberedCard(
+    number: String,
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    showWaveChart: Boolean = true,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    SgniaCerhanNumberedCard(
+        numberPrefix = number,
+        title = title,
+        description = subtitle,
+        bottomMetric = "",
+        primaryIcon = icon,
+        showChart = showWaveChart,
+        onClick = onClick,
+        modifier = modifier
+    )
+}
+
+/**
+ * Tarjeta Especial de Báscula en Vivo (01. Báscula 1 / 02. Báscula 2) con el estilo exacto de la plantilla CERHAN.
+ */
+@Composable
+fun SgniaCerhanDualScaleCard(
+    numberPrefix: String,
+    scaleDevice: TcpScaleDevice,
+    liveWeightKg: Double,
+    isStable: Boolean,
+    isActiveScale: Boolean,
+    onSelectScale: () -> Unit,
+    onManualWeightClick: () -> Unit,
+    onTareClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    val formattedWeight = remember(liveWeightKg) {
+        String.format(Locale.US, "%.3f", liveWeightKg)
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF181715))
+            .border(
+                width = if (isActiveScale) 2.dp else 1.dp,
+                color = if (isActiveScale) Color(0xFFEEDDC8) else Color(0xFF2E2B27),
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onSelectScale()
+            }
+            .padding(18.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = numberPrefix,
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = FontWeight.Normal,
+                            fontSize = 21.sp,
+                            color = Color(0xFFD6CEC2)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = scaleDevice.name,
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = Color(0xFFFAF6F0)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isActiveScale) Color(0xFFF3EFE6)
+                                    else Color(0xFF2B2824)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (isActiveScale) "ACTIVA" else "TOCAR PARA USAR",
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 9.sp,
+                                color = if (isActiveScale) Color(0xFF141312) else Color(0xFFB5ACA0)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "Red TCP/IP: ${scaleDevice.ip}:${scaleDevice.port} • ${if (scaleDevice.isConnected) "Conectada en vivo" else "Esperando lectura / Ticket"}",
+                        fontFamily = FontFamily.SansSerif,
+                        fontSize = 11.sp,
+                        color = Color(0xFFB5ACA0)
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.Default.Scale,
+                    contentDescription = null,
+                    tint = Color(0xFFEEDDC8),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Lectura de Peso Digital + Gráfica y Controles Rápidos
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = formattedWeight,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 36.sp,
+                        color = if (isActiveScale) Color(0xFFF3EFE6) else Color(0xFFC7BBAA)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "kg",
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFFD6CEC2)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = if (isStable) "● ESTABLE" else "◌ MOVIMIENTO",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        color = if (isStable) Color(0xFFD6CEC2) else Color(0xFFFFB74D)
+                    )
+                }
+
+                // Botones crema compactos de acción rápida en la báscula
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF2B2824))
+                            .border(1.dp, Color(0xFF4A443D), RoundedCornerShape(10.dp))
+                            .clickable { onTareClick() }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = ">0< Tara",
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = Color(0xFFF3EFE6)
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFFF3EFE6))
+                            .clickable { onManualWeightClick() }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "✏️ Peso",
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 11.sp,
+                            color = Color(0xFF141312)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Tarjeta "Acceso Rápido" con cuadrícula 2x2 de botones Crema con texto Negro (Idéntica a la plantilla CERHAN).
+ */
+@Composable
+fun SgniaCerhanQuickAccessCard(
+    title: String = "Acceso Rápido",
+    actions: List<SgniaQuickActionItem>,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF181715))
+            .border(1.dp, Color(0xFF2E2B27), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = title,
+                fontFamily = FontFamily.SansSerif,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color(0xFFFAF6F0)
+            )
+
+            val chunked = actions.chunked(2)
+            chunked.forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    rowItems.forEach { action ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFF3EFE6))
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    action.onClick()
+                                }
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = action.icon,
+                                    contentDescription = action.label,
+                                    tint = Color(0xFF141312),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = action.label,
+                                    fontFamily = FontFamily.SansSerif,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF141312),
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                    if (rowItems.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Tarjeta "Resumen Global" con números grandes y gráficas vectoriales de líneas y barras (Idéntica a la plantilla CERHAN).
+ */
+@Composable
+fun SgniaCerhanGlobalSummaryCard(
+    title: String = "Resumen Global",
+    firstLabel: String,
+    firstValue: String,
+    secondLabel: String,
+    secondValue: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xFF181715))
+            .border(1.dp, Color(0xFF2E2B27), RoundedCornerShape(20.dp))
+            .padding(18.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = title,
+                fontFamily = FontFamily.SansSerif,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color(0xFFFAF6F0)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Métrica 1 + Gráfica de línea ascendente
+            Text(
+                text = firstLabel,
+                fontFamily = FontFamily.SansSerif,
+                fontSize = 12.sp,
+                color = Color(0xFFB5ACA0)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = firstValue,
+                    fontFamily = FontFamily.SansSerif,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 32.sp,
+                    color = Color(0xFFFAF6F0)
+                )
+
+                androidx.compose.foundation.Canvas(
+                    modifier = Modifier
+                        .width(105.dp)
+                        .height(38.dp)
+                ) {
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(0f, size.height * 0.85f)
+                        lineTo(size.width * 0.28f, size.height * 0.45f)
+                        lineTo(size.width * 0.52f, size.height * 0.62f)
+                        lineTo(size.width * 0.78f, size.height * 0.30f)
+                        lineTo(size.width, size.height * 0.08f)
+                    }
+                    drawPath(
+                        path = path,
+                        color = Color(0xFFD6CEC2),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.5f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color(0xFF2E2B27))
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Métrica 2 + Gráfica de barras verticales
+            Text(
+                text = secondLabel,
+                fontFamily = FontFamily.SansSerif,
+                fontSize = 12.sp,
+                color = Color(0xFFB5ACA0)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = secondValue,
+                    fontFamily = FontFamily.SansSerif,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 32.sp,
+                    color = Color(0xFFFAF6F0)
+                )
+
+                androidx.compose.foundation.Canvas(
+                    modifier = Modifier
+                        .width(105.dp)
+                        .height(42.dp)
+                ) {
+                    val bars = listOf(0.28f, 0.72f, 0.95f, 0.52f, 0.82f)
+                    val barW = 12f
+                    val spacing = (size.width - (bars.size * barW)) / (bars.size - 1)
+                    bars.forEachIndexed { i, hRatio ->
+                        val h = size.height * hRatio
+                        val x = i * (barW + spacing)
+                        drawRoundRect(
+                            color = Color(0xFFD6CEC2),
+                            topLeft = Offset(x, size.height - h),
+                            size = androidx.compose.ui.geometry.Size(barW, h),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(3f, 3f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SgniaCerhanGlobalSummaryCard(
+    metric1Label: String,
+    metric1Value: String,
+    metric1Sub: String = "",
+    metric2Label: String,
+    metric2Value: String,
+    metric2Sub: String = "",
+    barValues: List<Float> = emptyList(),
+    modifier: Modifier = Modifier
+) {
+    SgniaCerhanGlobalSummaryCard(
+        title = "Resumen Global",
+        firstLabel = if (metric1Sub.isNotBlank()) "$metric1Label ($metric1Sub)" else metric1Label,
+        firstValue = metric1Value,
+        secondLabel = if (metric2Sub.isNotBlank()) "$metric2Label ($metric2Sub)" else metric2Label,
+        secondValue = metric2Value,
+        modifier = modifier
+    )
+}

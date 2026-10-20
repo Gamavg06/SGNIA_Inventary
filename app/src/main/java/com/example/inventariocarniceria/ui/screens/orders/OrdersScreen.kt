@@ -1,6 +1,7 @@
 package com.example.inventariocarniceria.ui.screens.orders
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,18 +22,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,15 +43,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.InventoryCaptureEntity
 import com.example.inventariocarniceria.data.local.ProductEntity
-import com.example.inventariocarniceria.ui.components.SgniaThemeToggle
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
+import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import com.example.inventariocarniceria.utils.PdfExporter
 import com.example.inventariocarniceria.utils.WhatsAppExporter
@@ -72,31 +76,29 @@ fun OrdersScreen(
     var selectedOrderProduct by remember { mutableStateOf<ProductEntity?>(null) }
     var selectedCategoryFilter by remember { mutableStateOf("Todas") }
 
-    val darkRed = Color(0xFFB71C1C)
-    val whatsAppGreen = Color(0xFF25D366)
-    val greenSuccess = Color(0xFF2E7D32)
-    val orangeCajas = Color(0xFFE65100)
+    val matteBg = Color(0xFF0F0E0D)
+    val cardBg = Color(0xFF181715)
+    val cardBorder = Color(0xFF282623)
+    val creamPrimary = Color(0xFFF3EFE6)
+    val creamWarm = Color(0xFFEEDDC8)
+    val textMuted = Color(0xFF8C857B)
+    val darkText = Color(0xFF141312)
 
     val productMap = remember(allProducts) {
         allProducts.associateBy { it.code }
     }
 
-    // Filtrar pedidos: mostrar todos los productos base/no derivados (Cajas, Barras, Paquetes, Piezas o Granel KG)
-    // Se excluyen únicamente los derivados internos (bistec, molida) que se descuentan de su producto padre
     val nonDerivedOrders = remember(pendingOrders, productMap) {
         pendingOrders.filter { order ->
             val prod = productMap[order.productCode]
-            val isNotDerived = prod?.parentProductCode == null
-            isNotDerived
+            prod?.parentProductCode == null
         }
     }
 
-    // Todos los productos no derivados que pueden pedirse a proveedores o rastro
     val orderableProducts = remember(allProducts) {
         allProducts.filter { it.parentProductCode == null }
     }
 
-    // Filtrar por departamento / categoría seleccionada
     val displayOrders = remember(nonDerivedOrders, selectedCategoryFilter, productMap) {
         if (selectedCategoryFilter == "Todas") {
             nonDerivedOrders
@@ -127,291 +129,304 @@ fun OrdersScreen(
         }.toInt()
     }
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(matteBg)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // HEADER
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "PEDIDO DE SURTIDO",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black)
-                )
-                Text(
-                    text = "Toca cualquier producto para ajustar cajas o unidades a pedir",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SgniaThemeToggle(
-                    onToggle = { viewModel.toggleTheme() }
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                IconButton(onClick = {
-                    selectedOrderProduct = null
-                    isManualOrderOpen = true
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Agregar Producto",
-                        tint = greenSuccess
-                    )
-                }
-                if (nonDerivedOrders.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.clearAllCaptures() }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Limpiar Lista",
-                            tint = Color.Gray
-                        )
-                    }
-                }
-            }
+        // ==========================================================
+        // SALUDO EJECUTIVO ESTILO CERHAN
+        // ==========================================================
+        item {
+            SgniaCerhanGreetingHeader(
+                userName = "Pedidos de Surtido",
+                subtitle = "Requisición de Cajas y Cortes Faltantes • ${uiState.currentBranch.ifBlank { "Sucursal" }}"
+            )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // BOTÓN PRINCIPAL PARA AGREGAR PRODUCTO
-        OutlinedButton(
-            onClick = {
-                selectedOrderProduct = null
-                isManualOrderOpen = true
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Icon(imageVector = Icons.Default.Add, contentDescription = null, tint = greenSuccess)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("➕ Agregar Producto / Cajas al Pedido", fontWeight = FontWeight.Bold, color = greenSuccess)
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // RESUMEN OPERATIVO (SIN PRECIOS DE VENTA)
-        if (nonDerivedOrders.isNotEmpty()) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("TOTAL A PEDIR", style = MaterialTheme.typography.labelSmall)
-                        val boxesExtra = if (totalBoxesCount > 0) " • $totalBoxesCount ${if (totalBoxesCount == 1) "Caja" else "Cajas"}" else ""
-                        Text(
-                            text = String.format(Locale.US, "%.2f kg", totalShortageKg) + boxesExtra,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("PRODUCTOS EN LISTA", style = MaterialTheme.typography.labelSmall)
-                        Text(
-                            text = "${nonDerivedOrders.size} en pedido",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
-        // CHIPS DE DEPARTAMENTOS / CATEGORÍAS (LÁCTEOS, CREMERÍA, ETC.)
-        val orderCategories = listOf("Todas", "Carnicería", "Lácteos y Quesos", "Jamones y Embutidos", "Cremería y Abarrotes")
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            items(orderCategories) { cat ->
-                val isSelected = cat == selectedCategoryFilter
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { selectedCategoryFilter = cat },
-                    label = {
-                        val count = if (cat == "Todas") nonDerivedOrders.size else {
-                            nonDerivedOrders.count { order ->
-                                val p = productMap[order.productCode]
-                                val c = p?.category.orEmpty()
-                                when (cat) {
-                                    "Carnicería" -> c in listOf("Res", "Cerdo", "Pollo", "Carnicería", "Carnes", "")
-                                    "Lácteos y Quesos" -> c in listOf("Quesos", "Lácteos", "Lacteos")
-                                    "Jamones y Embutidos" -> c in listOf("Jamones", "Salchichas", "Embutidos")
-                                    "Cremería y Abarrotes" -> c in listOf("Abarrotes", "Cremería", "Cremeria", "Otros")
-                                    else -> true
-                                }
-                            }
-                        }
-                        Text("$cat ($count)", fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = greenSuccess,
-                        selectedLabelColor = Color.White
-                    )
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // ENCABEZADO DE TABLA (SIN PRECIO DE VENTA)
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("CÓD", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("PRODUCTO", modifier = Modifier.weight(1.8f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("EXISTENCIA", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.End)
-                Text("A PEDIR", modifier = Modifier.weight(1.4f), fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.End, color = greenSuccess)
-                Spacer(modifier = Modifier.width(68.dp)) // Espacio para botones de editar y borrar
-            }
-        }
-
-        if (displayOrders.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("📦", fontSize = 48.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = if (nonDerivedOrders.isEmpty()) "No hay pedidos pendientes" else "Sin pedidos en esta categoría",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (nonDerivedOrders.isEmpty()) "Toca 'Agregar Producto / Cajas' para crear un pedido." else "Selecciona 'Todas' para ver todos los pedidos.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                items(displayOrders) { order ->
-                    val product = productMap[order.productCode]
-                    OrderItemRow(
-                        order = order,
-                        product = product,
-                        onItemClick = {
-                            selectedOrderProduct = product
-                            isManualOrderOpen = true
-                        },
-                        onDeleteClick = {
-                            viewModel.deleteOrderItem(order.productCode)
-                        }
-                    )
-                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.4f))
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // BOTONES DE ACCIÓN: WHATSAPP Y PDF DE PEDIDO
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        // ==========================================================
+        // TARJETAS NUMERADAS 01. Y 02.
+        // ==========================================================
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Button(
-                    onClick = { WhatsAppExporter.shareToWhatsApp(context, nonDerivedOrders) },
-                    enabled = nonDerivedOrders.isNotEmpty(),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = whatsAppGreen,
-                        contentColor = Color.White
-                    )
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "01.",
+                    title = "Total a Pedir",
+                    subtitle = String.format(Locale.US, "%.2f kg • %d Cajas", totalShortageKg, totalBoxesCount),
+                    icon = Icons.Default.ShoppingCart,
+                    showWaveChart = true
+                )
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "02.",
+                    title = "En Requisición",
+                    subtitle = "${nonDerivedOrders.size} cortes por surtir",
+                    icon = Icons.Default.Inventory2,
+                    showWaveChart = false
+                )
+            }
+        }
+
+        // ==========================================================
+        // BOTÓN PRINCIPAL AGREGAR PRODUCTO + CHIPS DE FILTRO
+        // ==========================================================
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("WhatsApp", fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = {
+                            selectedOrderProduct = null
+                            isManualOrderOpen = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Agregar Corte / Caja al Pedido", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    }
+
+                    if (nonDerivedOrders.isNotEmpty()) {
+                        OutlinedButton(
+                            onClick = { viewModel.clearAllCaptures() },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = creamWarm),
+                            modifier = Modifier.height(46.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Limpiar", modifier = Modifier.size(16.dp))
+                        }
+                    }
                 }
 
-                Button(
+                val orderCategories = listOf("Todas", "Carnicería", "Lácteos y Quesos", "Jamones y Embutidos", "Cremería y Abarrotes")
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(orderCategories) { cat ->
+                        val isSelected = cat == selectedCategoryFilter
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedCategoryFilter = cat },
+                            label = {
+                                Text(
+                                    text = cat,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = creamPrimary,
+                                selectedLabelColor = darkText,
+                                containerColor = Color(0xFF121110),
+                                labelColor = textMuted
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        // ==========================================================
+        // TARJETA 03. TABLA DE REQUISICIÓN DE PEDIDO
+        // ==========================================================
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF121110))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("CÓD", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
+                    Text("PRODUCTO", modifier = Modifier.weight(1.8f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
+                    Text("EXISTENCIA", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = textMuted)
+                    Text("A PEDIR", modifier = Modifier.weight(1.4f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = creamPrimary)
+                    Spacer(modifier = Modifier.width(64.dp))
+                }
+
+                if (displayOrders.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (nonDerivedOrders.isEmpty()) "No hay pedidos pendientes" else "Sin pedidos en esta categoría",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = creamPrimary
+                            )
+                            Text(
+                                text = "Toca 'Agregar Corte / Caja al Pedido' arriba para capturar faltantes.",
+                                fontSize = 11.sp,
+                                color = textMuted
+                            )
+                        }
+                    }
+                } else {
+                    displayOrders.forEach { order ->
+                        val product = productMap[order.productCode]
+                        OrderItemRow(
+                            order = order,
+                            product = product,
+                            onItemClick = {
+                                selectedOrderProduct = product
+                                isManualOrderOpen = true
+                            },
+                            onDeleteClick = {
+                                viewModel.deleteOrderItem(order.productCode)
+                            }
+                        )
+                        HorizontalDivider(color = cardBorder)
+                    }
+                }
+            }
+        }
+
+        // ==========================================================
+        // TARJETA 04. EXPORTACIÓN EJECUTIVA (WHATSAPP / PDF)
+        // ==========================================================
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "04. Exportar Pedido y Corte",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    color = creamPrimary
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = { WhatsAppExporter.shareToWhatsApp(context, nonDerivedOrders) },
+                        enabled = nonDerivedOrders.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = creamPrimary,
+                            contentColor = darkText,
+                            disabledContainerColor = Color(0xFF23211E),
+                            disabledContentColor = textMuted
+                        )
+                    ) {
+                        Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("WhatsApp", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = {
+                            PdfExporter.generateAndShareVipInventoryPdf(
+                                context = context,
+                                orders = nonDerivedOrders,
+                                allProducts = allProducts,
+                                branchName = uiState.currentBranch,
+                                managerName = "Encargado (${uiState.currentBranch})"
+                            )
+                        },
+                        enabled = nonDerivedOrders.isNotEmpty(),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = creamWarm,
+                            contentColor = darkText,
+                            disabledContainerColor = Color(0xFF23211E),
+                            disabledContentColor = textMuted
+                        )
+                    ) {
+                        Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("PDF Pedido", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    }
+                }
+
+                OutlinedButton(
                     onClick = {
-                        PdfExporter.generateAndShareVipInventoryPdf(
+                        val salesSource = if (recentCaptures.isNotEmpty()) recentCaptures else nonDerivedOrders
+                        PdfExporter.generateAndShareVipSalesReport(
                             context = context,
-                            orders = nonDerivedOrders,
+                            captures = salesSource,
                             allProducts = allProducts,
                             branchName = uiState.currentBranch,
                             managerName = "Encargado (${uiState.currentBranch})"
                         )
                     },
-                    enabled = nonDerivedOrders.isNotEmpty(),
+                    enabled = nonDerivedOrders.isNotEmpty() || recentCaptures.isNotEmpty(),
                     modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
+                        .fillMaxWidth()
+                        .height(46.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = darkRed)
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = creamPrimary)
                 ) {
-                    Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("PDF Pedido", fontWeight = FontWeight.Bold, color = Color.White)
+                    Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("GENERAR CORTE DE VENTAS (PDF)", fontWeight = FontWeight.Black, fontSize = 11.sp)
                 }
             }
+        }
 
-            // BOTÓN DE CORTE DE VENTAS
-            Button(
-                onClick = {
-                    val salesSource = if (recentCaptures.isNotEmpty()) recentCaptures else nonDerivedOrders
-                    PdfExporter.generateAndShareVipSalesReport(
-                        context = context,
-                        captures = salesSource,
-                        allProducts = allProducts,
-                        branchName = uiState.currentBranch,
-                        managerName = "Encargado (${uiState.currentBranch})"
-                    )
-                },
-                enabled = nonDerivedOrders.isNotEmpty() || recentCaptures.isNotEmpty(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = greenSuccess)
-            ) {
-                Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("GENERAR CORTE DE VENTAS (PDF)", fontWeight = FontWeight.Black, color = Color.White, fontSize = 12.sp)
-            }
+        // ==========================================================
+        // RESUMEN GLOBAL DE SURTIDO
+        // ==========================================================
+        item {
+            SgniaCerhanGlobalSummaryCard(
+                metric1Label = "Faltante Total",
+                metric1Value = String.format(Locale.US, "%.2f kg", totalShortageKg),
+                metric1Sub = "$totalBoxesCount Cajas / Paquetes estimados",
+                metric2Label = "Líneas de Pedido",
+                metric2Value = "${nonDerivedOrders.size} Cortes",
+                metric2Sub = "Listos para surtido central",
+                barValues = listOf(0.50f, 0.82f, 0.64f, 0.91f, 0.58f, 0.87f, 0.75f, 0.96f)
+            )
         }
     }
 
-    // Modal Manual Order Dialog
     if (isManualOrderOpen) {
         ManualOrderDialog(
             allProducts = orderableProducts,
@@ -436,8 +451,9 @@ fun OrderItemRow(
     onItemClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    val greenSuccess = Color(0xFF2E7D32)
-    val orangeCajas = Color(0xFFE65100)
+    val creamPrimary = Color(0xFFF3EFE6)
+    val creamWarm = Color(0xFFEEDDC8)
+    val textMuted = Color(0xFF8C857B)
 
     val effectiveUnitType = if (order.unitType.isNotBlank() && order.unitType != "KG") order.unitType else (product?.orderUnitType ?: "KG")
     val boxWeight = product?.weightPerBoxKg ?: 0.0
@@ -445,158 +461,103 @@ fun OrderItemRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
             .clickable { onItemClick() }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val codeFormatted = String.format(Locale.US, "%03d", order.productCode)
 
-        // CÓDIGO
-        Text(codeFormatted, modifier = Modifier.weight(0.5f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Text(
+            text = codeFormatted,
+            modifier = Modifier.weight(0.5f),
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Black,
+            fontSize = 12.sp,
+            color = creamWarm
+        )
 
-        // PRODUCTO
         Column(modifier = Modifier.weight(1.8f)) {
-            Text(order.productName, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = order.productName,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = creamPrimary
+            )
             val packNote = when (effectiveUnitType) {
-                "BARRA" -> "Llega: Barra ~${boxWeight} kg"
-                "PAQUETE" -> "Llega: Paquete ~${boxWeight} kg"
-                "BOLSA" -> "Llega: Bolsa ~${boxWeight} kg (${product?.unitsPerBox ?: 1} b/caja)"
-                "CAJA" -> "Llega: Caja ~${boxWeight} kg"
-                "BOTE" -> "Llega: Bote ~${boxWeight} kg"
-                "PIEZA" -> "Llega: Por Pieza"
+                "BARRA" -> "Barra ~${boxWeight} kg"
+                "PAQUETE" -> "Paquete ~${boxWeight} kg"
+                "BOLSA" -> "Bolsa ~${boxWeight} kg"
+                "CAJA" -> "Caja ~${boxWeight} kg"
+                "BOTE" -> "Bote ~${boxWeight} kg"
+                "PIEZA" -> "Por Pieza"
                 else -> null
             }
             if (packNote != null) {
                 Text(
                     text = packNote,
-                    fontSize = 10.5.sp,
-                    color = when (effectiveUnitType) {
-                        "BARRA" -> Color(0xFFD84315)
-                        "PAQUETE" -> Color(0xFF0277BD)
-                        "BOLSA" -> greenSuccess
-                        "BOTE" -> Color(0xFF6A1B9A)
-                        "PIEZA" -> Color(0xFF00838F)
-                        else -> orangeCajas
-                    },
-                    fontWeight = FontWeight.Medium
+                    fontSize = 10.sp,
+                    color = textMuted
                 )
             }
         }
 
-        // EXISTENCIA (EN UNIDADES / BARRAS / PAQUETES / CAJAS / BOLSAS O KG)
-        val stockUnits = if (product != null && product.currentStockUnits > 0) {
-            product.currentStockUnits
-        } else if (boxWeight > 0 && order.capturedWeight > 0) {
-            order.capturedWeight / boxWeight
-        } else {
-            0.0
-        }
-
-        val stockDisplay = when (effectiveUnitType) {
-            "CAJA" -> {
-                val boxes = stockUnits.toInt()
-                val kgStr = String.format(Locale.US, "%.1f", order.capturedWeight)
-                if (boxes > 0) "$boxes cjas\n($kgStr kg)" else "$kgStr kg"
-            }
-            "BARRA" -> {
-                val bars = stockUnits.toInt()
-                val kgStr = String.format(Locale.US, "%.1f", order.capturedWeight)
-                if (bars > 0) "$bars barras\n($kgStr kg)" else "$kgStr kg"
-            }
-            "PAQUETE" -> {
-                val pqtes = stockUnits.toInt()
-                val kgStr = String.format(Locale.US, "%.1f", order.capturedWeight)
-                if (pqtes > 0) "$pqtes pqtes\n($kgStr kg)" else "$kgStr kg"
-            }
-            "BOLSA" -> {
-                val bolsas = stockUnits.toInt()
-                val kgStr = String.format(Locale.US, "%.1f", order.capturedWeight)
-                if (bolsas > 0) "$bolsas bolsas\n($kgStr kg)" else "$kgStr kg"
-            }
-            "BOTE" -> {
-                val botes = stockUnits.toInt()
-                val kgStr = String.format(Locale.US, "%.1f", order.capturedWeight)
-                if (botes > 0) "$botes botes\n($kgStr kg)" else "$kgStr kg"
-            }
-            "PIEZA" -> {
-                val pzas = if (stockUnits > 0) stockUnits.toInt() else order.capturedWeight.toInt()
-                "$pzas pzas"
-            }
-            else -> String.format(Locale.US, "%.2f kg", order.capturedWeight)
-        }
+        val stockDisplay = String.format(Locale.US, "%.2f kg", order.capturedWeight)
         Text(
             text = stockDisplay,
             modifier = Modifier.weight(1.1f),
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             textAlign = TextAlign.End,
-            color = Color.DarkGray
+            color = textMuted
         )
 
-        // A PEDIR (EN BARRAS / PAQUETES / BOLSAS / CAJAS O KG)
         val kgFormatted = String.format(Locale.US, "%.2f", order.shortage)
         val unitsToOrder = if (order.orderedUnits > 0) {
             order.orderedUnits
         } else if (boxWeight > 0 && order.shortage > 0) {
             kotlin.math.max(1.0, kotlin.math.ceil(order.shortage / boxWeight))
-        } else if (effectiveUnitType == "PIEZA" && order.shortage > 0) {
-            kotlin.math.max(1.0, kotlin.math.ceil(order.shortage))
-        } else {
-            0.0
-        }
+        } else 0.0
 
         val toOrderDisplay = when (effectiveUnitType) {
             "CAJA" -> "${unitsToOrder.toInt()} CAJA(S)\n(~$kgFormatted kg)"
             "BARRA" -> "${unitsToOrder.toInt()} BARRA(S)\n(~$kgFormatted kg)"
             "PAQUETE" -> "${unitsToOrder.toInt()} PQTE(S)\n(~$kgFormatted kg)"
             "BOLSA" -> "${unitsToOrder.toInt()} BOLSA(S)\n(~$kgFormatted kg)"
-            "BOTE" -> "${unitsToOrder.toInt()} BOTE(S)\n(~$kgFormatted kg)"
-            "PIEZA" -> "${unitsToOrder.toInt()} PZA(S)\n(~$kgFormatted kg)"
-            else -> String.format(Locale.US, "%.3f kg", order.shortage)
+            else -> String.format(Locale.US, "%.2f kg", order.shortage)
         }
-        val orderTextColor = when (effectiveUnitType) {
-            "BARRA" -> Color(0xFFD84315)
-            "PAQUETE" -> Color(0xFF0277BD)
-            "CAJA" -> orangeCajas
-            "BOTE" -> Color(0xFF6A1B9A)
-            "BOLSA" -> greenSuccess
-            "PIEZA" -> Color(0xFF00838F)
-            else -> greenSuccess
-        }
+
         Text(
             text = toOrderDisplay,
             modifier = Modifier.weight(1.4f),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Black,
             textAlign = TextAlign.End,
-            color = orderTextColor
+            color = creamPrimary
         )
 
-        // Botones de acción: Editar y Eliminar
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
             IconButton(
                 onClick = onItemClick,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Editar Cantidad",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(17.dp)
+                    contentDescription = "Editar",
+                    tint = creamWarm,
+                    modifier = Modifier.size(16.dp)
                 )
             }
             IconButton(
                 onClick = onDeleteClick,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(30.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Eliminar del Pedido",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(17.dp)
+                    contentDescription = "Eliminar",
+                    tint = textMuted,
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }

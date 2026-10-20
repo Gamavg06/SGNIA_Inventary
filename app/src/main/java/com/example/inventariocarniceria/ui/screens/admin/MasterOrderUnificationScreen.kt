@@ -1,6 +1,7 @@
 package com.example.inventariocarniceria.ui.screens.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,23 +11,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,13 +34,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inventariocarniceria.data.local.BranchOrderEntity
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
+import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import com.example.inventariocarniceria.utils.PdfExporter
 import com.example.inventariocarniceria.utils.WhatsAppExporter
@@ -53,7 +56,7 @@ data class MasterConsolidatedItem(
     val pricePerKg: Double,
     val totalShortageKg: Double,
     val totalEstimatedCost: Double,
-    val branchBreakdown: List<Pair<String, Double>> // BranchName -> Kilos
+    val branchBreakdown: List<Pair<String, Double>>
 )
 
 @Composable
@@ -64,11 +67,14 @@ fun MasterOrderUnificationScreen(
     val branchOrders by viewModel.allBranchOrders.collectAsState()
     val context = LocalContext.current
 
-    val greenSuccess = Color(0xFF2E7D32)
-    val darkRed = Color(0xFFB71C1C)
-    val whatsAppGreen = Color(0xFF25D366)
+    val matteBg = Color(0xFF0F0E0D)
+    val cardBg = Color(0xFF181715)
+    val cardBorder = Color(0xFF282623)
+    val creamPrimary = Color(0xFFF3EFE6)
+    val creamWarm = Color(0xFFEEDDC8)
+    val textMuted = Color(0xFF8C857B)
+    val darkText = Color(0xFF141312)
 
-    // Consolidate orders by productCode across all branches
     val consolidatedItems = remember(branchOrders) {
         branchOrders.groupBy { it.productCode }.map { (code, orders) ->
             val first = orders.first()
@@ -91,211 +97,199 @@ fun MasterOrderUnificationScreen(
     val totalMasterCost = consolidatedItems.sumOf { it.totalEstimatedCost }
     val activeBranchesCount = branchOrders.map { it.branchName }.distinct().size
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(matteBg)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // --- 1. HEADER ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Hub, contentDescription = null, tint = Color(0xFFFFD549))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "HUB UNIFICACIÓN MULTI-SUCURSAL",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    SgniaCerhanGreetingHeader(
+                        userName = "Unificación Pedidos",
+                        subtitle = "Consolidado Multi-Sucursal para Orden Maestra a Proveedor"
                     )
                 }
-                Text(
-                    text = "Consolidado de Requerimientos para Orden Maestra a Proveedor",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
-
-            if (branchOrders.isNotEmpty()) {
-                IconButton(onClick = { viewModel.clearBranchOrders() }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Limpiar Unificación",
-                        tint = Color.Gray
-                    )
+                if (branchOrders.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.clearBranchOrders() }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Limpiar Unificación",
+                            tint = creamWarm
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "01.",
+                    title = "Sucursales",
+                    subtitle = String.format(Locale.US, "%d Tiendas • %.2f kg", activeBranchesCount, totalMasterKg),
+                    icon = Icons.Default.Storefront,
+                    showWaveChart = true
+                )
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "02.",
+                    title = "Importe Maestro",
+                    subtitle = String.format(Locale.US, "$%.2f MXN", totalMasterCost),
+                    icon = Icons.Default.Hub,
+                    showWaveChart = false
+                )
+            }
+        }
 
-        // --- 2. EXECUTIVE MASTER KPI BANNER ---
-        if (consolidatedItems.isNotEmpty()) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFF121110))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text("SUCURSALES UNIFICADAS", style = MaterialTheme.typography.labelSmall)
-                        Text(
-                            text = "$activeBranchesCount Sucursales",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = String.format(Locale.US, "%.3f kg totales", totalMasterKg),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.DarkGray
-                        )
+                    Text("CÓD", modifier = Modifier.weight(0.6f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
+                    Text("PRODUCTO / DESGLOSE", modifier = Modifier.weight(2f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
+                    Text("TOTAL KG", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = creamPrimary)
+                    Text("EST. ($)", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = creamWarm)
+                }
+
+                if (consolidatedItems.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Sin pedidos pendientes de sucursales",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = creamPrimary
+                            )
+                            Text(
+                                text = "Todas las sucursales tienen existencias completas.",
+                                fontSize = 11.sp,
+                                color = textMuted
+                            )
+                        }
                     }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("IMPORTE MAESTRO PROVEEDOR", style = MaterialTheme.typography.labelSmall)
-                        Text(
-                            text = String.format(Locale.US, "$%.2f MXN", totalMasterCost),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                            color = greenSuccess
-                        )
+                } else {
+                    consolidatedItems.forEach { item ->
+                        MasterConsolidatedItemRow(item)
+                        HorizontalDivider(color = cardBorder)
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        // --- 3. CONSOLIDATED TABLE HEADER ---
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        item {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text("CÓD", modifier = Modifier.weight(0.6f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("PRODUCTO / DESGLOSE SUCURSALES", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text("TOTAL KG", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.End, color = darkRed)
-                Text("EST. ($)", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.End, color = greenSuccess)
-            }
-        }
-
-        if (consolidatedItems.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("📦", fontSize = 48.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Sin pedidos pendientes de sucursales",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                Button(
+                    onClick = {
+                        val text = buildMasterWhatsAppText(consolidatedItems, totalMasterKg, totalMasterCost)
+                        WhatsAppExporter.shareRawText(context, text)
+                    },
+                    enabled = consolidatedItems.isNotEmpty(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = creamPrimary,
+                        contentColor = darkText,
+                        disabledContainerColor = Color(0xFF23211E),
+                        disabledContentColor = textMuted
                     )
-                    Text(
-                        text = "Todas las sucursales tienen existencias completas o no han enviado requerimientos.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
+                ) {
+                    Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("WhatsApp Maestro", fontWeight = FontWeight.Black, fontSize = 12.sp)
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                items(consolidatedItems) { item ->
-                    MasterConsolidatedItemRow(item)
-                    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
-                }
-            }
-        }
 
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // --- 4. MASTER EXPORT BUTTONS ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Button(
-                onClick = {
-                    // Export Master Order to WhatsApp
-                    val text = buildMasterWhatsAppText(consolidatedItems, totalMasterKg, totalMasterCost)
-                    WhatsAppExporter.shareRawText(context, text)
-                },
-                enabled = consolidatedItems.isNotEmpty(),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = whatsAppGreen,
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Orden Maestra WhatsApp", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            }
-
-            OutlinedButton(
-                onClick = {
-                    // Export Master Order to PDF
-                    val captures = consolidatedItems.map {
-                        com.example.inventariocarniceria.data.local.InventoryCaptureEntity(
-                            productCode = it.productCode,
-                            productName = "${it.productName} (UNIFICADO ${it.branchBreakdown.size} SUCURSALES)",
-                            capturedWeight = 0.0,
-                            maxStock = it.totalShortageKg,
-                            shortage = it.totalShortageKg
+                OutlinedButton(
+                    onClick = {
+                        val captures = consolidatedItems.map {
+                            com.example.inventariocarniceria.data.local.InventoryCaptureEntity(
+                                productCode = it.productCode,
+                                productName = "${it.productName} (UNIFICADO ${it.branchBreakdown.size} SUCURSALES)",
+                                capturedWeight = 0.0,
+                                maxStock = it.totalShortageKg,
+                                shortage = it.totalShortageKg
+                            )
+                        }
+                        PdfExporter.generateAndShareVipInventoryPdf(
+                            context = context,
+                            orders = captures,
+                            allProducts = emptyList(),
+                            branchName = "CONSOLIDADO CADENA MULTI-TIENDA",
+                            managerName = "Dirección General / Administrador SGNIA"
                         )
-                    }
-                    PdfExporter.generateAndShareVipInventoryPdf(
-                        context = context,
-                        orders = captures,
-                        allProducts = emptyList(),
-                        branchName = "CONSOLIDADO CADENA MULTI-TIENDA",
-                        managerName = "Dirección General / Administrador SGNIA"
-                    )
-                },
-                enabled = consolidatedItems.isNotEmpty(),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, tint = darkRed)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("PDF Maestro", fontWeight = FontWeight.Bold, color = darkRed, fontSize = 13.sp)
+                    },
+                    enabled = consolidatedItems.isNotEmpty(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = creamPrimary)
+                ) {
+                    Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, tint = creamWarm, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("PDF Maestro", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                }
             }
+        }
+
+        item {
+            SgniaCerhanGlobalSummaryCard(
+                metric1Label = "Volumen Consolidado",
+                metric1Value = String.format(Locale.US, "%.2f kg", totalMasterKg),
+                metric1Sub = "Requerimiento total a rastro",
+                metric2Label = "Inversión Estimada",
+                metric2Value = String.format(Locale.US, "$%.2f", totalMasterCost),
+                metric2Sub = "${consolidatedItems.size} cortes unificados",
+                barValues = listOf(0.55f, 0.80f, 0.65f, 0.92f, 0.60f, 0.88f, 0.74f, 0.96f)
+            )
         }
     }
 }
 
 @Composable
 fun MasterConsolidatedItemRow(item: MasterConsolidatedItem) {
-    val darkRed = Color(0xFFB71C1C)
-    val greenSuccess = Color(0xFF2E7D32)
+    val creamPrimary = Color(0xFFF3EFE6)
+    val creamWarm = Color(0xFFEEDDC8)
+    val textMuted = Color(0xFF8C857B)
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .padding(horizontal = 8.dp, vertical = 10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -305,27 +299,26 @@ fun MasterConsolidatedItemRow(item: MasterConsolidatedItem) {
             val totalKgStr = String.format(Locale.US, "%.3f kg", item.totalShortageKg)
             val totalCostStr = String.format(Locale.US, "$%.2f", item.totalEstimatedCost)
 
-            Text(codeFormatted, modifier = Modifier.weight(0.6f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text(item.productName, modifier = Modifier.weight(2f), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            Text(totalKgStr, modifier = Modifier.weight(1.1f), fontSize = 13.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.End, color = darkRed)
-            Text(totalCostStr, modifier = Modifier.weight(1.1f), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = greenSuccess)
+            Text(codeFormatted, modifier = Modifier.weight(0.6f), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Black, fontSize = 12.sp, color = creamWarm)
+            Text(item.productName, modifier = Modifier.weight(2f), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = creamPrimary)
+            Text(totalKgStr, modifier = Modifier.weight(1.1f), fontSize = 12.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.End, color = creamPrimary)
+            Text(totalCostStr, modifier = Modifier.weight(1.1f), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = creamWarm)
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Breakdown per branch
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 28.dp),
+                .padding(start = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item.branchBreakdown.forEach { (branch, kg) ->
                 val shortBranch = branch.replace(" SGNIA", "")
                 Text(
-                    text = "• $shortBranch: ${String.format(Locale.US, "%.3f", kg)} kg",
-                    fontSize = 11.sp,
-                    color = Color.Gray
+                    text = "• $shortBranch: ${String.format(Locale.US, "%.2f", kg)} kg",
+                    fontSize = 10.sp,
+                    color = textMuted
                 )
             }
         }

@@ -74,7 +74,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.LocalProductEntity
-import com.example.inventariocarniceria.ui.components.SgniaThemeToggle
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
+import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import java.util.Locale
 
@@ -94,17 +95,15 @@ fun ManagerInvestmentScreen(
 
     var selectedInvestmentFilter by remember { mutableStateOf("Todas") }
     var searchQuery by remember { mutableStateOf("") }
-    var isTableViewMode by remember { mutableStateOf(true) } // true = Tablita ejecutiva, false = Tarjetas
+    var isTableViewMode by remember { mutableStateOf(true) }
 
-    val greenSuccess = Color(0xFF2E7D32)
-    val amberWarning = Color(0xFFE65100)
-    val purpleSgnia = Color(0xFF6A1B9A)
-    val darkRed = Color(0xFFB71C1C)
+    val greenSuccess = Color(0xFFF3EFE6)
+    val amberWarning = Color(0xFFEEDDC8)
+    val purpleSgnia = Color(0xFFF3EFE6)
+    val darkRed = Color(0xFFE57373)
 
-    // Inversiones registradas únicas para filtros
     val investmentNames = listOf("Todas") + localProducts.map { it.investmentName.trim() }.distinct().filter { it.isNotEmpty() }
 
-    // Filtrar productos
     val filteredProducts = localProducts.filter { prod ->
         val matchesInvestment = (selectedInvestmentFilter == "Todas" || prod.investmentName.equals(selectedInvestmentFilter, ignoreCase = true))
         val matchesSearch = searchQuery.isBlank() ||
@@ -114,7 +113,6 @@ fun ManagerInvestmentScreen(
         matchesInvestment && matchesSearch
     }
 
-    // Métricas ejecutivas
     val totalToMakeBags = filteredProducts.sumOf { it.quantityToMake }
     val totalToMakePieces = filteredProducts.sumOf { it.totalPiecesToMake }
     val totalStockBags = filteredProducts.sumOf { it.quantityInStock }
@@ -125,23 +123,24 @@ fun ManagerInvestmentScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        containerColor = Color(0xFF0F0E0D),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     itemToEdit = null
                     isAddOrEditDialogOpen = true
                 },
-                containerColor = greenSuccess,
-                contentColor = Color.White,
+                containerColor = Color(0xFFF3EFE6),
+                contentColor = Color(0xFF141312),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Nueva Botana / Inversión")
+                    Icon(Icons.Default.Add, contentDescription = "Nueva Inversión")
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("NUEVA INVERSIÓN", fontWeight = FontWeight.Bold)
+                    Text("NUEVA INVERSIÓN", fontWeight = FontWeight.Black)
                 }
             }
         }
@@ -149,182 +148,67 @@ fun ManagerInvestmentScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFF0F0E0D))
                 .padding(padding)
-                .padding(14.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
-            // --- HEADER ---
+            SgniaCerhanGreetingHeader(
+                userName = "Mi Inversión Local",
+                subtitle = "Control de Bolsitas, Botanas y Venta Unitaria • ${uiState.currentBranch.ifBlank { "Sucursal" }}"
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            color = purpleSgnia.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.CardGiftcard,
-                                    contentDescription = null,
-                                    tint = purpleSgnia,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "MI INVERSIÓN LOCAL",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                        )
-                    }
-                    Text(
-                        text = "Venta por unidad/bolsita (Botanas SGNIA, Dulces, Abarrotes)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-                SgniaThemeToggle(
-                    onToggle = { viewModel.toggleTheme() }
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "01.",
+                    title = "Por Hacer",
+                    subtitle = "$totalToMakeBags bolsas ($totalToMakePieces pzas)",
+                    icon = Icons.Default.PrecisionManufacturing,
+                    showWaveChart = true
+                )
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "02.",
+                    title = "Existencia y Valor",
+                    subtitle = String.format(Locale.US, "%d bolsas • $%.2f", totalStockBags, totalProjectedValue),
+                    icon = Icons.Default.CardGiftcard,
+                    showWaveChart = false
                 )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // --- EXECUTIVE DASHBOARD METRICS (KPIs) ---
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "PRODUCCIÓN Y CONTROL DE BOTANAS",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                            Text(
-                                text = "Sucursal: ${uiState.currentBranch}",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        // Botón de WhatsApp para compartir plan de producción
-                        OutlinedButton(
-                            onClick = {
-                                shareProductionPlan(
-                                    context = context,
-                                    branch = uiState.currentBranch,
-                                    investmentFilter = selectedInvestmentFilter,
-                                    items = filteredProducts
-                                )
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = greenSuccess),
-                            border = BorderStroke(1.dp, greenSuccess),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Compartir Plan", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Tarjetas de conteo de piezas y bolsas
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Card: Por Hacer (Bolsitas y Piezas exactas)
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = amberWarning.copy(alpha = 0.12f)),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.PrecisionManufacturing, contentDescription = null, tint = amberWarning, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("POR HACER", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = amberWarning)
-                                }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "$totalToMakeBags bolsitas",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                                Text(
-                                    text = "🍬 $totalToMakePieces piezas a embolsar",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = amberWarning
-                                )
-                            }
-                        }
-
-                        // Card: Existencia Lista en Mostrador
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = greenSuccess.copy(alpha = 0.12f)),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = greenSuccess, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("EXISTENCIA", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = greenSuccess)
-                                }
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "$totalStockBags bolsitas",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Black
-                                )
-                                Text(
-                                    text = "📦 $totalStockPieces piezas listas",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = greenSuccess
-                                )
-                            }
-                        }
-
-                        // Card: Valor Total
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = purpleSgnia.copy(alpha = 0.12f)),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
-                                Text("VALOR TOTAL ($)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = purpleSgnia)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = String.format(Locale.US, "$%.2f", totalProjectedValue),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = purpleSgnia
-                                )
-                                Text(
-                                    text = "Venta unitaria",
-                                    fontSize = 11.sp,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
-                    }
+                OutlinedButton(
+                    onClick = {
+                        shareProductionPlan(
+                            context = context,
+                            branch = uiState.currentBranch,
+                            investmentFilter = selectedInvestmentFilter,
+                            items = filteredProducts
+                        )
+                    },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF3EFE6)),
+                    border = BorderStroke(1.dp, Color(0xFF282623)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Compartir Plan de Producción (WhatsApp)", fontSize = 11.sp, fontWeight = FontWeight.Black)
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // --- FILTERS & SEARCH ROW ---
             Row(
@@ -557,10 +441,10 @@ fun ExecutiveProductionTable(
     onEdit: (LocalProductEntity) -> Unit,
     onDelete: (LocalProductEntity) -> Unit
 ) {
-    val greenSuccess = Color(0xFF2E7D32)
-    val amberWarning = Color(0xFFE65100)
-    val purpleSgnia = Color(0xFF6A1B9A)
-    val darkRed = Color(0xFFB71C1C)
+    val greenSuccess = Color(0xFFF3EFE6)
+    val amberWarning = Color(0xFFEEDDC8)
+    val purpleSgnia = Color(0xFFF3EFE6)
+    val darkRed = Color(0xFFE57373)
 
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -828,10 +712,10 @@ fun LocalProductItemCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val greenSuccess = Color(0xFF2E7D32)
-    val amberWarning = Color(0xFFE65100)
-    val purpleSgnia = Color(0xFF6A1B9A)
-    val darkRed = Color(0xFFB71C1C)
+    val greenSuccess = Color(0xFFF3EFE6)
+    val amberWarning = Color(0xFFEEDDC8)
+    val purpleSgnia = Color(0xFFF3EFE6)
+    val darkRed = Color(0xFFE57373)
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -1040,9 +924,9 @@ fun AddEditLocalProductDialog(
     val totalPiecesNeeded = pzas * toMake
     val totalEstimatedValue = (toMake + inStock) * saleVal
 
-    val purpleSgnia = Color(0xFF6A1B9A)
-    val amberWarning = Color(0xFFE65100)
-    val greenSuccess = Color(0xFF2E7D32)
+    val purpleSgnia = Color(0xFFF3EFE6)
+    val amberWarning = Color(0xFFEEDDC8)
+    val greenSuccess = Color(0xFFF3EFE6)
 
     AlertDialog(
         onDismissRequest = onDismiss,

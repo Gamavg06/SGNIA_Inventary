@@ -20,17 +20,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,9 +42,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inventariocarniceria.theme.SgniaTheme
-import com.example.inventariocarniceria.ui.components.SgniaThemeToggle
-import com.example.inventariocarniceria.ui.components.TacticalGlassCard
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
+import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
+import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 
 @Composable
@@ -55,304 +52,237 @@ fun SettingsScreen(
     viewModel: InventoryViewModel,
     modifier: Modifier = Modifier
 ) {
-    val themeMode by viewModel.themeMode.collectAsState()
     val scalesList by viewModel.scalesList.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     var isScaleConfigDialogOpen by remember { mutableStateOf(false) }
     var showResetAllConfirm by remember { mutableStateOf(false) }
 
-    val accentGreen = Color(0xFF2E7D32)
-    val purplePrimary = Color(0xFF6A1B9A)
-    val alertRed = Color(0xFFC62828)
+    val matteBg = Color(0xFF0F0E0D)
+    val cardBg = Color(0xFF181715)
+    val cardBorder = Color(0xFF282623)
+    val creamPrimary = Color(0xFFF3EFE6)
+    val creamWarm = Color(0xFFEEDDC8)
+    val textMuted = Color(0xFF8C857B)
+    val darkText = Color(0xFF141312)
 
     val onlineCount = scalesList.count { it.isConnected }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(SgniaTheme.colors.backgroundPrimary)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(matteBg)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // ==========================================
-        // HEADER Y TEMA (SOL Y LUNA)
-        // ==========================================
+        // ==========================================================
+        // SALUDO EJECUTIVO ESTILO CERHAN
+        // ==========================================================
+        item {
+            SgniaCerhanGreetingHeader(
+                userName = "Ajustes del Sistema",
+                subtitle = "Configuración TCP/IP de Básculas y Red Local • ${uiState.currentBranch.ifBlank { "Sucursal" }}"
+            )
+        }
+
+        // ==========================================================
+        // TARJETAS NUMERADAS 01. Y 02.
+        // ==========================================================
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column {
-                    Text(
-                        text = "AJUSTES DEL SISTEMA",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                        color = SgniaTheme.colors.textPrimary
-                    )
-                    Text(
-                        text = "Configuración TCP/IP de Básculas y parámetros de tienda",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = SgniaTheme.colors.textSecondary
-                    )
-                }
-                SgniaThemeToggle(
-                    currentMode = themeMode,
-                    onToggle = { viewModel.toggleTheme() }
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "01.",
+                    title = "Básculas en Red",
+                    subtitle = "$onlineCount/${scalesList.size} equipos en línea",
+                    icon = Icons.Default.Scale,
+                    showWaveChart = true
+                )
+                SgniaCerhanNumberedCard(
+                    modifier = Modifier.weight(1f),
+                    number = "02.",
+                    title = "Socket TCP/IP",
+                    subtitle = "Hardware físico directo",
+                    icon = Icons.Default.Router,
+                    showWaveChart = false
                 )
             }
         }
 
-        // ==========================================
-        // BOTÓN SUBVENTANA: CONFIGURAR BÁSCULAS EN RED
-        // ==========================================
+        // ==========================================================
+        // TARJETA 03. CONFIGURAR BÁSCULAS EN RED
+        // ==========================================================
         item {
-            TacticalGlassCard(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(purplePrimary.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
-                                    .border(1.dp, purplePrimary, RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Scale, contentDescription = null, tint = purplePrimary, modifier = Modifier.size(22.dp))
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "RED DE BÁSCULAS TCP/IP",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 14.sp,
-                                    color = SgniaTheme.colors.textPrimary
-                                )
-                                Text(
-                                    text = "Sucursales con 2, 5 (Grajales) o hasta 15+ básculas",
-                                    fontSize = 11.sp,
-                                    color = SgniaTheme.colors.textSecondary
-                                )
-                            }
-                        }
-
-                        // Badge de estado general
-                        Surface(
-                            color = if (onlineCount > 0) accentGreen.copy(alpha = 0.15f) else alertRed.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .background(if (onlineCount > 0) accentGreen else alertRed, CircleShape)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = "$onlineCount/${scalesList.size} EN LÍNEA",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (onlineCount > 0) accentGreen else alertRed
-                                )
-                            }
-                        }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("03.", fontSize = 18.sp, fontWeight = FontWeight.Black, color = creamPrimary)
+                        Text("Red de Básculas TCP/IP", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = creamWarm)
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "⚡ Conexión simultánea activa: Todas las básculas transmiten en paralelo sin desconectarse ni tener que cambiar manualmente de equipo.",
-                        fontSize = 11.sp,
-                        color = SgniaTheme.colors.textSecondary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "🛡️ Servicio en segundo plano activo (WakeLock): Sigue funcionando con la app cerrada o pantalla apagada.",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = accentGreen
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Botón principal solicitado por el usuario para abrir la subventana
-                    Button(
-                        onClick = { isScaleConfigDialogOpen = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = purplePrimary),
-                        shape = RoundedCornerShape(12.dp),
+                    Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Icon(Icons.Default.Settings, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "CONFIGURAR BÁSCULAS (${scalesList.size} REGISTRADAS)",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 13.sp,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
-        }
-
-        // ==========================================
-        // MODO FÍSICO HARDWARE TCP/IP
-        // ==========================================
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Modo Físico Hardware TCP/IP",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = "Lectura directa por socket TCP/IP conectada a básculas Systel Cuora en la red local. Cero simulación.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = accentGreen
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Modo Físico Activo",
-                            tint = accentGreen,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        // ==========================================
-        // MODO DUEÑO: INICIAR EN BLANCO (VACIAR TODO)
-        // ==========================================
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFB71C1C).copy(alpha = 0.08f)),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFB71C1C).copy(alpha = 0.35f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color(0xFF121110))
+                            .border(1.dp, cardBorder, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFFB71C1C).copy(alpha = 0.18f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = null,
-                                tint = Color(0xFFB71C1C),
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "INICIAR EN BLANCO (MODO DUEÑO)",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                                color = Color(0xFFB71C1C)
-                            )
-                            Text(
-                                text = "Limpia productos de prueba, sucursales e inversiones para arrancar desde cero.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = SgniaTheme.colors.textSecondary
-                            )
-                        }
+                                .size(7.dp)
+                                .background(if (onlineCount > 0) creamPrimary else textMuted, CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "$onlineCount/${scalesList.size} EN LÍNEA",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            color = creamPrimary
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Conexión simultánea activa: Báscula 1 y Báscula 2 transmiten en paralelo sin desconectarse, con servicio WakeLock en segundo plano.",
+                    fontSize = 11.sp,
+                    color = textMuted,
+                    lineHeight = 15.sp
+                )
+
+                Button(
+                    onClick = { isScaleConfigDialogOpen = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "CONFIGURAR BÁSCULAS (${scalesList.size} REGISTRADAS)",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        // ==========================================================
+        // TARJETA 04. MANTENIMIENTO Y REINICIO DE BASE DE DATOS
+        // ==========================================================
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("04.", fontSize = 18.sp, fontWeight = FontWeight.Black, color = creamPrimary)
+                        Text("Mantenimiento y Reinicio Limpio", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = creamWarm)
+                    }
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = creamWarm,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Text(
+                    text = "Limpia productos de prueba, sucursales e inversiones si necesitas inicializar el sistema desde cero.",
+                    fontSize = 11.sp,
+                    color = textMuted
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { showResetAllConfirm = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = creamWarm),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Vaciar Base", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
                     Button(
-                        onClick = { showResetAllConfirm = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C)),
+                        onClick = { viewModel.logout() },
+                        colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
+                            .weight(1f)
+                            .height(46.dp)
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "VACIAR BASE DE DATOS (MODO DUEÑO)",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 13.sp,
-                            color = Color.White
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Cerrar Sesión", fontWeight = FontWeight.Black, fontSize = 11.sp)
                     }
                 }
             }
         }
 
-        // ==========================================
-        // CERRAR SESIÓN
-        // ==========================================
+        // ==========================================================
+        // RESUMEN GLOBAL DE RED
+        // ==========================================================
         item {
-            Button(
-                onClick = { viewModel.logout() },
-                colors = ButtonDefaults.buttonColors(containerColor = SgniaTheme.colors.statusAlert),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = null,
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "CERRAR SESIÓN DE TIENDA",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
+            SgniaCerhanGlobalSummaryCard(
+                metric1Label = "Básculas Configuradas",
+                metric1Value = "${scalesList.size} Equipos",
+                metric1Sub = "Puertos TCP/IP listos",
+                metric2Label = "Estado de Enlace",
+                metric2Value = "$onlineCount Activas",
+                metric2Sub = "Monitoreo continuo",
+                barValues = listOf(0.60f, 0.85f, 0.72f, 0.94f, 0.68f, 0.90f, 0.82f, 0.98f)
+            )
         }
     }
 
-    // Diálogo de confirmación para Modo Dueño (Vaciar todo)
     if (showResetAllConfirm) {
         AlertDialog(
             onDismissRequest = { showResetAllConfirm = false },
+            containerColor = cardBg,
             title = {
                 Text(
-                    text = "⚠️ ¿Iniciar Todo el Sistema en Blanco?",
+                    text = "¿Iniciar Todo el Sistema en Blanco?",
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFFB71C1C)
+                    color = creamPrimary
                 )
             },
             text = {
                 Text(
-                    text = "Esta acción eliminará de forma permanente los datos de prueba:\n\n" +
-                            "• Catálogo de productos y cortes derivados de prueba\n" +
-                            "• Sucursales e inversiones registradas\n" +
-                            "• Historial de pedidos y capturas\n\n" +
-                            "El sistema quedará 100% en blanco para que tú como Dueño crees tu sucursal oficial, configures tus básculas y extraigas o des de alta tus códigos oficiales.",
-                    color = SgniaTheme.colors.textSecondary,
+                    text = "Esta acción eliminará los datos actuales de catálogo, sucursales e historial para arrancar desde cero.",
+                    color = textMuted,
                     fontSize = 13.sp
                 )
             },
@@ -362,20 +292,19 @@ fun SettingsScreen(
                         viewModel.clearAllDataForFreshStart()
                         showResetAllConfirm = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C))
+                    colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText)
                 ) {
-                    Text("SÍ, VACIAR TODO", color = Color.White, fontWeight = FontWeight.Black)
+                    Text("SÍ, VACIAR TODO", fontWeight = FontWeight.Black)
                 }
             },
             dismissButton = {
                 OutlinedButton(onClick = { showResetAllConfirm = false }) {
-                    Text("Cancelar")
+                    Text("Cancelar", color = creamWarm)
                 }
             }
         )
     }
 
-    // Modal Subventana de Configuración de Básculas
     if (isScaleConfigDialogOpen) {
         ScaleNetworkConfigDialog(
             viewModel = viewModel,
