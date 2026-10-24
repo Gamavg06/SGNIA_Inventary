@@ -1769,18 +1769,26 @@ fun OwnerDetailScreen(
             }
         }
 
-        // BOTONES DE COMPROBANTES: PDF OFICIAL Y WHATSAPP
+        // BOTONES DE COMPROBANTES Y DOCUMENTOS LEGALES (PDF Y WHATSAPP)
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // 1. GENERAR PDF OFICIAL CON LOGOS
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "DOCUMENTOS OFICIALES Y EXPEDICIÓN LEGAL",
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = NoirCream
+                )
+
+                // 1. GENERAR CONTRATO FORMAL DE LICENCIAMIENTO (2 PÁGINAS A4)
                 Button(
                     onClick = {
                         try {
-                            val pdfFile = PdfReceiptGenerator.generateReceiptPdf(context, owner)
-                            PdfReceiptGenerator.shareReceiptPdf(context, pdfFile)
-                            Toast.makeText(context, "Comprobante PDF generado exitosamente", Toast.LENGTH_SHORT).show()
+                            val contractFile = PdfReceiptGenerator.generateContractPdf(context, owner)
+                            PdfReceiptGenerator.shareContractPdf(context, contractFile)
+                            Toast.makeText(context, "Contrato formal generado exitosamente", Toast.LENGTH_SHORT).show()
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Error al generar PDF: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "Error al generar contrato: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = NoirCream, contentColor = NoirOnCream),
@@ -1791,10 +1799,79 @@ fun OwnerDetailScreen(
                 ) {
                     Icon(Icons.Default.Description, contentDescription = null, tint = NoirOnCream, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("📄 Generar y Compartir Comprobante Oficial (PDF)", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Text("📄 Generar Contrato Formal de Licencia (PDF)", fontWeight = FontWeight.Black, fontSize = 12.sp)
                 }
 
-                // 2. ENVIAR RESUMEN POR WHATSAPP
+                // 2. GENERAR RECIBO DE PAGO OFICIAL
+                Button(
+                    onClick = {
+                        try {
+                            val pdfFile = PdfReceiptGenerator.generateReceiptPdf(context, owner)
+                            PdfReceiptGenerator.shareReceiptPdf(context, pdfFile)
+                            Toast.makeText(context, "Comprobante de pago generado exitosamente", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error al generar comprobante: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirSurfaceRaised, contentColor = NoirTextPrimary),
+                    border = BorderStroke(1.dp, NoirHairlineStrong),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Icon(Icons.Default.AttachMoney, contentDescription = null, tint = NoirEmerald, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("🧾 Generar Recibo de Pago Oficial (PDF)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+
+                // 3. GENERAR CONSTANCIA DE CANCELACIÓN Y RESCISIÓN (PDF)
+                if (owner.contractStatus == "CANCELADO" || owner.contractStatus == "PAUSADO") {
+                    Button(
+                        onClick = {
+                            try {
+                                val cancelFile = PdfReceiptGenerator.generateCancellationPdf(context, owner)
+                                PdfReceiptGenerator.shareCancellationPdf(context, cancelFile)
+                                Toast.makeText(context, "Constancia de cancelación generada", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Error al generar constancia: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = NoirDanger.copy(alpha = 0.2f), contentColor = NoirDanger),
+                        border = BorderStroke(1.dp, NoirDanger),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = NoirDanger, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("🚫 Generar Constancia de Cancelación / Baja (PDF)", fontWeight = FontWeight.Black, fontSize = 12.sp, color = NoirDanger)
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                val cancelFile = PdfReceiptGenerator.generateCancellationPdf(context, owner)
+                                PdfReceiptGenerator.shareCancellationPdf(context, cancelFile)
+                                Toast.makeText(context, "Constancia de cancelación generada", Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Error al generar constancia: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        border = BorderStroke(1.dp, NoirDanger.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = NoirDanger, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Generar Constancia de Rescisión / Baja (PDF)", fontWeight = FontWeight.Normal, fontSize = 11.sp, color = NoirDanger)
+                    }
+                }
+
+                // 4. ENVIAR RESUMEN POR WHATSAPP
                 Button(
                     onClick = {
                         val sb = StringBuilder()
@@ -1806,6 +1883,7 @@ fun OwnerDetailScreen(
                         sb.append("Sucursales activas: *${owner.branches.size}*\n")
                         sb.append("Importe Total: *$${String.format(Locale.US, "%,.2f", owner.totalAmount)} MXN*\n")
                         sb.append("Estado de Pago: *${if (isPaid) "🟢 PAGADO" else "🔴 PENDIENTE"}*\n")
+                        sb.append("Estado de Contrato: *${owner.contractStatus}*\n")
                         sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n")
                         sb.append("🔑 *CLAVES DE ACTIVACIÓN INDUSTRIAL:*\n\n")
 
