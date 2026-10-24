@@ -649,9 +649,16 @@ class InventoryViewModel(
         )
     }
 
-    fun addScale(name: String, ip: String, port: Int) {
-        repository.addScale(name, ip, port)
-        _uiState.value = _uiState.value.copy(snackbarMessage = "Báscula '$name' agregada a la red")
+    fun addScale(
+        name: String,
+        ip: String,
+        port: Int,
+        brand: String = "Systel",
+        model: String = "Cuora Max",
+        protocol: String = "AUTO"
+    ) {
+        repository.addScale(name, ip, port, brand, model, protocol)
+        _uiState.value = _uiState.value.copy(snackbarMessage = "Báscula '$name' ($brand $model) agregada a la red")
     }
 
     fun updateScale(scale: TcpScaleDevice) {

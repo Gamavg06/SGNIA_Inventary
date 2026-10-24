@@ -49,7 +49,14 @@ class InventoryRepository(
     fun resetToOfficialScaleIps() = scaleManager.resetToOfficialScaleIps()
     fun updateScaleConfigs(scale1Ip: String, scale1Port: Int, scale2Ip: String, scale2Port: Int) =
         scaleManager.updateScaleConfigs(scale1Ip, scale1Port, scale2Ip, scale2Port)
-    fun addScale(name: String, ip: String, port: Int) = scaleManager.addScale(name, ip, port)
+    fun addScale(
+        name: String,
+        ip: String,
+        port: Int,
+        brand: String = "Systel",
+        model: String = "Cuora Max",
+        protocol: String = "AUTO"
+    ) = scaleManager.addScale(name, ip, port, brand, model, protocol)
     fun updateScale(scale: TcpScaleDevice) = scaleManager.updateScale(scale)
     fun deleteScale(scaleId: Int) = scaleManager.deleteScale(scaleId)
     suspend fun pingScale(scaleId: Int = 0, ip: String, port: Int) = scaleManager.pingScale(scaleId, ip, port)

@@ -1,5 +1,6 @@
 package com.example.inventariocarniceria.ui.screens.admin
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -46,11 +48,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.ProductEntity
+
+private val NoirSurface = Color(0xFF181715)
+private val NoirSurfaceRaised = Color(0xFF22201D)
+private val NoirSurfaceSunken = Color(0xFF121110)
+private val NoirHairline = Color(0xFF2C2824)
+private val NoirCream = Color(0xFFEEDDC8)
+private val NoirOnCream = Color(0xFF141312)
+private val NoirTextPrimary = Color(0xFFF3EFE6)
+private val NoirTextSecondary = Color(0xFFA8A196)
+private val NoirEmerald = Color(0xFF4ADE80)
+private val NoirAmber = Color(0xFFD9A441)
+private val NoirDanger = Color(0xFFE07A6F)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -104,19 +119,32 @@ fun ProductEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = NoirSurface,
+        shape = RoundedCornerShape(20.dp),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Inventory2,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = NoirCream,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (product == null) "NUEVO PRODUCTO / CORTE" else "EDITAR PRODUCTO #${product.code}",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                )
+                Column {
+                    Text(
+                        text = "CATÁLOGO DE PRODUCTOS",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NoirCream
+                    )
+                    Text(
+                        text = if (product == null) "Nuevo Producto / Corte" else "Editar Producto #${product.code}",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        color = NoirTextPrimary
+                    )
+                }
             }
         },
         text = {
@@ -253,16 +281,17 @@ fun ProductEditDialog(
                         Box(
                             modifier = Modifier
                                 .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    if (isSelected) NoirCream else NoirSurfaceRaised,
                                     RoundedCornerShape(8.dp)
                                 )
+                                .border(1.dp, if (isSelected) NoirCream else NoirHairline, RoundedCornerShape(8.dp))
                                 .clickable { selectedUnitType = type }
                                 .padding(horizontal = 10.dp, vertical = 8.dp)
                         ) {
                             Text(
                                 text = label,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (isSelected) NoirOnCream else NoirTextPrimary,
                                 fontSize = 12.sp
                             )
                         }
@@ -274,7 +303,8 @@ fun ProductEditDialog(
                     "BARRA" -> {
                         // MODO BARRA (JAMONES, QUESO BARRA)
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            colors = CardDefaults.cardColors(containerColor = NoirSurfaceRaised),
+                            border = BorderStroke(1.dp, NoirHairline),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -324,7 +354,8 @@ fun ProductEditDialog(
                     "PAQUETE" -> {
                         // MODO PAQUETE (SALCHICHAS, TOCINO)
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            colors = CardDefaults.cardColors(containerColor = NoirSurfaceRaised),
+                            border = BorderStroke(1.dp, NoirHairline),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -374,7 +405,8 @@ fun ProductEditDialog(
                     "BOLSA" -> {
                         // MODO BOLSA Y CAJA (EJ. PAPA CONGELADA)
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            colors = CardDefaults.cardColors(containerColor = NoirSurfaceRaised),
+                            border = BorderStroke(1.dp, NoirHairline),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -383,7 +415,7 @@ fun ProductEditDialog(
                                     text = "🛍️ Configuración de Bolsas y Cajas (Ej. Papa de 2 kg en cajas de 3-4 bolsas):",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF2E7D32)
+                                    color = NoirEmerald
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedTextField(
@@ -436,7 +468,8 @@ fun ProductEditDialog(
                     "CAJA" -> {
                         // MODO CAJA (MENUDO, PIERNA)
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            colors = CardDefaults.cardColors(containerColor = NoirSurfaceRaised),
+                            border = BorderStroke(1.dp, NoirHairline),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -498,7 +531,8 @@ fun ProductEditDialog(
                     "BOTE" -> {
                         // MODO BOTE (MAYONESA, ADEREZOS, CUBETAS)
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            colors = CardDefaults.cardColors(containerColor = NoirSurfaceRaised),
+                            border = BorderStroke(1.dp, NoirHairline),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -507,7 +541,7 @@ fun ProductEditDialog(
                                     text = "🫙 Configuración de Botes (Mayonesa, Aderezos, Cubetas):",
                                     style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF6A1B9A)
+                                    color = NoirCream
                                 )
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedTextField(
@@ -642,7 +676,8 @@ fun ProductEditDialog(
                 // Si este producto es materia prima (no tiene padre y ya existe), mostrar sus derivadas
                 if (product != null && selectedParentCode == null) {
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        colors = CardDefaults.cardColors(containerColor = NoirSurfaceRaised),
+                        border = BorderStroke(1.dp, NoirHairline),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -775,14 +810,15 @@ fun ProductEditDialog(
                     )
                     onSave(updatedProduct)
                 },
-                shape = RoundedCornerShape(10.dp)
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = NoirCream, contentColor = NoirOnCream)
             ) {
-                Text("Guardar Producto")
+                Text("Guardar Producto", fontWeight = FontWeight.Black)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+                Text("Cancelar", color = NoirTextSecondary)
             }
         }
     )

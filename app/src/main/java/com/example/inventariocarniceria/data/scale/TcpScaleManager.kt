@@ -43,6 +43,9 @@ data class TcpScaleDevice(
     val name: String,
     val ip: String,
     val port: Int = 10001,
+    val brand: String = "Systel",
+    val model: String = "Cuora Max",
+    val protocol: String = "AUTO",
     val isConnected: Boolean = false,
     val statusDescription: String = "Desconectado",
     val latencyMs: Long? = null,
@@ -823,6 +826,9 @@ class TcpScaleManager(
                             name = obj.getString("name"),
                             ip = obj.getString("ip"),
                             port = obj.optInt("port", 10001),
+                            brand = obj.optString("brand", "Systel"),
+                            model = obj.optString("model", "Cuora Max"),
+                            protocol = obj.optString("protocol", "AUTO"),
                             isConnected = false,
                             statusDescription = "Iniciando..."
                         )
@@ -872,6 +878,9 @@ class TcpScaleManager(
                     put("name", scale.name)
                     put("ip", scale.ip)
                     put("port", scale.port)
+                    put("brand", scale.brand)
+                    put("model", scale.model)
+                    put("protocol", scale.protocol)
                 }
                 jsonArray.put(obj)
             }
@@ -891,7 +900,14 @@ class TcpScaleManager(
     }
 
     // --- ADMINISTRACIÓN DINÁMICA DE BÁSCULAS (+) ---
-    fun addScale(name: String, ip: String, port: Int): TcpScaleDevice {
+    fun addScale(
+        name: String,
+        ip: String,
+        port: Int,
+        brand: String = "Systel",
+        model: String = "Cuora Max",
+        protocol: String = "AUTO"
+    ): TcpScaleDevice {
         val cleanName = name.trim().ifEmpty { "Báscula ${_scalesList.value.size + 1}" }
         val cleanIp = ip.trim().ifEmpty { "192.168.100.50" }
         val cleanPort = if (port in 1..65535) port else 10001
@@ -902,6 +918,9 @@ class TcpScaleManager(
             name = cleanName,
             ip = cleanIp,
             port = cleanPort,
+            brand = brand.trim().ifEmpty { "Systel" },
+            model = model.trim().ifEmpty { "Cuora Max" },
+            protocol = protocol.trim().ifEmpty { "AUTO" },
             isConnected = false,
             statusDescription = "Conectando..."
         )
@@ -917,7 +936,10 @@ class TcpScaleManager(
             if (it.id == scale.id) scale.copy(
                 name = scale.name.trim().ifEmpty { "Báscula ${scale.id}" },
                 ip = scale.ip.trim(),
-                port = if (scale.port in 1..65535) scale.port else 10001
+                port = if (scale.port in 1..65535) scale.port else 10001,
+                brand = scale.brand.trim().ifEmpty { "Systel" },
+                model = scale.model.trim().ifEmpty { "Cuora Max" },
+                protocol = scale.protocol.trim().ifEmpty { "AUTO" }
             ) else it
         }
         _scalesList.value = updatedList
@@ -988,6 +1010,24 @@ class TcpScaleManager(
             if (addr in 0..99 && addedAddresses.add(addr)) {
                 commands.add("CUORA MAX ID:$addr" to ScaleFrameParser.buildCuoraWeightRequest(addr))
             }
+        }
+
+        val isTorrey = scale.brand.equals("Torrey", ignoreCase = true) || scale.protocol.contains("TORREY", ignoreCase = true)
+        val isRhino = scale.brand.equals("Rhino", ignoreCase = true) || scale.protocol.contains("RHINO", ignoreCase = true)
+        val isToledo = scale.brand.contains("Toledo", ignoreCase = true) || scale.protocol.contains("TOLEDO", ignoreCase = true)
+
+        if (isTorrey) {
+            commands.add("Torrey 'W' (0x57)" to byteArrayOf(0x57))
+            commands.add("Torrey 'W\\r\\n'" to "W\r\n".toByteArray(Charsets.US_ASCII))
+            commands.add("Torrey 'P\\r\\n'" to "P\r\n".toByteArray(Charsets.US_ASCII))
+            commands.add("Torrey ENQ (0x05)" to byteArrayOf(0x05))
+        } else if (isToledo) {
+            commands.add("Toledo MT-SICS 'S\\r\\n'" to "S\r\n".toByteArray(Charsets.US_ASCII))
+            commands.add("Toledo 'SI\\r\\n'" to "SI\r\n".toByteArray(Charsets.US_ASCII))
+            commands.add("Toledo 'P\\r\\n'" to "P\r\n".toByteArray(Charsets.US_ASCII))
+        } else if (isRhino) {
+            commands.add("Rhino 'P\\r\\n'" to "P\r\n".toByteArray(Charsets.US_ASCII))
+            commands.add("Rhino 'W\\r\\n'" to "W\r\n".toByteArray(Charsets.US_ASCII))
         }
 
         // 1. Dirección Cuora Max previamente descubierta y guardada para esta IP (conexión instantánea)

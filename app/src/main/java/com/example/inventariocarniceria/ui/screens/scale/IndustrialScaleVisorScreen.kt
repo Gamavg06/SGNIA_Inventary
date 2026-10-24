@@ -18,13 +18,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -72,6 +77,7 @@ import com.example.inventariocarniceria.ui.components.SgniaPillButton
 import com.example.inventariocarniceria.ui.screens.inventory.DespiecePiernaDialog
 import com.example.inventariocarniceria.ui.screens.inventory.PriceAdjustmentDialog
 import com.example.inventariocarniceria.ui.screens.inventory.QendraCatalogImportDialog
+import com.example.inventariocarniceria.ui.screens.settings.ScaleNetworkConfigDialog
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import java.util.Locale
 
@@ -115,23 +121,14 @@ fun IndustrialScaleVisorScreen(
     var isManualWeightOpen by remember { mutableStateOf(false) }
     var isCameraScannerOpen by remember { mutableStateOf(false) }
     var isCaptureSheetOpen by remember { mutableStateOf(false) }
+    var isScaleNetworkConfigOpen by remember { mutableStateOf(false) }
     var manualWeightInput by remember { mutableStateOf("") }
 
-    var tareScale1Kg by remember { mutableDoubleStateOf(0.200) }
-    var tareScale2Kg by remember { mutableDoubleStateOf(0.000) }
-
-    val scale1 = scalesList.getOrNull(0) ?: TcpScaleDevice(
-        id = 1,
-        name = "Báscula 1",
-        ip = "192.168.100.40",
-        port = 10001
-    )
-    val scale2 = scalesList.getOrNull(1) ?: TcpScaleDevice(
-        id = 2,
-        name = "Báscula 2",
-        ip = "192.168.100.50",
-        port = 10001
-    )
+    var scaleTareMap by remember {
+        mutableStateOf<Map<Int, Double>>(
+            mapOf(1 to 0.200, 2 to 0.000)
+        )
+    }
 
     val suggestions = remember(uiState.codeInput, allProducts) {
         val q = uiState.codeInput.trim().lowercase()
@@ -146,61 +143,24 @@ fun IndustrialScaleVisorScreen(
         }
     }
 
-    val isScale1Active = scaleState.activeScaleId == scale1.id
-    val isScale2Active = scaleState.activeScaleId == scale2.id
-
-    val statusScale1 = remember(isScale1Active, scaleState.isStable, scaleState.lastErrorMessage, scale1.isStable) {
-        val stable = if (isScale1Active) scaleState.isStable else scale1.isStable
-        when {
-            isScale1Active && !scaleState.lastErrorMessage.isNullOrBlank() -> ScaleVisualStatus.SIN_SENAL
-            stable -> ScaleVisualStatus.ESTABLE
-            else -> ScaleVisualStatus.LECTURA
-        }
-    }
-
-    val statusScale2 = remember(isScale2Active, scaleState.isStable, scaleState.lastErrorMessage, scale2.isStable) {
-        val stable = if (isScale2Active) scaleState.isStable else scale2.isStable
-        when {
-            isScale2Active && !scaleState.lastErrorMessage.isNullOrBlank() -> ScaleVisualStatus.SIN_SENAL
-            stable -> ScaleVisualStatus.ESTABLE
-            else -> ScaleVisualStatus.LECTURA
-        }
-    }
+    val activePluText = uiState.selectedProduct?.let { "PLU #${it.localCode} · ${it.name}" }
+        ?: uiState.detectedScalePlu?.let { "PLU #$it detectado" }
 
     val connectedCount = remember(scalesList) {
         val online = scalesList.count { it.isConnected }
-        if (online > 0) online else 2
+        if (online > 0) online else scalesList.size
     }
-
-    val scale1PluText = if (isScale1Active) {
-        uiState.selectedProduct?.let { "PLU #${it.localCode} · ${it.name}" }
-            ?: uiState.detectedScalePlu?.let { "PLU #$it detectado" }
-    } else null
-
-    val scale2PluText = if (isScale2Active) {
-        uiState.selectedProduct?.let { "PLU #${it.localCode} · ${it.name}" }
-            ?: uiState.detectedScalePlu?.let { "PLU #$it detectado" }
-    } else null
 
     EncargadoDualScalesContent(
         modifier = modifier,
         userName = uiState.currentBranch.ifEmpty { "SGNIA" },
-        scale1IpPort = "Mostrador · ${scale1.ip}:${scale1.port}",
-        scale2IpPort = "Corte y despiece · ${scale2.ip}:${scale2.port}",
-        isScale1Active = isScale1Active,
-        isScale2Active = isScale2Active,
-        scale1WeightProvider = {
-            if (scaleState.activeScaleId == scale1.id) scaleState.currentWeight else scale1.lastWeight
-        },
-        scale2WeightProvider = {
-            if (scaleState.activeScaleId == scale2.id) scaleState.currentWeight else scale2.lastWeight
-        },
-        scale1Status = statusScale1,
-        scale2Status = statusScale2,
-        scale1TareKg = tareScale1Kg,
-        scale2TareKg = tareScale2Kg,
-        scale1PluText = scale1PluText,
-        scale2PluText = scale2PluText,
+        scalesList = scalesList,
+        activeScaleId = scaleState.activeScaleId,
+        currentWeight = scaleState.currentWeight,
+        isScaleStable = scaleState.isStable,
+        scaleErrorMessage = scaleState.lastErrorMessage,
+        scaleTareMap = scaleTareMap,
+        detectedPluText = activePluText,
         connectedScalesCount = connectedCount,
         scannedBoxBanner = scannedBarcodeResult?.let { res ->
             Pair(
@@ -211,41 +171,34 @@ fun IndustrialScaleVisorScreen(
         onDismissScannedBoxBanner = { viewModel.clearScannedBarcodeResult() },
         onOpenDrawer = onOpenDrawer,
         onOpenBoxScanner = { isCameraScannerOpen = true },
-        onSelectScale1 = { viewModel.selectActiveScale(scale1.id) },
-        onSelectScale2 = { viewModel.selectActiveScale(scale2.id) },
-        onTareScale1 = {
-            viewModel.selectActiveScale(scale1.id)
-            val w = if (isScale1Active) scaleState.currentWeight else scale1.lastWeight
-            tareScale1Kg = if (w > 0.0) w else 0.000
+        onOpenScaleConfig = { isScaleNetworkConfigOpen = true },
+        onSelectScale = { scaleId -> viewModel.selectActiveScale(scaleId) },
+        onTareScale = { scaleId ->
+            viewModel.selectActiveScale(scaleId)
+            val active = scaleState.activeScaleId == scaleId
+            val w = if (active) scaleState.currentWeight else (scalesList.find { it.id == scaleId }?.lastWeight ?: 0.0)
+            scaleTareMap = scaleTareMap + (scaleId to (if (w > 0.0) w else 0.000))
             viewModel.setManualWeight(0.000)
         },
-        onTareScale2 = {
-            viewModel.selectActiveScale(scale2.id)
-            val w = if (isScale2Active) scaleState.currentWeight else scale2.lastWeight
-            tareScale2Kg = if (w > 0.0) w else 0.000
-            viewModel.setManualWeight(0.000)
-        },
-        onManualWeightScale1 = {
-            viewModel.selectActiveScale(scale1.id)
-            val w = if (isScale1Active) scaleState.currentWeight else scale1.lastWeight
+        onManualWeightScale = { scaleId ->
+            viewModel.selectActiveScale(scaleId)
+            val active = scaleState.activeScaleId == scaleId
+            val w = if (active) scaleState.currentWeight else (scalesList.find { it.id == scaleId }?.lastWeight ?: 0.0)
             manualWeightInput = if (w > 0.0) w.toString() else ""
             isManualWeightOpen = true
         },
-        onManualWeightScale2 = {
-            viewModel.selectActiveScale(scale2.id)
-            val w = if (isScale2Active) scaleState.currentWeight else scale2.lastWeight
-            manualWeightInput = if (w > 0.0) w.toString() else ""
-            isManualWeightOpen = true
-        },
-        onCaptureScale1 = {
-            viewModel.selectActiveScale(scale1.id)
-            isCaptureSheetOpen = true
-        },
-        onCaptureScale2 = {
-            viewModel.selectActiveScale(scale2.id)
+        onCaptureScale = { scaleId ->
+            viewModel.selectActiveScale(scaleId)
             isCaptureSheetOpen = true
         }
     )
+
+    if (isScaleNetworkConfigOpen) {
+        ScaleNetworkConfigDialog(
+            viewModel = viewModel,
+            onDismiss = { isScaleNetworkConfigOpen = false }
+        )
+    }
 
     // =========================================================================
     // MODAL BOTTOM SHEET: CORTE ACTIVO Y CAPTURA (Al tocar "Capturar")
@@ -263,7 +216,7 @@ fun IndustrialScaleVisorScreen(
                 )
             }
         ) {
-            val activeScaleName = if (scaleState.activeScaleId == scale2.id) "Báscula 2" else "Báscula 1"
+            val activeScaleName = scalesList.find { it.id == scaleState.activeScaleId }?.name ?: "Báscula ${scaleState.activeScaleId}"
             val activeWeight = scaleState.currentWeight
             val selectedProduct = uiState.selectedProduct
             val totalImporte = (selectedProduct?.price ?: 0.0) * activeWeight
@@ -759,36 +712,28 @@ fun IndustrialScaleVisorScreen(
 }
 
 /**
- * Contenido principal stateless del Panel del Encargado fiel a la Imagen 2.
+ * Contenido principal dinámico del Panel del Encargado (soporta 1, 2, 4, 8, 10+ básculas).
  */
 @Composable
 fun EncargadoDualScalesContent(
     userName: String,
-    scale1IpPort: String,
-    scale2IpPort: String,
-    isScale1Active: Boolean,
-    isScale2Active: Boolean,
-    scale1WeightProvider: () -> Double,
-    scale2WeightProvider: () -> Double,
-    scale1Status: ScaleVisualStatus,
-    scale2Status: ScaleVisualStatus,
-    scale1TareKg: Double,
-    scale2TareKg: Double,
-    scale1PluText: String? = null,
-    scale2PluText: String? = null,
+    scalesList: List<TcpScaleDevice>,
+    activeScaleId: Int,
+    currentWeight: Double,
+    isScaleStable: Boolean,
+    scaleErrorMessage: String?,
+    scaleTareMap: Map<Int, Double>,
+    detectedPluText: String? = null,
     connectedScalesCount: Int,
     scannedBoxBanner: Pair<String, String>? = null,
     onDismissScannedBoxBanner: () -> Unit = {},
     onOpenDrawer: () -> Unit = {},
     onOpenBoxScanner: () -> Unit = {},
-    onSelectScale1: () -> Unit = {},
-    onSelectScale2: () -> Unit = {},
-    onTareScale1: () -> Unit = {},
-    onTareScale2: () -> Unit = {},
-    onManualWeightScale1: () -> Unit = {},
-    onManualWeightScale2: () -> Unit = {},
-    onCaptureScale1: () -> Unit = {},
-    onCaptureScale2: () -> Unit = {},
+    onOpenScaleConfig: () -> Unit = {},
+    onSelectScale: (Int) -> Unit = {},
+    onTareScale: (Int) -> Unit = {},
+    onManualWeightScale: (Int) -> Unit = {},
+    onCaptureScale: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
@@ -797,14 +742,16 @@ fun EncargadoDualScalesContent(
         modifier = modifier
             .fillMaxSize()
             .background(ScreenBgColor)
-            .padding(vertical = 4.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // 1. BARRA SUPERIOR: "☰ MENÚ" a la izquierda y botón de escáner de cajas a la derecha
+            // 1. BARRA SUPERIOR: "☰ MENÚ", BOTÓN RÁPIDO "＋ BÁSCULAS" Y ESCÁNER DE CAJAS
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -843,7 +790,41 @@ fun EncargadoDualScalesContent(
                     }
                 }
 
-                // Botón de escáner de cajas (ícono) a la derecha
+                // Botón central de acceso directo al Gestor de Básculas
+                Box(
+                    modifier = Modifier
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(CardBgColor)
+                        .border(1.dp, ButtonBorderColor, RoundedCornerShape(14.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onOpenScaleConfig()
+                        }
+                        .padding(horizontal = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = CreamAccentColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "BÁSCULAS (${scalesList.size})",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = CreamAccentColor
+                        )
+                    }
+                }
+
+                // Botón de escáner de cajas a la derecha
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -863,11 +844,11 @@ fun EncargadoDualScalesContent(
                 }
             }
 
-            // 2. SALUDO "Buenas tardes, [nombre]" (26sp bold) y línea gris de 13sp
+            // 2. SALUDO CON NÚMERO DINÁMICO DE BÁSCULAS
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 2.dp, bottom = 2.dp)
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = "Buenas tardes, $userName",
@@ -875,9 +856,10 @@ fun EncargadoDualScalesContent(
                     fontSize = 26.sp,
                     color = PrimaryTextColor
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Ambas básculas en tiempo real. Toca una para activarla.",
+                    text = if (scalesList.size == 1) "1 báscula conectada en tiempo real. Toca para activarla."
+                    else "Red de ${scalesList.size} básculas en tiempo real. Toca una para activarla.",
                     fontSize = 13.sp,
                     color = SecondaryTextColor
                 )
@@ -919,55 +901,65 @@ fun EncargadoDualScalesContent(
                 }
             }
 
-            // 3. TARJETA "01" BÁSCULA 1
-            TargetScaleCard(
-                indexText = "01",
-                scaleName = "Báscula 1",
-                locationAndIp = scale1IpPort,
-                isActive = isScale1Active,
-                weightProvider = scale1WeightProvider,
-                status = scale1Status,
-                tareWeightKg = scale1TareKg,
-                detectedPluText = scale1PluText,
-                onSelectCard = onSelectScale1,
-                onTareClick = onTareScale1,
-                onManualWeightClick = onManualWeightScale1,
-                onCaptureClick = onCaptureScale1
-            )
+            // 3. LISTA DINÁMICA DE TODAS LAS BÁSCULAS REGISTRADAS (1, 2, 3, 5, 10 BÁSCULAS)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                itemsIndexed(scalesList, key = { _, s -> s.id }) { index, scale ->
+                    val isActive = activeScaleId == scale.id
 
-            // 4. TARJETA "02" BÁSCULA 2
-            TargetScaleCard(
-                indexText = "02",
-                scaleName = "Báscula 2",
-                locationAndIp = scale2IpPort,
-                isActive = isScale2Active,
-                weightProvider = scale2WeightProvider,
-                status = scale2Status,
-                tareWeightKg = scale2TareKg,
-                detectedPluText = scale2PluText,
-                onSelectCard = onSelectScale2,
-                onTareClick = onTareScale2,
-                onManualWeightClick = onManualWeightScale2,
-                onCaptureClick = onCaptureScale2
-            )
+                    val status = if (isActive && !scaleErrorMessage.isNullOrBlank()) {
+                        ScaleVisualStatus.SIN_SENAL
+                    } else if (if (isActive) isScaleStable else scale.isStable) {
+                        ScaleVisualStatus.ESTABLE
+                    } else {
+                        ScaleVisualStatus.LECTURA
+                    }
+
+                    val tareKg = scaleTareMap[scale.id] ?: 0.000
+                    val locationAndIp = "${scale.brand} ${scale.model} · ${scale.ip}:${scale.port}"
+
+                    TargetScaleCard(
+                        indexText = String.format(Locale.US, "%02d", index + 1),
+                        scaleName = scale.name,
+                        locationAndIp = locationAndIp,
+                        isActive = isActive,
+                        weightProvider = {
+                            if (activeScaleId == scale.id) currentWeight else scale.lastWeight
+                        },
+                        status = status,
+                        tareWeightKg = tareKg,
+                        detectedPluText = if (isActive) detectedPluText else null,
+                        onSelectCard = { onSelectScale(scale.id) },
+                        onTareClick = { onTareScale(scale.id) },
+                        onManualWeightClick = { onManualWeightScale(scale.id) },
+                        onCaptureClick = { onCaptureScale(scale.id) }
+                    )
+                }
+            }
         }
 
-        // 5. LÍNEA AL PIE, CENTRADA: "● 2 básculas conectadas · Red TCP/IP"
+        // 4. LÍNEA AL PIE, CENTRADA Y CLICKABLE PARA GESTIONAR LA RED
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 10.dp),
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onOpenScaleConfig() }
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .background(StatusStableGreen, CircleShape)
+                    .background(if (connectedScalesCount > 0) StatusStableGreen else Color(0xFFE07A6F), CircleShape)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "$connectedScalesCount básculas conectadas · Red TCP/IP",
+                text = "$connectedScalesCount de ${scalesList.size} básculas conectadas · Red TCP/IP ⚙️",
                 fontSize = 13.sp,
                 color = SecondaryTextColor,
                 textAlign = TextAlign.Center
@@ -1353,18 +1345,16 @@ fun IndustrialScaleVisorScreenPreview() {
     ) {
         EncargadoDualScalesContent(
             userName = "SGNIA",
-            scale1IpPort = "Mostrador · 192.168.100.40:10001",
-            scale2IpPort = "Corte y despiece · 192.168.100.50:10001",
-            isScale1Active = true,
-            isScale2Active = false,
-            scale1WeightProvider = { 12.480 },
-            scale2WeightProvider = { 3.250 },
-            scale1Status = ScaleVisualStatus.ESTABLE,
-            scale2Status = ScaleVisualStatus.LECTURA,
-            scale1TareKg = 0.200,
-            scale2TareKg = 0.000,
-            scale1PluText = "PLU #24 · Bistec de Res",
-            scale2PluText = null,
+            scalesList = listOf(
+                TcpScaleDevice(1, "Báscula 1", "192.168.100.40", 10001, "Torrey", "L-EQ", lastWeight = 12.480, isConnected = true),
+                TcpScaleDevice(2, "Báscula 2", "192.168.100.50", 10001, "Systel", "Cuora Max", lastWeight = 3.250, isConnected = true)
+            ),
+            activeScaleId = 1,
+            currentWeight = 12.480,
+            isScaleStable = true,
+            scaleErrorMessage = null,
+            scaleTareMap = mapOf(1 to 0.200, 2 to 0.000),
+            detectedPluText = "PLU #24 · Bistec de Res",
             connectedScalesCount = 2
         )
     }
