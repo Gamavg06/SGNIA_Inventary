@@ -148,6 +148,16 @@ El ecosistema está estructurado en **tres módulos independientes pero coordina
 
 ---
 
+## 📚 Documentación Técnica y Manuales Operativos
+
+El repositorio cuenta con guías exhaustivas disponibles en la carpeta [`docs/`](docs/):
+
+1. **[🏛️ Arquitectura Técnica y Estructura del Sistema](docs/ARQUITECTURA_TECNICA.md)**: Estructura de módulos (`app/tienda`, `app/dueno`, `keygen`), persistencia SQLite Room, DataStore, concurrencia en segundo plano y comandos de compilación.
+2. **[⚖️ Manual de Conectividad y Básculas TCP/IP](docs/MANUAL_CONECTIVIDAD_BASCULAS.md)**: Guía detallada de conexión y configuración para básculas Systel, Torrey, Rhino, Mettler Toledo, CAS y genéricas; auto-detección, ping y visor dinámico para 1 a 10+ balanzas.
+3. **[🔑 Manual de Licenciamiento Criptográfico y Ventas](docs/MANUAL_LICENCIAMIENTO_Y_VENTAS.md)**: Manual del desarrollador para administración de clientes por Dueño y Sucursal, generación de licencias offline (HMAC-SHA256), tarifarios y emisión de comprobantes de compra oficiales en PDF.
+
+---
+
 ## 🛠️ Tecnologías y Librerías
 
 * **Lenguaje**: Kotlin 2.1.20
