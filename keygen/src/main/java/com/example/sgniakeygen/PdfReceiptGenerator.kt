@@ -109,8 +109,10 @@ object PdfReceiptGenerator {
         currentY += 25f
 
         // 4. CAJA: DATOS DEL CLIENTE / PROPIETARIO
+        val hasOwnerHw = owner.ownerHardwareId.isNotBlank()
+        val clientBoxHeight = if (hasOwnerHw) 95f else 75f
         paint.color = Color.rgb(248, 248, 248)
-        val clientBox = RectF(30f, currentY, 565f, currentY + 75f)
+        val clientBox = RectF(30f, currentY, 565f, currentY + clientBoxHeight)
         canvas.drawRoundRect(clientBox, 8f, 8f, paint)
         paint.color = Color.rgb(220, 220, 220)
         paint.style = Paint.Style.STROKE
@@ -130,7 +132,15 @@ object PdfReceiptGenerator {
         canvas.drawText("WhatsApp: ${owner.phoneWhatsApp.ifBlank { "No registrado" }}", 320f, currentY + 38f, paint)
         canvas.drawText("Correo: ${owner.email.ifBlank { "No registrado" }}", 320f, currentY + 54f, paint)
 
-        currentY += 95f
+        if (hasOwnerHw) {
+            paint.color = Color.rgb(0, 105, 92)
+            paint.typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            paint.textSize = 9f
+            canvas.drawText("👑 Consola Dueño HW: ${owner.ownerHardwareId}", 45f, currentY + 72f, paint)
+            canvas.drawText("Clave Admin: ${owner.ownerLicenseKey.ifBlank { "PENDIENTE" }}", 320f, currentY + 72f, paint)
+        }
+
+        currentY += (clientBoxHeight + 20f)
 
         // 5. CAJA: RESUMEN DE CONTRATO Y MEMBRESÍA
         paint.color = Color.rgb(248, 248, 248)

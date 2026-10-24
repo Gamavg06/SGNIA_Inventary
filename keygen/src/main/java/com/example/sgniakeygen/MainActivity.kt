@@ -142,6 +142,9 @@ data class OwnerRecord(
     val phoneWhatsApp: String,
     val email: String,
     val membershipTier: KeygenTier,
+    val ownerHardwareId: String = "",
+    val ownerLicenseKey: String = "",
+    val ownerStatus: String = "PENDIENTE",
     val branches: List<BranchItem>,
     val pricePerBranch: Double = 0.0,
     val totalAmount: Double = 0.0,
@@ -619,6 +622,9 @@ fun CreateOrEditOwnerScreen(
     var phoneWhatsApp by remember { mutableStateOf(existingOwner?.phoneWhatsApp ?: "") }
     var email by remember { mutableStateOf(existingOwner?.email ?: "") }
     var selectedTier by remember { mutableStateOf(existingOwner?.membershipTier ?: KeygenTier.LIFETIME) }
+    var ownerHardwareId by remember { mutableStateOf(existingOwner?.ownerHardwareId ?: "") }
+    var ownerLicenseKey by remember { mutableStateOf(existingOwner?.ownerLicenseKey ?: "") }
+    var ownerStatus by remember { mutableStateOf(existingOwner?.ownerStatus ?: "PENDIENTE") }
 
     val branches = remember {
         mutableStateListOf<BranchItem>().apply {
@@ -666,6 +672,29 @@ fun CreateOrEditOwnerScreen(
         totalAmountStr = String.format(Locale.US, "%.2f", unit * count)
     }
 
+    fun generateKeyForOwner() {
+        val cleanHw = ownerHardwareId.trim().uppercase(Locale.US)
+            .replace("SGN", "")
+            .replace("-", "")
+            .replace(" ", "")
+
+        if (cleanHw.length < 8) {
+            Toast.makeText(context, "El Hardware ID del Dueño debe tener al menos 8 caracteres.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val chars = "0123456789ABCDEF"
+        val token = (1..4).map { chars.random() }.joinToString("")
+        val payload = "$cleanHw:${selectedTier.code}:$token"
+        val hmac = calculateHmacSha256(payload, HMAC_SECRET_SEED).take(8).uppercase(Locale.US)
+        val hmacPart1 = hmac.substring(0, 4)
+        val hmacPart2 = hmac.substring(4, 8)
+
+        ownerLicenseKey = "SGN-${selectedTier.code}-$token-$hmacPart1-$hmacPart2"
+        ownerStatus = "ACTIVADA (${selectedTier.code})"
+        Toast.makeText(context, "Clave generada para Consola Dueño", Toast.LENGTH_SHORT).show()
+    }
+
     fun generateKeyForBranch(index: Int) {
         val branch = branches[index]
         val cleanHw = branch.hardwareId.trim().uppercase(Locale.US)
@@ -685,8 +714,10 @@ fun CreateOrEditOwnerScreen(
         val hmacPart1 = hmac.substring(0, 4)
         val hmacPart2 = hmac.substring(4, 8)
 
-        branch.generatedKey = "SGN-${selectedTier.code}-$token-$hmacPart1-$hmacPart2"
-        branch.status = "ACTIVADA (${selectedTier.code})"
+        val key = "SGN-${selectedTier.code}-$token-$hmacPart1-$hmacPart2"
+        val status = "ACTIVADA (${selectedTier.code})"
+        branches[index] = branch.copy(generatedKey = key, status = status)
+        Toast.makeText(context, "Clave generada para ${branch.name}", Toast.LENGTH_SHORT).show()
     }
 
     LazyColumn(
@@ -796,6 +827,91 @@ fun CreateOrEditOwnerScreen(
                             singleLine = true,
                             colors = outlinedColors()
                         )
+                    }
+
+                    HorizontalDivider(color = NoirHairline, modifier = Modifier.padding(vertical = 4.dp))
+
+                    Text(
+                        text = "VINCULACIÓN DISPOSITIVO DUEÑO (CONSOLA ADMIN)",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = NoirCream
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = ownerHardwareId,
+                            onValueChange = { ownerHardwareId = it.uppercase(Locale.US) },
+                            modifier = Modifier.weight(1f),
+                            label = { Text("Hardware ID Dueño (ej. SGN-8F2A-3C91)", color = NoirTextSecondary) },
+                            placeholder = { Text("SGN-XXXX-XXXX", color = NoirTextSecondary) },
+                            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = NoirTextPrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            singleLine = true,
+                            colors = outlinedColors()
+                        )
+
+                        OutlinedButton(
+                            onClick = {
+                                val text = clipboardManager.getText()?.text
+                                if (!text.isNullOrBlank()) {
+                                    ownerHardwareId = text.trim().uppercase(Locale.US)
+                                } else {
+                                    Toast.makeText(context, "Portapapeles vacío", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, NoirHairline),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirCream),
+                            modifier = Modifier.height(50.dp)
+                        ) {
+                            Icon(Icons.Default.ContentPaste, contentDescription = null, tint = NoirCream, modifier = Modifier.size(16.dp))
+                        }
+
+                        Button(
+                            onClick = { generateKeyForOwner() },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = NoirCream, contentColor = NoirOnCream),
+                            modifier = Modifier.height(50.dp)
+                        ) {
+                            Icon(Icons.Default.Key, contentDescription = null, tint = NoirOnCream, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Generar", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                        }
+                    }
+
+                    if (ownerLicenseKey.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(NoirSurfaceSunken)
+                                .border(1.dp, NoirEmerald.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text("Clave Consola Dueño: $ownerLicenseKey", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = NoirCream)
+                                    Text("Estado: 🟢 $ownerStatus", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NoirEmerald)
+                                }
+
+                                IconButton(onClick = {
+                                    clipboardManager.setText(AnnotatedString(ownerLicenseKey))
+                                    Toast.makeText(context, "Clave del Dueño copiada", Toast.LENGTH_SHORT).show()
+                                }) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null, tint = NoirCream, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1058,7 +1174,7 @@ fun CreateOrEditOwnerScreen(
 
                     OutlinedTextField(
                         value = branch.name,
-                        onValueChange = { branch.name = it },
+                        onValueChange = { branches[index] = branch.copy(name = it) },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("Nombre Sucursal (ej. Sucursal Norte)", color = NoirTextSecondary) },
                         shape = RoundedCornerShape(10.dp),
@@ -1073,7 +1189,7 @@ fun CreateOrEditOwnerScreen(
                     ) {
                         OutlinedTextField(
                             value = branch.hardwareId,
-                            onValueChange = { branch.hardwareId = it.uppercase(Locale.US) },
+                            onValueChange = { branches[index] = branch.copy(hardwareId = it.uppercase(Locale.US)) },
                             modifier = Modifier.weight(1f),
                             label = { Text("Hardware ID (ej. SGN-8F2A-3C91)", color = NoirTextSecondary) },
                             placeholder = { Text("SGN-XXXX-XXXX", color = NoirTextSecondary) },
@@ -1087,7 +1203,7 @@ fun CreateOrEditOwnerScreen(
                             onClick = {
                                 val text = clipboardManager.getText()?.text
                                 if (!text.isNullOrBlank()) {
-                                    branch.hardwareId = text.trim().uppercase(Locale.US)
+                                    branches[index] = branch.copy(hardwareId = text.trim().uppercase(Locale.US))
                                 } else {
                                     Toast.makeText(context, "Portapapeles vacío", Toast.LENGTH_SHORT).show()
                                 }
@@ -1169,7 +1285,12 @@ fun CreateOrEditOwnerScreen(
                             return@Button
                         }
 
-                        // Auto-generar claves pendientes si tienen hardware ID
+                        // Auto-generar clave del dueño si tiene hardware ID y aún no tiene clave
+                        if (ownerLicenseKey.isBlank() && ownerHardwareId.isNotBlank()) {
+                            generateKeyForOwner()
+                        }
+
+                        // Auto-generar claves pendientes de sucursales si tienen hardware ID
                         branches.forEachIndexed { i, b ->
                             if (b.generatedKey.isBlank() && b.hardwareId.isNotBlank()) {
                                 generateKeyForBranch(i)
@@ -1183,6 +1304,9 @@ fun CreateOrEditOwnerScreen(
                             phoneWhatsApp = phoneWhatsApp.trim(),
                             email = email.trim(),
                             membershipTier = selectedTier,
+                            ownerHardwareId = ownerHardwareId.trim(),
+                            ownerLicenseKey = ownerLicenseKey.trim(),
+                            ownerStatus = ownerStatus,
                             branches = branches.toList(),
                             pricePerBranch = pricePerBranchStr.toDoubleOrNull() ?: 0.0,
                             totalAmount = totalAmountStr.toDoubleOrNull() ?: 0.0,
@@ -1421,14 +1545,24 @@ fun OwnerDetailScreen(
                         sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n")
                         sb.append("🔑 *CLAVES DE ACTIVACIÓN INDUSTRIAL:*\n\n")
 
-                        owner.branches.forEachIndexed { i, b ->
-                            sb.append("🏬 *${i + 1}. ${b.name}*\n")
-                            sb.append("   📱 Hardware ID: `${b.hardwareId}`\n")
-                            sb.append("   🔐 Clave: `${b.generatedKey}`\n\n")
+                        if (owner.ownerHardwareId.isNotBlank()) {
+                            sb.append("👑 *CONSOLA DEL DUEÑO (PANEL ADMIN):*\n")
+                            sb.append("   📱 Hardware ID: `${owner.ownerHardwareId}`\n")
+                            sb.append("   🔐 Clave Admin: `${owner.ownerLicenseKey}`\n")
+                            sb.append("   🟢 Estado: ${owner.ownerStatus}\n\n")
+                        }
+
+                        if (owner.branches.isNotEmpty()) {
+                            sb.append("🏬 *SUCURSALES DE TIENDA (POS):*\n\n")
+                            owner.branches.forEachIndexed { i, b ->
+                                sb.append("   *${i + 1}. ${b.name}*\n")
+                                sb.append("   📱 Hardware ID: `${b.hardwareId}`\n")
+                                sb.append("   🔐 Clave POS: `${b.generatedKey}`\n\n")
+                            }
                         }
 
                         sb.append("*Instrucciones de Activación:*\n")
-                        sb.append("1. Abre la app en la tablet de cada tienda.\n")
+                        sb.append("1. Abre la app en la tablet de cada tienda (o en el celular del dueño para la consola admin).\n")
                         sb.append("2. Ve a 'Licencia de Operación'.\n")
                         sb.append("3. Ingresa la clave correspondiente y pulsa 'ACTIVAR'.\n\n")
                         sb.append("_Gamaliel Velazquez Galicia • Liderazgo Técnico_\n")
@@ -1450,6 +1584,63 @@ fun OwnerDetailScreen(
                     Icon(Icons.Default.Share, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("💬 Enviar Comprobante y Claves por WhatsApp", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                }
+            }
+        }
+
+        if (owner.ownerHardwareId.isNotBlank()) {
+            item {
+                Text("DISPOSITIVO DEL DUEÑO (CONSOLA ADMIN)", fontFamily = FontFamily.Monospace, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = NoirCream)
+            }
+
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = NoirSurfaceRaised),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, NoirCream.copy(alpha = 0.5f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("👑 Consola Dueño (Admin)", fontWeight = FontWeight.Black, fontSize = 14.sp, color = NoirCream)
+                            Text(owner.ownerStatus, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NoirEmerald)
+                        }
+
+                        Text("📱 Hardware ID Dueño: ${owner.ownerHardwareId}", fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = NoirTextSecondary)
+
+                        if (owner.ownerLicenseKey.isNotBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(NoirSurfaceSunken)
+                                    .border(1.dp, NoirEmerald.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                    .padding(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(owner.ownerLicenseKey, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = NoirCream)
+                                    IconButton(onClick = {
+                                        clipboardManager.setText(AnnotatedString(owner.ownerLicenseKey))
+                                        Toast.makeText(context, "Clave del Dueño copiada", Toast.LENGTH_SHORT).show()
+                                    }) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = NoirCream, modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1578,6 +1769,9 @@ private fun loadOwnersFromPrefs(context: Context): List<OwnerRecord> {
                     phoneWhatsApp = obj.optString("phoneWhatsApp", ""),
                     email = obj.optString("email", ""),
                     membershipTier = tier,
+                    ownerHardwareId = obj.optString("ownerHardwareId", ""),
+                    ownerLicenseKey = obj.optString("ownerLicenseKey", ""),
+                    ownerStatus = obj.optString("ownerStatus", "PENDIENTE"),
                     branches = branchList,
                     pricePerBranch = obj.optDouble("pricePerBranch", 0.0),
                     totalAmount = obj.optDouble("totalAmount", 0.0),
@@ -1619,6 +1813,9 @@ private fun saveAllOwners(context: Context, list: List<OwnerRecord>) {
         obj.put("phoneWhatsApp", o.phoneWhatsApp)
         obj.put("email", o.email)
         obj.put("tier", o.membershipTier.name)
+        obj.put("ownerHardwareId", o.ownerHardwareId)
+        obj.put("ownerLicenseKey", o.ownerLicenseKey)
+        obj.put("ownerStatus", o.ownerStatus)
         obj.put("pricePerBranch", o.pricePerBranch)
         obj.put("totalAmount", o.totalAmount)
         obj.put("paymentStatus", o.paymentStatus)
