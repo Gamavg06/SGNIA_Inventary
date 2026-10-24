@@ -70,6 +70,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
     val pendingOrders by viewModel.pendingOrders.collectAsState()
 
     val context = LocalContext.current
+    val isOwnerApp = context.packageName.endsWith(".admin")
     val legalPrefs = remember { LegalPreferences(context) }
     val isTermsAccepted by legalPrefs.isTermsAccepted.collectAsState(initial = null)
     var licenseInfo by remember { mutableStateOf(LicenseManager.checkLicense(context)) }
@@ -101,7 +102,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 onToggleTheme = { viewModel.toggleTheme() },
                 onLoginSuccess = { }
             )
-        } else if (uiState.currentUserRole == "ADMIN") {
+        } else if (isOwnerApp || uiState.currentUserRole == "ADMIN") {
             // =========================================================================
             // CONSOLA DEL DUEÑO: MENÚ DESPLEGABLE AL COSTADO (SIN BOTONES ARRIBA)
             // =========================================================================

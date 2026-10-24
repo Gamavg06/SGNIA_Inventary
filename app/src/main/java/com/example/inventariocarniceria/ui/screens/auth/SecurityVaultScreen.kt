@@ -93,8 +93,10 @@ fun SecurityVaultScreen(
     val allProducts by viewModel.allProducts.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val haptic = LocalHapticFeedback.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isOwnerApp = context.packageName.endsWith(".admin")
 
-    var selectedRole by remember { mutableStateOf("ADMIN") }
+    var selectedRole by remember { mutableStateOf(if (isOwnerApp) "ADMIN" else "ENCARGADO") }
     var authMode by remember { mutableStateOf("PIN") }
 
     // Estado Consola Dueño
@@ -247,34 +249,25 @@ fun SecurityVaultScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
             ) {
-                RoleTile(
-                    modifier = Modifier.weight(1f),
-                    title = "Dueño",
-                    caption = "Pedidos unificados, sucursales y proveedores",
-                    icon = Icons.Default.AdminPanelSettings,
-                    selected = isAdmin,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        selectedRole = "ADMIN"
-                        isAdminPinError = false
-                        adminEnteredPin = ""
-                        adminErrorMessage = null
-                    }
-                )
-                RoleTile(
-                    modifier = Modifier.weight(1f),
-                    title = "Tienda",
-                    caption = "Básculas en vivo, catálogo y mostrador",
-                    icon = Icons.Default.Storefront,
-                    selected = !isAdmin,
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        selectedRole = "ENCARGADO"
-                        isStorePinError = false
-                        storeEnteredPin = ""
-                        storeErrorMessage = null
-                    }
-                )
+                if (isOwnerApp) {
+                    RoleTile(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = "Consola Ejecutiva del Dueño",
+                        caption = "Unificación multi-tienda, sucursales y pedidos a rastro",
+                        icon = Icons.Default.AdminPanelSettings,
+                        selected = true,
+                        onClick = { }
+                    )
+                } else {
+                    RoleTile(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = "Mostrador de Tienda / Carnicería",
+                        caption = "2 Básculas Systel en vivo, catálogo de cortes y despiece",
+                        icon = Icons.Default.Storefront,
+                        selected = true,
+                        onClick = { }
+                    )
+                }
             }
 
             // =======================================================

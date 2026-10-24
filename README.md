@@ -137,12 +137,15 @@ Incluida en el módulo `:keygen` del repositorio:
 
 ---
 
-## 📦 Binarios APK Generados
+## 📦 Ecosistema de 3 Aplicaciones Generadas
 
-| Aplicación | Destino | Archivo APK | Tamaño |
-| :--- | :--- | :--- | :---: |
-| 🥩 **SGNIA Carnicería POS** | Tablet de Mostrador / Básculas | `release_apks/SGNIA_Carniceria_POS_v1.0.apk` | ~56.3 MB |
-| 🔑 **SGNIA Keygen Admin** | Celular de Gamaliel Velazquez | `release_apks/SGNIA_Keygen_Admin_v1.0.apk` | ~18.9 MB |
+El ecosistema ahora está dividido en **tres aplicaciones nativas independientes pero perfectamente enlazadas**:
+
+| Aplicación | Destino | Rol y Funcionalidad Principal | Archivo APK | Tamaño |
+| :--- | :--- | :--- | :--- | :---: |
+| 🥩 **SGNIA Carnicería POS** | Tablet de Mostrador de cada Sucursal | **Encargado de Tienda**: 2 Básculas Systel Cuora Max TCP/IP en vivo, tara, catálogo de cortes, recepción / despiece con mermas, pedidos de surtido de tienda y licencia de la tablet. | `release_apks/SGNIA_Carniceria_POS_v1.0.apk` | ~49.3 MB |
+| 👔 **SGNIA Consola Dueño** | Teléfono / Tablet Personal del Dueño | **Propietario**: Unificación Maestra multi-tienda (consolida los pedidos de todas las sucursales en un solo pedido para el rastro con WhatsApp y PDF VIP), directorio de sucursales con PINs y proveedores. | `release_apks/SGNIA_Consola_Dueno_v1.0.apk` | ~49.3 MB |
+| 🔑 **SGNIA Keygen Admin** | Celular de Gamaliel Velazquez (Desarrollador) | **Administración y Cobranza**: Cartera de dueños/carnicerías con gestión multitienda (Hardware IDs por sucursal), generación criptográfica de claves (10m, 7d, 1m, 1y, LIFE) y envío del paquete completo por WhatsApp. | `release_apks/SGNIA_Keygen_Admin_v1.0.apk` | ~19.0 MB |
 
 ---
 
@@ -150,7 +153,7 @@ Incluida en el módulo `:keygen` del repositorio:
 
 * **Lenguaje**: Kotlin 2.1.20
 * **Framework UI**: Jetpack Compose con BOM oficial 2026 y Material 3
-* **Persistencia Local**: Room SQLite con KSP (`androidx.room`)
+* **Persistencia Local**: Room SQLite con KSP (`androidx.room`) y JSON DataStore
 * **Preferencias Seguras**: Jetpack DataStore Preferences (`androidx.datastore:datastore-preferences`)
 * **Hardware de Red**: Sockets TCP/IP puros y protocolo binario Systel Cuora
 * **Visión Artificial**: Android CameraX y Google ML Kit Barcode Scanning
@@ -166,14 +169,15 @@ El proyecto cuenta con una suite integral de **37 pruebas unitarias automatizada
 # Ejecutar la suite completa de pruebas unitarias
 .\gradlew.bat testDebugUnitTest
 
-# Compilar y empaquetar ambos APKs (POS + Keygen Admin)
+# Compilar y empaquetar los 3 APKs (Tienda POS + Consola Dueño + Keygen Admin)
 .\gradlew.bat assembleDebug
 ```
 
 > **Resultado**: `BUILD SUCCESSFUL` (37/37 pruebas superadas al 100%, 0 fallos).  
 > **Ubicación de APKs**:  
-> - POS Carnicería: `release_apks/SGNIA_Carniceria_POS_v1.0.apk`  
-> - Keygen Celular: `release_apks/SGNIA_Keygen_Admin_v1.0.apk`
+> - 🏪 Tienda Mostrador: `release_apks/SGNIA_Carniceria_POS_v1.0.apk`  
+> - 👔 Consola Dueño: `release_apks/SGNIA_Consola_Dueno_v1.0.apk`  
+> - 🔑 Keygen Celular: `release_apks/SGNIA_Keygen_Admin_v1.0.apk`
 
 ---
 

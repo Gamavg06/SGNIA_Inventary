@@ -24,6 +24,20 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
+    flavorDimensions += "role"
+    productFlavors {
+        create("tienda") {
+            dimension = "role"
+            applicationIdSuffix = ".pos"
+            manifestPlaceholders["appLabel"] = "SGNIA Carnicería POS"
+        }
+        create("dueno") {
+            dimension = "role"
+            applicationIdSuffix = ".admin"
+            manifestPlaceholders["appLabel"] = "SGNIA Consola Dueño"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
