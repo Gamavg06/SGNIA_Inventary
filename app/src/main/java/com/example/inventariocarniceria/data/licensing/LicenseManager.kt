@@ -124,6 +124,28 @@ object LicenseManager {
         // Remueve prefijo SGN
         val withoutPrefix = cleanKey.removePrefix("SGN")
 
+        // 1. Manejo de Clave de Revocación / Kill-Switch emitida por SGNIA Keygen Admin
+        if (withoutPrefix.startsWith("KILL") || withoutPrefix.startsWith("REVOKE")) {
+            val restKill = if (withoutPrefix.startsWith("KILL")) withoutPrefix.removePrefix("KILL") else withoutPrefix.removePrefix("REVOKE")
+            if (restKill.length >= 12) {
+                val token = restKill.take(4)
+                val signatureProvided = restKill.drop(4).take(8)
+                val payload = "$cleanHw:KILL:$token"
+                val expectedSignature = calculateHmacSha256(payload, HMAC_SECRET_SEED).take(8).uppercase(Locale.US)
+                if (signatureProvided.equals(expectedSignature, ignoreCase = true)) {
+                    val prefs = getPrefs(context)
+                    prefs.edit()
+                        .putString(KEY_STATE, LicenseStatus.EXPIRED.name)
+                        .putLong(KEY_EXPIRES_AT, 0L)
+                        .putString(KEY_ACTIVE_KEY, "REVOCADA")
+                        .apply()
+                    return Result.failure(SecurityException("🚫 ACCESO REVOCADO: Esta terminal ha sido dada de baja del sistema por SGNIA COMPANY."))
+                } else {
+                    return Result.failure(SecurityException("Clave de revocación no válida para este dispositivo."))
+                }
+            }
+        }
+
         // Extrae componentes:
         // Si el código es 'LIFE' (4 caracteres), o '10M'/'07D'/'01M'/'01Y' (3 caracteres)
         val tierCode: String

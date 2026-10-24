@@ -145,6 +145,7 @@ data class OwnerRecord(
     val ownerHardwareId: String = "",
     val ownerLicenseKey: String = "",
     val ownerStatus: String = "PENDIENTE",
+    val contractStatus: String = "ACTIVO", // "ACTIVO", "PAUSADO", "CANCELADO"
     val branches: List<BranchItem>,
     val pricePerBranch: Double = 0.0,
     val totalAmount: Double = 0.0,
@@ -458,6 +459,24 @@ fun OwnerCardSummary(
                             fontWeight = FontWeight.Black,
                             color = if (isPaid) NoirEmerald else NoirDanger
                         )
+                    }
+
+                    // Badge de Estatus de Contrato (si no es activo)
+                    if (owner.contractStatus != "ACTIVO") {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(if (owner.contractStatus == "PAUSADO") NoirAmber.copy(alpha = 0.2f) else NoirDanger.copy(alpha = 0.2f))
+                                .border(1.dp, if (owner.contractStatus == "PAUSADO") NoirAmber else NoirDanger, RoundedCornerShape(100.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = if (owner.contractStatus == "PAUSADO") "⏸️ PAUSA" else "🔴 BAJA",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = if (owner.contractStatus == "PAUSADO") NoirAmber else NoirDanger
+                            )
+                        }
                     }
                 }
             }
@@ -1307,6 +1326,7 @@ fun CreateOrEditOwnerScreen(
                             ownerHardwareId = ownerHardwareId.trim(),
                             ownerLicenseKey = ownerLicenseKey.trim(),
                             ownerStatus = ownerStatus,
+                            contractStatus = existingOwner?.contractStatus ?: "ACTIVO",
                             branches = branches.toList(),
                             pricePerBranch = pricePerBranchStr.toDoubleOrNull() ?: 0.0,
                             totalAmount = totalAmountStr.toDoubleOrNull() ?: 0.0,
@@ -1341,6 +1361,49 @@ fun OwnerDetailScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     var isEditing by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirmDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            containerColor = NoirSurfaceRaised,
+            title = {
+                Text(
+                    text = "⚠️ ¿Eliminar cliente definitivamente?",
+                    fontWeight = FontWeight.Bold,
+                    color = NoirCream,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "¿Estás seguro de dar de baja y eliminar a ${owner.ownerName} (${owner.companyName.ifBlank { "Carnicería" }}) y sus ${owner.branches.size} sucursales?\n\nEsta acción borrará el registro de tu panel de Keygen Admin.",
+                    color = NoirTextPrimary,
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        onDeleteOwner(owner)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirDanger, contentColor = Color.White)
+                ) {
+                    Text("Sí, Eliminar Registro", fontWeight = FontWeight.Black)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showDeleteConfirmDialog = false },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirCream),
+                    border = BorderStroke(1.dp, NoirHairline)
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     if (isEditing) {
         CreateOrEditOwnerScreen(
@@ -1394,7 +1457,7 @@ fun OwnerDetailScreen(
                     IconButton(onClick = { isEditing = true }) {
                         Icon(Icons.Default.Edit, contentDescription = "Editar", tint = NoirCream)
                     }
-                    IconButton(onClick = { onDeleteOwner(owner) }) {
+                    IconButton(onClick = { showDeleteConfirmDialog = true }) {
                         Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = NoirDanger)
                     }
                 }
@@ -1500,6 +1563,207 @@ fun OwnerDetailScreen(
                             fontWeight = FontWeight.Black,
                             fontSize = 12.sp
                         )
+                    }
+                }
+            }
+        }
+
+        // CONTROL DE ESTATUS OPERATIVO DEL CLIENTE (ACTIVO / PAUSADO / CANCELADO)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = NoirSurface),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, when (owner.contractStatus) {
+                    "ACTIVO" -> NoirHairline
+                    "PAUSADO" -> NoirAmber
+                    else -> NoirDanger
+                })
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ESTATUS OPERATIVO DEL CLIENTE",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NoirCream
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(when (owner.contractStatus) {
+                                    "ACTIVO" -> NoirEmerald.copy(alpha = 0.15f)
+                                    "PAUSADO" -> NoirAmber.copy(alpha = 0.15f)
+                                    else -> NoirDanger.copy(alpha = 0.15f)
+                                })
+                                .border(1.dp, when (owner.contractStatus) {
+                                    "ACTIVO" -> NoirEmerald
+                                    "PAUSADO" -> NoirAmber
+                                    else -> NoirDanger
+                                }, RoundedCornerShape(100.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = when (owner.contractStatus) {
+                                    "ACTIVO" -> "🟢 ACTIVO"
+                                    "PAUSADO" -> "⏸️ PAUSADO"
+                                    else -> "🔴 CANCELADO"
+                                },
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                color = when (owner.contractStatus) {
+                                    "ACTIVO" -> NoirEmerald
+                                    "PAUSADO" -> NoirAmber
+                                    else -> NoirDanger
+                                }
+                            )
+                        }
+                    }
+
+                    // Selector de 3 botones: Activo, Pausa, Cancelar
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val updated = owner.copy(contractStatus = "ACTIVO")
+                                onUpdateOwner(updated)
+                                Toast.makeText(context, "Cliente activado 🟢", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (owner.contractStatus == "ACTIVO") NoirEmerald else NoirSurfaceRaised,
+                                contentColor = if (owner.contractStatus == "ACTIVO") Color.Black else NoirTextSecondary
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (owner.contractStatus == "ACTIVO") NoirEmerald else NoirHairline),
+                            modifier = Modifier.weight(1f).height(40.dp)
+                        ) {
+                            Text("🟢 Activo", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                val updated = owner.copy(contractStatus = "PAUSADO")
+                                onUpdateOwner(updated)
+                                Toast.makeText(context, "Cliente pausado ⏸️", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (owner.contractStatus == "PAUSADO") NoirAmber else NoirSurfaceRaised,
+                                contentColor = if (owner.contractStatus == "PAUSADO") Color.Black else NoirTextSecondary
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (owner.contractStatus == "PAUSADO") NoirAmber else NoirHairline),
+                            modifier = Modifier.weight(1f).height(40.dp)
+                        ) {
+                            Text("⏸️ Pausar", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                val updated = owner.copy(contractStatus = "CANCELADO")
+                                onUpdateOwner(updated)
+                                Toast.makeText(context, "Cliente cancelado / dado de baja 🔴", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (owner.contractStatus == "CANCELADO") NoirDanger else NoirSurfaceRaised,
+                                contentColor = if (owner.contractStatus == "CANCELADO") Color.White else NoirTextSecondary
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (owner.contractStatus == "CANCELADO") NoirDanger else NoirHairline),
+                            modifier = Modifier.weight(1.3f).height(40.dp)
+                        ) {
+                            Text("🔴 Cancelar", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    // Si está en CANCELADO o PAUSADO: Mostrar sección de Claves de Bloqueo Inmediato (Kill-Switch)
+                    if (owner.contractStatus == "CANCELADO" || owner.contractStatus == "PAUSADO") {
+                        HorizontalDivider(color = NoirHairline, modifier = Modifier.padding(vertical = 4.dp))
+
+                        Text(
+                            text = "🔐 CLAVES DE REVOCACIÓN / BLOQUEO INMEDIATO (KILL-SWITCH)",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NoirDanger
+                        )
+
+                        Text(
+                            text = "Si necesitas quitar el acceso a la app inmediatamente antes del fin de mes, introduce esta clave en la terminal:",
+                            fontSize = 11.sp,
+                            color = NoirTextSecondary
+                        )
+
+                        if (owner.ownerHardwareId.isNotBlank()) {
+                            val killOwner = generateKillKey(owner.ownerHardwareId)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(NoirSurfaceSunken)
+                                    .border(1.dp, NoirDanger.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                    .padding(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text("🚫 Bloqueo Consola Dueño:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NoirDanger)
+                                        Text(killOwner, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = NoirCream)
+                                    }
+                                    IconButton(onClick = {
+                                        clipboardManager.setText(AnnotatedString(killOwner))
+                                        Toast.makeText(context, "Clave de bloqueo de Dueño copiada", Toast.LENGTH_SHORT).show()
+                                    }) {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = NoirCream, modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                        }
+
+                        owner.branches.forEach { branch ->
+                            if (branch.hardwareId.isNotBlank()) {
+                                val killBranch = generateKillKey(branch.hardwareId)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(NoirSurfaceSunken)
+                                        .border(1.dp, NoirDanger.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                        .padding(8.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text("🚫 Bloqueo ${branch.name}:", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NoirDanger)
+                                            Text(killBranch, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = NoirCream)
+                                        }
+                                        IconButton(onClick = {
+                                            clipboardManager.setText(AnnotatedString(killBranch))
+                                            Toast.makeText(context, "Clave de bloqueo de ${branch.name} copiada", Toast.LENGTH_SHORT).show()
+                                        }) {
+                                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = NoirCream, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1698,6 +1962,23 @@ fun OwnerDetailScreen(
             }
         }
 
+        // BOTÓN ROJO: ELIMINAR CLIENTE Y SUCURSALES DE LA CARTERA
+        item {
+            OutlinedButton(
+                onClick = { showDeleteConfirmDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, NoirDanger),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirDanger),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = null, tint = NoirDanger, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("🗑️ Dar de Baja y Eliminar Cliente de la Cartera", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            }
+        }
+
         item {
             Spacer(modifier = Modifier.height(20.dp))
         }
@@ -1772,6 +2053,7 @@ private fun loadOwnersFromPrefs(context: Context): List<OwnerRecord> {
                     ownerHardwareId = obj.optString("ownerHardwareId", ""),
                     ownerLicenseKey = obj.optString("ownerLicenseKey", ""),
                     ownerStatus = obj.optString("ownerStatus", "PENDIENTE"),
+                    contractStatus = obj.optString("contractStatus", "ACTIVO"),
                     branches = branchList,
                     pricePerBranch = obj.optDouble("pricePerBranch", 0.0),
                     totalAmount = obj.optDouble("totalAmount", 0.0),
@@ -1816,6 +2098,7 @@ private fun saveAllOwners(context: Context, list: List<OwnerRecord>) {
         obj.put("ownerHardwareId", o.ownerHardwareId)
         obj.put("ownerLicenseKey", o.ownerLicenseKey)
         obj.put("ownerStatus", o.ownerStatus)
+        obj.put("contractStatus", o.contractStatus)
         obj.put("pricePerBranch", o.pricePerBranch)
         obj.put("totalAmount", o.totalAmount)
         obj.put("paymentStatus", o.paymentStatus)
@@ -1845,4 +2128,21 @@ private fun calculateHmacSha256(data: String, key: String): String {
     mac.init(secretKey)
     val bytes = mac.doFinal(data.toByteArray(Charsets.UTF_8))
     return bytes.joinToString("") { "%02X".format(it) }
+}
+
+fun generateKillKey(hardwareId: String): String {
+    val cleanHw = hardwareId.trim().uppercase(Locale.US)
+        .replace("SGN", "")
+        .replace("-", "")
+        .replace(" ", "")
+
+    if (cleanHw.length < 8) return ""
+
+    val chars = "0123456789ABCDEF"
+    val token = (1..4).map { chars.random() }.joinToString("")
+    val payload = "$cleanHw:KILL:$token"
+    val hmac = calculateHmacSha256(payload, HMAC_SECRET_SEED).take(8).uppercase(Locale.US)
+    val hmacPart1 = hmac.substring(0, 4)
+    val hmacPart2 = hmac.substring(4, 8)
+    return "SGN-KILL-$token-$hmacPart1-$hmacPart2"
 }

@@ -157,7 +157,8 @@ object PdfReceiptGenerator {
         canvas.drawText("Plan: ${owner.membershipTier.label}", 45f, currentY + 18f, paint)
         paint.color = Color.rgb(100, 100, 100)
         paint.textSize = 9f
-        canvas.drawText("Modalidad: ${owner.membershipTier.badge}", 45f, currentY + 33f, paint)
+        val statusSuffix = if (owner.contractStatus != "ACTIVO") " • [${owner.contractStatus}]" else ""
+        canvas.drawText("Modalidad: ${owner.membershipTier.badge}$statusSuffix", 45f, currentY + 33f, paint)
 
         paint.color = Color.rgb(20, 20, 20)
         paint.textSize = 10f
