@@ -101,5 +101,8 @@ dependencies {
 
   // ML Kit Barcode Scanning
   implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+  // DataStore Preferences
+  implementation("androidx.datastore:datastore-preferences:1.1.1")
 }
 

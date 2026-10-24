@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.AddBusiness
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Lock
@@ -32,11 +33,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.inventariocarniceria.data.preferences.LegalPreferences
 import com.example.inventariocarniceria.theme.SgniaTheme
 import com.example.inventariocarniceria.ui.components.SgniaCerhanSidebar
 import com.example.inventariocarniceria.ui.components.SgniaCerhanTopBar
 import com.example.inventariocarniceria.ui.components.SgniaSidebarItem
+import com.example.inventariocarniceria.ui.screens.about.AboutSgniaScreen
 import com.example.inventariocarniceria.ui.screens.admin.AdminBranchesScreen
 import com.example.inventariocarniceria.ui.screens.admin.AdminCatalogScreen
 import com.example.inventariocarniceria.ui.screens.admin.AdminSecurityScreen
@@ -44,6 +48,7 @@ import com.example.inventariocarniceria.ui.screens.admin.AdminSuppliersScreen
 import com.example.inventariocarniceria.ui.screens.admin.MasterOrderUnificationScreen
 import com.example.inventariocarniceria.ui.screens.auth.SecurityVaultScreen
 import com.example.inventariocarniceria.ui.screens.dashboard.ExecutiveOwnerDashboardScreen
+import com.example.inventariocarniceria.ui.screens.legal.LegalAcceptanceScreen
 import com.example.inventariocarniceria.ui.screens.manager.ManagerInvestmentScreen
 import com.example.inventariocarniceria.ui.screens.orders.OrdersScreen
 import com.example.inventariocarniceria.ui.screens.reception.StockReceptionScreen
@@ -61,10 +66,18 @@ fun MainNavigation(viewModel: InventoryViewModel) {
     val allProducts by viewModel.allProducts.collectAsState()
     val pendingOrders by viewModel.pendingOrders.collectAsState()
 
+    val context = LocalContext.current
+    val legalPrefs = remember { LegalPreferences(context) }
+    val isTermsAccepted by legalPrefs.isTermsAccepted.collectAsState(initial = null)
+
     SgniaTheme(themeMode = themeMode) {
         if (showSplash) {
             SplashScreen(
                 onSplashFinished = { showSplash = false }
+            )
+        } else if (isTermsAccepted == false) {
+            LegalAcceptanceScreen(
+                onAcceptanceComplete = { /* DataStore Flow actualiza automáticamente el estado */ }
             )
         } else if (!uiState.isLoggedIn) {
             // LOGIN EJECUTIVO ADAPTADO A LA PLANTILLA CERHAN (NEGRO MATE Y CREMA)
@@ -90,14 +103,14 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 }
             }
 
-            val ownerSidebarItems = remember(allProducts.size, pendingOrders.size) {
+            val ownerSidebarItems = remember(pendingOrders.size) {
                 listOf(
                     SgniaSidebarItem("home", "Inicio / Resumen", Icons.Default.Home),
-                    SgniaSidebarItem("catalogo", "Catálogo de Cortes", Icons.Default.Inventory2, "${allProducts.size}"),
                     SgniaSidebarItem("unificacion", "Unificación Pedidos", Icons.Default.MergeType, if (pendingOrders.isNotEmpty()) "${pendingOrders.size}" else null),
                     SgniaSidebarItem("sucursales", "Sucursales y Tiendas", Icons.Default.Business),
                     SgniaSidebarItem("proveedores", "Proveedores", Icons.Default.LocalShipping),
-                    SgniaSidebarItem("seguridad", "Seguridad y PIN", Icons.Default.Lock)
+                    SgniaSidebarItem("seguridad", "Seguridad y PIN", Icons.Default.Lock),
+                    SgniaSidebarItem("acerca_de", "Acerca de SGNIA", Icons.Default.Info)
                 )
             }
 
@@ -134,8 +147,8 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                     ) {
                         SgniaCerhanTopBar(
                             onOpenDrawer = { scope.launch { drawerState.open() } },
-                            searchPlaceholder = "Buscar en catálogo o sucursal...",
-                            onSearchClick = { selectedOwnerSection = "catalogo" },
+                            searchPlaceholder = "Buscar pedidos o sucursal...",
+                            onSearchClick = { selectedOwnerSection = "unificacion" },
                             onToggleTheme = { viewModel.toggleTheme() }
                         )
 
@@ -146,14 +159,15 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                                     themeMode = themeMode,
                                     onToggleTheme = { viewModel.toggleTheme() },
                                     onLogout = { viewModel.logout() },
-                                    onOpenAdminConsole = { selectedOwnerSection = "catalogo" },
+                                    onOpenAdminConsole = { selectedOwnerSection = "unificacion" },
                                     onNavigateToSection = { section -> selectedOwnerSection = section }
                                 )
-                                "catalogo" -> AdminCatalogScreen(viewModel = viewModel)
                                 "unificacion" -> MasterOrderUnificationScreen(viewModel = viewModel)
                                 "sucursales" -> AdminBranchesScreen(viewModel = viewModel)
                                 "proveedores" -> AdminSuppliersScreen(viewModel = viewModel)
                                 "seguridad" -> AdminSecurityScreen(viewModel = viewModel)
+                                "acerca_de" -> AboutSgniaScreen(onBack = { selectedOwnerSection = "home" })
+                                else -> MasterOrderUnificationScreen(viewModel = viewModel)
                             }
                         }
                     }
@@ -175,13 +189,15 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 }
             }
 
-            val storeSidebarItems = remember(pendingOrders.size) {
+            val storeSidebarItems = remember(allProducts.size, pendingOrders.size) {
                 listOf(
                     SgniaSidebarItem("basculas", "Básculas (Principal)", Icons.Default.Scale),
+                    SgniaSidebarItem("catalogo", "Catálogo de Cortes", Icons.Default.Inventory2, "${allProducts.size}"),
                     SgniaSidebarItem("recepcion", "Recepción Mercancía", Icons.Default.AddBusiness),
                     SgniaSidebarItem("pedidos", "Pedidos de Surtido", Icons.AutoMirrored.Filled.ReceiptLong, if (pendingOrders.isNotEmpty()) "${pendingOrders.size}" else null),
                     SgniaSidebarItem("inversion", "Mi Inversión Local", Icons.Default.CardGiftcard),
-                    SgniaSidebarItem("ajustes", "Ajustes de Sistema", Icons.Default.Settings)
+                    SgniaSidebarItem("ajustes", "Ajustes de Sistema", Icons.Default.Settings),
+                    SgniaSidebarItem("acerca_de", "Acerca de SGNIA", Icons.Default.Info)
                 )
             }
 
@@ -216,20 +232,30 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                             .padding(innerPadding)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        SgniaCerhanTopBar(
-                            onOpenDrawer = { scope.launch { drawerState.open() } },
-                            searchPlaceholder = "Buscar corte o código...",
-                            onSearchClick = { selectedStoreSection = "basculas" },
-                            onToggleTheme = { viewModel.toggleTheme() }
-                        )
+                        if (selectedStoreSection != "basculas") {
+                            SgniaCerhanTopBar(
+                                onOpenDrawer = { scope.launch { drawerState.open() } },
+                                searchPlaceholder = if (selectedStoreSection == "catalogo") "Buscar corte o PLU..." else "Buscar...",
+                                onSearchClick = if (selectedStoreSection == "catalogo") null else { { selectedStoreSection = "catalogo" } },
+                                onToggleTheme = null
+                            )
+                        }
 
                         Box(modifier = Modifier.weight(1f)) {
                             when (selectedStoreSection) {
-                                "basculas" -> IndustrialScaleVisorScreen(viewModel = viewModel)
+                                "basculas" -> IndustrialScaleVisorScreen(
+                                    viewModel = viewModel,
+                                    onOpenDrawer = { scope.launch { drawerState.open() } }
+                                )
+                                "catalogo" -> AdminCatalogScreen(viewModel = viewModel)
                                 "recepcion" -> StockReceptionScreen(viewModel = viewModel)
                                 "pedidos" -> OrdersScreen(viewModel = viewModel)
                                 "inversion" -> ManagerInvestmentScreen(viewModel = viewModel)
-                                "ajustes" -> SettingsScreen(viewModel = viewModel)
+                                "ajustes" -> SettingsScreen(
+                                    viewModel = viewModel,
+                                    onOpenAbout = { selectedStoreSection = "acerca_de" }
+                                )
+                                "acerca_de" -> AboutSgniaScreen(onBack = { selectedStoreSection = "ajustes" })
                             }
                         }
                     }

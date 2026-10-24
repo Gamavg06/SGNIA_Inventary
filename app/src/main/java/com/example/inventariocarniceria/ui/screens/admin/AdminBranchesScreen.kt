@@ -5,12 +5,14 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -28,6 +31,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,12 +45,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.BranchEntity
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.ui.design.BentoCard
+import com.example.inventariocarniceria.ui.design.BigMetric
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirRadius
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 
 @Composable
@@ -58,31 +70,23 @@ fun AdminBranchesScreen(
     var editingBranch by remember { mutableStateOf<BranchEntity?>(null) }
     var isAddOpen by remember { mutableStateOf(false) }
 
-    val matteBg = Color(0xFF0F0E0D)
-    val cardBg = Color(0xFF181715)
-    val cardBorder = Color(0xFF282623)
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-    val darkText = Color(0xFF141312)
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = matteBg,
+        containerColor = NoirColors.Background,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { isAddOpen = true },
-                containerColor = creamPrimary,
-                contentColor = darkText,
-                shape = RoundedCornerShape(16.dp)
+                containerColor = NoirColors.Cream,
+                contentColor = NoirColors.OnCream,
+                shape = RoundedCornerShape(NoirRadius.md)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = NoirSpace.md, vertical = NoirSpace.xs),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Nueva Sucursal")
+                    Icon(Icons.Default.Add, contentDescription = "Nueva Sucursal", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("NUEVA SUCURSAL", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Text("NUEVA SUCURSAL", style = NoirType.label.copy(color = NoirColors.OnCream, fontWeight = FontWeight.Bold))
                 }
             }
         }
@@ -90,77 +94,133 @@ fun AdminBranchesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(matteBg)
+                .background(NoirColors.Background)
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+            verticalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
         ) {
-            SgniaCerhanGreetingHeader(
-                userName = "Sucursales y Tiendas",
-                subtitle = "Gestión de Tiendas, Encargados y PIN de Mostrador"
-            )
-
+            // ENCABEZADO
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "01.",
-                    title = "Tiendas Activas",
-                    subtitle = "${branches.size} sucursales registradas",
-                    icon = Icons.Default.Storefront,
-                    showWaveChart = true
-                )
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "02.",
-                    title = "Accesos PIN",
-                    subtitle = "${branches.size} encargados con clave",
-                    icon = Icons.Default.Lock,
-                    showWaveChart = false
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    NoirLabel("DIRECCIÓN GENERAL · RED DE TIENDAS", color = NoirColors.Gold)
+                    Text(
+                        text = "Sucursales",
+                        style = NoirType.display.copy(fontSize = 24.sp),
+                        color = NoirColors.TextPrimary
+                    )
+                    Text(
+                        text = "Gestión de puntos de venta, encargados y PIN de mostrador",
+                        style = NoirType.bodySmall,
+                        color = NoirColors.TextMuted
+                    )
+                }
             }
 
-            if (branches.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+            // BENTO HERO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+            ) {
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.md)
                 ) {
-                    Text(
-                        text = "No hay sucursales activas. Crea una nueva presionando 'NUEVA SUCURSAL'.",
-                        color = textMuted
+                    BigMetric(
+                        value = "${branches.size}",
+                        label = "SUCURSALES",
+                        unit = "TIENDAS",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.Cream
                     )
+                    StatusPill("RED OPERATIVA", tone = PillTone.Positive)
+                }
+
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.md)
+                ) {
+                    BigMetric(
+                        value = "${branches.size}",
+                        label = "ENCARGADOS",
+                        unit = "CON PIN",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.TextPrimary
+                    )
+                    StatusPill("SEGURIDAD ACTIVA", tone = PillTone.Gold)
+                }
+            }
+
+            // LISTA DE SUCURSALES
+            if (branches.isEmpty()) {
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.xl),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("No hay sucursales activas", style = NoirType.title, color = NoirColors.TextPrimary)
+                            Text("Presiona '+ NUEVA SUCURSAL' para registrar una tienda.", style = NoirType.bodySmall, color = NoirColors.TextMuted)
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(NoirSpace.xs)
                 ) {
                     items(branches) { branch ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(cardBg)
-                                .border(1.dp, cardBorder, RoundedCornerShape(16.dp))
-                                .padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        BentoCard(
+                            contentPadding = PaddingValues(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(branch.branchName, fontWeight = FontWeight.Black, fontSize = 15.sp, color = creamPrimary)
-                                Text("Encargado: ${branch.managerName}", fontSize = 12.sp, color = creamWarm, fontWeight = FontWeight.Bold)
-                                Text("PIN / Contraseña: '${branch.password}' • Tel: ${branch.phone}", fontSize = 11.sp, color = textMuted)
-                            }
-                            Row {
-                                IconButton(onClick = { editingBranch = branch }) {
-                                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = creamWarm)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(branch.branchName, style = NoirType.title.copy(fontSize = 15.sp), color = NoirColors.TextPrimary)
+                                        Spacer(Modifier.width(8.dp))
+                                        StatusPill("ACTIVA", tone = PillTone.Positive, showDot = true)
+                                    }
+
+                                    Text(
+                                        "Encargado: ${branch.managerName}",
+                                        style = NoirType.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = NoirColors.Cream
+                                    )
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "PIN: ${branch.password}",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 11.sp,
+                                            color = NoirColors.Gold
+                                        )
+                                        Text(
+                                            "• Tel: ${branch.phone}",
+                                            fontSize = 11.sp,
+                                            color = NoirColors.TextMuted
+                                        )
+                                    }
                                 }
-                                IconButton(onClick = { viewModel.deleteBranch(branch) }) {
-                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Borrar", tint = textMuted)
+
+                                Row {
+                                    IconButton(onClick = { editingBranch = branch }) {
+                                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = NoirColors.Cream)
+                                    }
+                                    IconButton(onClick = { viewModel.deleteBranch(branch) }) {
+                                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Borrar", tint = NoirColors.Danger)
+                                    }
                                 }
                             }
                         }
@@ -178,14 +238,59 @@ fun AdminBranchesScreen(
 
         AlertDialog(
             onDismissRequest = { isAddOpen = false },
-            containerColor = cardBg,
-            title = { Text("CREAR SUCURSAL Y USUARIO", fontWeight = FontWeight.Black, color = creamPrimary) },
+            containerColor = NoirColors.Surface,
+            shape = RoundedCornerShape(NoirRadius.lg),
+            title = { Text("CREAR SUCURSAL Y USUARIO", style = NoirType.title, color = NoirColors.TextPrimary) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(value = branchName, onValueChange = { branchName = it }, label = { Text("Nombre de Sucursal (ej. Sucursal Sur)") }, singleLine = true)
-                    OutlinedTextField(value = managerName, onValueChange = { managerName = it }, label = { Text("Nombre del Encargado (ej. Pedro M.)") }, singleLine = true)
-                    OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("PIN / Contraseña de Acceso") }, singleLine = true)
-                    OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Teléfono de la Tienda") }, singleLine = true)
+                    OutlinedTextField(
+                        value = branchName,
+                        onValueChange = { branchName = it },
+                        label = { Text("Nombre de Sucursal (ej. Sucursal Sur)", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = managerName,
+                        onValueChange = { managerName = it },
+                        label = { Text("Nombre del Encargado (ej. Pedro M.)", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("PIN de Acceso", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Teléfono de la Tienda", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
                 }
             },
             confirmButton = {
@@ -196,10 +301,13 @@ fun AdminBranchesScreen(
                             isAddOpen = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText)
-                ) { Text("Crear Sucursal", fontWeight = FontWeight.Black) }
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.Cream, contentColor = NoirColors.OnCream),
+                    shape = RoundedCornerShape(NoirRadius.md)
+                ) { Text("Crear Sucursal", style = NoirType.button) }
             },
-            dismissButton = { TextButton(onClick = { isAddOpen = false }) { Text("Cancelar", color = creamWarm) } }
+            dismissButton = {
+                TextButton(onClick = { isAddOpen = false }) { Text("Cancelar", color = NoirColors.Cream) }
+            }
         )
     }
 
@@ -211,14 +319,59 @@ fun AdminBranchesScreen(
 
         AlertDialog(
             onDismissRequest = { editingBranch = null },
-            containerColor = cardBg,
-            title = { Text("EDITAR SUCURSAL", fontWeight = FontWeight.Black, color = creamPrimary) },
+            containerColor = NoirColors.Surface,
+            shape = RoundedCornerShape(NoirRadius.lg),
+            title = { Text("EDITAR SUCURSAL", style = NoirType.title, color = NoirColors.TextPrimary) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(value = branchName, onValueChange = { branchName = it }, label = { Text("Nombre de Sucursal") }, singleLine = true)
-                    OutlinedTextField(value = managerName, onValueChange = { managerName = it }, label = { Text("Encargado Asignado") }, singleLine = true)
-                    OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("PIN / Contraseña del Encargado") }, singleLine = true)
-                    OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Teléfono") }, singleLine = true)
+                    OutlinedTextField(
+                        value = branchName,
+                        onValueChange = { branchName = it },
+                        label = { Text("Nombre de Sucursal", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = managerName,
+                        onValueChange = { managerName = it },
+                        label = { Text("Encargado Asignado", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("PIN de Acceso", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Teléfono", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
                 }
             },
             confirmButton = {
@@ -236,10 +389,13 @@ fun AdminBranchesScreen(
                             editingBranch = null
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText)
-                ) { Text("Guardar Cambios", fontWeight = FontWeight.Black) }
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.Cream, contentColor = NoirColors.OnCream),
+                    shape = RoundedCornerShape(NoirRadius.md)
+                ) { Text("Guardar Cambios", style = NoirType.button) }
             },
-            dismissButton = { TextButton(onClick = { editingBranch = null }) { Text("Cancelar", color = creamWarm) } }
+            dismissButton = {
+                TextButton(onClick = { editingBranch = null }) { Text("Cancelar", color = NoirColors.Cream) }
+            }
         )
     }
 }

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FormatListNumbered
@@ -80,7 +81,8 @@ fun PluCatalogListDialog(
     onSaveProduct: (ProductEntity) -> Unit = {},
     onLinkDerivative: (childCode: Int, parentCode: Int?) -> Unit = { _, _ -> },
     onDeleteProduct: (ProductEntity) -> Unit = {},
-    onDeleteAllProducts: () -> Unit = {}
+    onDeleteAllProducts: () -> Unit = {},
+    onImportQendra: (() -> Unit)? = null
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todas") }
@@ -191,6 +193,21 @@ fun PluCatalogListDialog(
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFE53935)
                                 )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                        }
+
+                        if (onImportQendra != null) {
+                            Button(
+                                onClick = onImportQendra,
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.height(38.dp)
+                            ) {
+                                Icon(Icons.Default.CloudDownload, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("IMPORTAR BÁSCULA", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             }
                             Spacer(modifier = Modifier.width(6.dp))
                         }

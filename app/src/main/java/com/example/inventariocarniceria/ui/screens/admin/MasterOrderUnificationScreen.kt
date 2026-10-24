@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,17 +17,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -35,16 +33,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.data.local.InventoryCaptureEntity
+import com.example.inventariocarniceria.ui.design.BentoCard
+import com.example.inventariocarniceria.ui.design.BigMetric
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirPrimaryButton
+import com.example.inventariocarniceria.ui.design.NoirRadius
+import com.example.inventariocarniceria.ui.design.NoirSecondaryButton
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import com.example.inventariocarniceria.utils.PdfExporter
 import com.example.inventariocarniceria.utils.WhatsAppExporter
@@ -59,6 +65,11 @@ data class MasterConsolidatedItem(
     val branchBreakdown: List<Pair<String, Double>>
 )
 
+/**
+ * Pantalla ejecutiva de Unificación de Pedidos Multi-Sucursal (Dueño).
+ * Diseñada bajo el estándar "Noir & Crema" Bento Grid: datos ordenados,
+ * tipografía monospace de alta legibilidad y botones de exportación táctiles.
+ */
 @Composable
 fun MasterOrderUnificationScreen(
     viewModel: InventoryViewModel,
@@ -66,14 +77,6 @@ fun MasterOrderUnificationScreen(
 ) {
     val branchOrders by viewModel.allBranchOrders.collectAsState()
     val context = LocalContext.current
-
-    val matteBg = Color(0xFF0F0E0D)
-    val cardBg = Color(0xFF181715)
-    val cardBorder = Color(0xFF282623)
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-    val darkText = Color(0xFF141312)
 
     val consolidatedItems = remember(branchOrders) {
         branchOrders.groupBy { it.productCode }.map { (code, orders) ->
@@ -100,143 +103,125 @@ fun MasterOrderUnificationScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(matteBg)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .background(NoirColors.Background)
+            .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+        verticalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
     ) {
+        // ENCABEZADO EJECUTIVO
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.weight(1f)) {
-                    SgniaCerhanGreetingHeader(
-                        userName = "Unificación Pedidos",
-                        subtitle = "Consolidado Multi-Sucursal para Orden Maestra a Proveedor"
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    NoirLabel("DIRECCIÓN GENERAL · ORDEN MAESTRA", color = NoirColors.Gold)
+                    Text(
+                        text = "Unificación de Pedidos",
+                        style = NoirType.display.copy(fontSize = 24.sp),
+                        color = NoirColors.TextPrimary
+                    )
+                    Text(
+                        text = "Consolidación multi-tienda para compras a rastro",
+                        style = NoirType.bodySmall,
+                        color = NoirColors.TextMuted
                     )
                 }
+
                 if (branchOrders.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.clearBranchOrders() }) {
+                    IconButton(
+                        onClick = { viewModel.clearBranchOrders() },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(NoirRadius.sm))
+                            .background(NoirColors.SurfaceRaised)
+                            .border(1.dp, NoirColors.Hairline, RoundedCornerShape(NoirRadius.sm))
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Delete,
+                            imageVector = Icons.Default.DeleteSweep,
                             contentDescription = "Limpiar Unificación",
-                            tint = creamWarm
+                            tint = NoirColors.Danger,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
         }
 
+        // BENTO CARD HERO: TOTAL MAESTRO DE KILOS E INVERSIÓN
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "01.",
-                    title = "Sucursales",
-                    subtitle = String.format(Locale.US, "%d Tiendas • %.2f kg", activeBranchesCount, totalMasterKg),
-                    icon = Icons.Default.Storefront,
-                    showWaveChart = true
-                )
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "02.",
-                    title = "Importe Maestro",
-                    subtitle = String.format(Locale.US, "$%.2f MXN", totalMasterCost),
-                    icon = Icons.Default.Hub,
-                    showWaveChart = false
-                )
-            }
-        }
-
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(cardBg)
-                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            BentoCard(
+                hero = false,
+                contentPadding = PaddingValues(NoirSpace.lg),
+                verticalArrangement = Arrangement.spacedBy(NoirSpace.md)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFF121110))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("CÓD", modifier = Modifier.weight(0.6f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
-                    Text("PRODUCTO / DESGLOSE", modifier = Modifier.weight(2f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
-                    Text("TOTAL KG", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = creamPrimary)
-                    Text("EST. ($)", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = creamWarm)
+                    StatusPill(
+                        text = if (consolidatedItems.isNotEmpty()) "$activeBranchesCount TIENDAS ACTIVAS" else "SIN PEDIDOS",
+                        tone = if (consolidatedItems.isNotEmpty()) PillTone.Positive else PillTone.Neutral
+                    )
+                    Text(
+                        text = "${consolidatedItems.size} CORTES",
+                        style = NoirType.label,
+                        color = NoirColors.TextMuted
+                    )
                 }
 
-                if (consolidatedItems.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Sin pedidos pendientes de sucursales",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = creamPrimary
-                            )
-                            Text(
-                                text = "Todas las sucursales tienen existencias completas.",
-                                fontSize = 11.sp,
-                                color = textMuted
-                            )
-                        }
-                    }
-                } else {
-                    consolidatedItems.forEach { item ->
-                        MasterConsolidatedItemRow(item)
-                        HorizontalDivider(color = cardBorder)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    BigMetric(
+                        value = String.format(Locale.US, "%,.2f", totalMasterKg),
+                        unit = "KG",
+                        label = "VOLUMEN CONSOLIDADO",
+                        style = NoirType.metricXL,
+                        valueColor = NoirColors.Cream
+                    )
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        NoirLabel("IMPORTE TOTAL ESTIMADO", color = NoirColors.TextMuted)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = String.format(Locale.US, "$%,.2f", totalMasterCost),
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = NoirColors.TextPrimary
+                        )
                     }
                 }
             }
         }
 
+        // BOTONES DE EXPORTACIÓN DIRECTA (WHATSAPP & PDF)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
             ) {
-                Button(
+                NoirPrimaryButton(
+                    text = "WhatsApp Maestro",
+                    icon = Icons.Default.Share,
+                    enabled = consolidatedItems.isNotEmpty(),
                     onClick = {
                         val text = buildMasterWhatsAppText(consolidatedItems, totalMasterKg, totalMasterCost)
                         WhatsAppExporter.shareRawText(context, text)
                     },
-                    enabled = consolidatedItems.isNotEmpty(),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = creamPrimary,
-                        contentColor = darkText,
-                        disabledContainerColor = Color(0xFF23211E),
-                        disabledContentColor = textMuted
-                    )
-                ) {
-                    Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("WhatsApp Maestro", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                }
+                    modifier = Modifier.weight(1.2f)
+                )
 
-                OutlinedButton(
+                NoirSecondaryButton(
+                    text = "PDF VIP",
+                    icon = Icons.Default.PictureAsPdf,
+                    enabled = consolidatedItems.isNotEmpty(),
                     onClick = {
                         val captures = consolidatedItems.map {
-                            com.example.inventariocarniceria.data.local.InventoryCaptureEntity(
+                            InventoryCaptureEntity(
                                 productCode = it.productCode,
                                 productName = "${it.productName} (UNIFICADO ${it.branchBreakdown.size} SUCURSALES)",
                                 capturedWeight = 0.0,
@@ -252,74 +237,173 @@ fun MasterOrderUnificationScreen(
                             managerName = "Dirección General / Administrador SGNIA"
                         )
                     },
-                    enabled = consolidatedItems.isNotEmpty(),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = creamPrimary)
-                ) {
-                    Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, tint = creamWarm, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("PDF Maestro", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                }
+                    modifier = Modifier.weight(0.9f)
+                )
             }
         }
 
+        // TABLA BENTO GRID: DETALLE DE CORTES CONSOLIDADO
         item {
-            SgniaCerhanGlobalSummaryCard(
-                metric1Label = "Volumen Consolidado",
-                metric1Value = String.format(Locale.US, "%.2f kg", totalMasterKg),
-                metric1Sub = "Requerimiento total a rastro",
-                metric2Label = "Inversión Estimada",
-                metric2Value = String.format(Locale.US, "$%.2f", totalMasterCost),
-                metric2Sub = "${consolidatedItems.size} cortes unificados",
-                barValues = listOf(0.55f, 0.80f, 0.65f, 0.92f, 0.60f, 0.88f, 0.74f, 0.96f)
-            )
+            BentoCard(
+                contentPadding = PaddingValues(NoirSpace.md),
+                verticalArrangement = Arrangement.spacedBy(NoirSpace.xs)
+            ) {
+                // ENCABEZADO DE TABLA
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(NoirRadius.sm))
+                        .background(NoirColors.SurfaceSunken)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "PLU",
+                        modifier = Modifier.weight(0.7f),
+                        style = NoirType.label.copy(fontSize = 11.sp),
+                        color = NoirColors.TextSecondary
+                    )
+                    Text(
+                        "PRODUCTO / SUCURSALES",
+                        modifier = Modifier.weight(2.2f),
+                        style = NoirType.label.copy(fontSize = 11.sp),
+                        color = NoirColors.TextSecondary
+                    )
+                    Text(
+                        "FALTANTE",
+                        modifier = Modifier.weight(1.1f),
+                        style = NoirType.label.copy(fontSize = 11.sp),
+                        textAlign = TextAlign.End,
+                        color = NoirColors.Cream
+                    )
+                    Text(
+                        "COSTO EST.",
+                        modifier = Modifier.weight(1.2f),
+                        style = NoirType.label.copy(fontSize = 11.sp),
+                        textAlign = TextAlign.End,
+                        color = NoirColors.TextSecondary
+                    )
+                }
+
+                if (consolidatedItems.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 36.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Sin pedidos pendientes de sucursales",
+                                style = NoirType.title,
+                                color = NoirColors.TextPrimary
+                            )
+                            Text(
+                                text = "Las tiendas reportan stock completo o no han enviado pedidos hoy.",
+                                style = NoirType.bodySmall,
+                                color = NoirColors.TextMuted,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    consolidatedItems.forEachIndexed { index, item ->
+                        MasterConsolidatedItemRow(item)
+                        if (index < consolidatedItems.lastIndex) {
+                            HorizontalDivider(color = NoirColors.Hairline, thickness = 0.5.dp)
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
 fun MasterConsolidatedItemRow(item: MasterConsolidatedItem) {
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 10.dp)
+            .padding(horizontal = 4.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val codeFormatted = String.format(Locale.US, "%03d", item.productCode)
-            val totalKgStr = String.format(Locale.US, "%.3f kg", item.totalShortageKg)
-            val totalCostStr = String.format(Locale.US, "$%.2f", item.totalEstimatedCost)
+            val totalKgStr = String.format(Locale.US, "%.2f kg", item.totalShortageKg)
+            val totalCostStr = String.format(Locale.US, "$%,.2f", item.totalEstimatedCost)
 
-            Text(codeFormatted, modifier = Modifier.weight(0.6f), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Black, fontSize = 12.sp, color = creamWarm)
-            Text(item.productName, modifier = Modifier.weight(2f), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = creamPrimary)
-            Text(totalKgStr, modifier = Modifier.weight(1.1f), fontSize = 12.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.End, color = creamPrimary)
-            Text(totalCostStr, modifier = Modifier.weight(1.1f), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, color = creamWarm)
+            Text(
+                text = codeFormatted,
+                modifier = Modifier.weight(0.7f),
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                color = NoirColors.Gold
+            )
+            Text(
+                text = item.productName,
+                modifier = Modifier.weight(2.2f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = NoirColors.TextPrimary
+            )
+            Text(
+                text = totalKgStr,
+                modifier = Modifier.weight(1.1f),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.End,
+                color = NoirColors.Cream
+            )
+            Text(
+                text = totalCostStr,
+                modifier = Modifier.weight(1.2f),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.End,
+                color = NoirColors.TextSecondary
+            )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
+        // DESGLOSE POR SUCURSAL
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(start = 32.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item.branchBreakdown.forEach { (branch, kg) ->
-                val shortBranch = branch.replace(" SGNIA", "")
-                Text(
-                    text = "• $shortBranch: ${String.format(Locale.US, "%.2f", kg)} kg",
-                    fontSize = 10.sp,
-                    color = textMuted
-                )
+                val shortBranch = branch.replace(" SGNIA", "").replace("Sucursal ", "")
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(NoirRadius.sm))
+                        .background(NoirColors.SurfaceRaised)
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(NoirColors.TextMuted)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "$shortBranch: ${String.format(Locale.US, "%.2f", kg)} kg",
+                        fontSize = 11.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = NoirColors.TextSecondary
+                    )
+                }
             }
         }
     }
@@ -337,20 +421,22 @@ private fun buildMasterWhatsAppText(
 
     items.forEach { item ->
         val codeStr = String.format(Locale.US, "%03d", item.productCode)
-        val kgStr = String.format(Locale.US, "%.3f", item.totalShortageKg)
-        val costStr = String.format(Locale.US, "$%.2f", item.totalEstimatedCost)
+        val kgStr = String.format(Locale.US, "%.2f", item.totalShortageKg)
+        val costStr = String.format(Locale.US, "$%,.2f", item.totalEstimatedCost)
 
-        sb.append("🔹 [Cod. $codeStr] *${item.productName.uppercase()}*\n")
+        sb.append("🔹 [PLU $codeStr] *${item.productName.uppercase()}*\n")
         sb.append("   ▶ TOTAL COMPRA: *$kgStr kg* | Est: $costStr MXN\n")
         sb.append("   📍 Desglose: ")
-        val breakdownStr = item.branchBreakdown.joinToString(" + ") { "${it.first.replace(" SGNIA", "")} (${String.format(Locale.US, "%.3f", it.second)}kg)" }
+        val breakdownStr = item.branchBreakdown.joinToString(" + ") {
+            "${it.first.replace(" SGNIA", "")} (${String.format(Locale.US, "%.2f", it.second)}kg)"
+        }
         sb.append(breakdownStr)
         sb.append("\n\n")
     }
 
     sb.append("------------------------------------------\n")
-    sb.append(String.format(Locale.US, "⚖️ *TOTAL COMPRA PROVEEDOR:* %.3f kg\n", totalKg))
-    sb.append(String.format(Locale.US, "💰 *IMPORTE ESTIMADO TOTAL:* $%.2f MXN\n\n", totalCost))
+    sb.append(String.format(Locale.US, "⚖️ *TOTAL COMPRA PROVEEDOR:* %.2f kg\n", totalKg))
+    sb.append(String.format(Locale.US, "💰 *IMPORTE ESTIMADO TOTAL:* $%,.2f MXN\n\n", totalCost))
     sb.append("Favor de confirmar tiempo de entrega a la sucursal matriz SGNIA. ¡Gracias!")
 
     return sb.toString()

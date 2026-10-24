@@ -2,15 +2,18 @@ package com.example.inventariocarniceria.ui.screens.admin
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,13 +21,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,14 +40,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.ProductEntity
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.ui.design.BentoCard
+import com.example.inventariocarniceria.ui.design.BigMetric
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirRadius
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import java.util.Locale
 
@@ -62,13 +67,6 @@ fun AdminCatalogScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf("Todas") }
-
-    val matteBg = Color(0xFF0F0E0D)
-    val cardBorder = Color(0xFF282623)
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-    val darkText = Color(0xFF141312)
 
     val categories = listOf("Todas", "Res", "Cerdo", "Pollo", "Embutidos", "Otros")
 
@@ -86,21 +84,21 @@ fun AdminCatalogScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = matteBg,
+        containerColor = NoirColors.Background,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.openNewProductEditor() },
-                containerColor = creamPrimary,
-                contentColor = darkText,
-                shape = RoundedCornerShape(16.dp)
+                containerColor = NoirColors.Cream,
+                contentColor = NoirColors.OnCream,
+                shape = RoundedCornerShape(NoirRadius.md)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = NoirSpace.md, vertical = NoirSpace.xs),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Agregar Corte")
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Corte", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("NUEVO CORTE", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Text("NUEVO CORTE", style = NoirType.label.copy(color = NoirColors.OnCream, fontWeight = FontWeight.Bold))
                 }
             }
         }
@@ -108,97 +106,131 @@ fun AdminCatalogScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(matteBg)
+                .background(NoirColors.Background)
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+            verticalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
         ) {
-            SgniaCerhanGreetingHeader(
-                userName = "Catálogo de Cortes",
-                subtitle = "Gestión de PLUs, Precios por Kilo y Presentaciones"
-            )
-
+            // ENCABEZADO
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "01.",
-                    title = "Total PLUs",
-                    subtitle = "${allProducts.size} cortes registrados",
-                    icon = Icons.Default.Inventory2,
-                    showWaveChart = true
-                )
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "02.",
-                    title = "Filtrados",
-                    subtitle = "${filteredProducts.size} en vista ($selectedCategoryFilter)",
-                    icon = Icons.Default.Category,
-                    showWaveChart = false
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    NoirLabel("ADMINISTRACIÓN DE TIENDA · CATÁLOGO LOCAL", color = NoirColors.Gold)
+                    Text(
+                        text = "Catálogo de Cortes",
+                        style = NoirType.display.copy(fontSize = 24.sp),
+                        color = NoirColors.TextPrimary
+                    )
+                    Text(
+                        text = "Códigos PLU, precios por kilo y límites de stock en báscula",
+                        style = NoirType.bodySmall,
+                        color = NoirColors.TextMuted
+                    )
+                }
             }
 
+            // BENTO HERO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+            ) {
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.md)
+                ) {
+                    BigMetric(
+                        value = "${allProducts.size}",
+                        label = "TOTAL PLUs",
+                        unit = "CORTES",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.Cream
+                    )
+                    StatusPill("EN MEMORIA LOCAL", tone = PillTone.Positive)
+                }
+
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.md)
+                ) {
+                    BigMetric(
+                        value = "${filteredProducts.size}",
+                        label = "EN PANTALLA",
+                        unit = selectedCategoryFilter.uppercase(),
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.TextPrimary
+                    )
+                    StatusPill("FILTRO ACTIVO", tone = PillTone.Neutral)
+                }
+            }
+
+            // BUSCADOR BENTO
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Buscar por código (ej. 24) o nombre...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = creamWarm) },
+                placeholder = { Text("Buscar por código PLU o corte...", color = NoirColors.TextMuted) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = NoirColors.Cream) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(NoirRadius.md),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = creamPrimary,
-                    unfocusedBorderColor = cardBorder,
-                    focusedTextColor = creamPrimary,
-                    unfocusedTextColor = creamPrimary,
-                    focusedPlaceholderColor = textMuted,
-                    unfocusedPlaceholderColor = textMuted
+                    focusedBorderColor = NoirColors.Cream,
+                    unfocusedBorderColor = NoirColors.Hairline,
+                    focusedTextColor = NoirColors.TextPrimary,
+                    unfocusedTextColor = NoirColors.TextPrimary,
+                    focusedContainerColor = NoirColors.Surface,
+                    unfocusedContainerColor = NoirColors.Surface
                 )
             )
 
+            // SELECTOR DE CATEGORÍA
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(categories) { cat ->
                     val isSelected = selectedCategoryFilter == cat
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedCategoryFilter = cat },
-                        label = {
-                            Text(
-                                text = cat,
-                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = creamPrimary,
-                            selectedLabelColor = darkText,
-                            containerColor = Color(0xFF181715),
-                            labelColor = textMuted
+                    val bg = if (isSelected) NoirColors.Cream else NoirColors.SurfaceRaised
+                    val fg = if (isSelected) NoirColors.OnCream else NoirColors.TextSecondary
+                    val border = if (isSelected) NoirColors.Cream else NoirColors.Hairline
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(NoirRadius.pill))
+                            .background(bg)
+                            .border(1.dp, border, RoundedCornerShape(NoirRadius.pill))
+                            .clickable { selectedCategoryFilter = cat }
+                            .padding(horizontal = 14.dp, vertical = 7.dp)
+                    ) {
+                        Text(
+                            text = cat.uppercase(),
+                            style = NoirType.label.copy(fontSize = 11.sp),
+                            color = fg
                         )
-                    )
+                    }
                 }
             }
 
+            // LISTA DE CORTES
             if (filteredProducts.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.xl),
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "No se encontraron productos en el catálogo.",
-                        color = textMuted
-                    )
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("No se encontraron cortes", style = NoirType.title, color = NoirColors.TextPrimary)
+                            Text("Prueba con otro término de búsqueda o agrega un nuevo corte.", style = NoirType.bodySmall, color = NoirColors.TextMuted)
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(NoirSpace.xs)
                 ) {
                     items(filteredProducts) { product ->
                         AdminProductItem(
@@ -229,100 +261,87 @@ fun AdminProductItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val cardBg = Color(0xFF181715)
-    val cardBorder = Color(0xFF282623)
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-    val darkText = Color(0xFF141312)
-
     val priceFormatted = String.format(Locale.US, "$%.2f", product.price)
     val maxStockFormatted = String.format(Locale.US, "%.2f", product.maxStock)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(cardBg)
-            .border(1.dp, cardBorder, RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    BentoCard(
+        contentPadding = PaddingValues(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .background(creamPrimary, shape = RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(NoirColors.SurfaceRaised)
+                            .border(1.dp, NoirColors.Hairline, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = String.format(Locale.US, "PLU %03d", product.code),
+                            color = NoirColors.Gold,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
                     Text(
-                        text = "#${product.code}",
-                        color = darkText,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 11.sp
+                        text = product.name,
+                        style = NoirType.title.copy(fontSize = 15.sp),
+                        color = NoirColors.TextPrimary
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = product.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = creamPrimary
-                )
-            }
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "$priceFormatted/kg",
+                        style = NoirType.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = NoirColors.Cream
+                    )
+                    Text(
+                        text = "Máx: $maxStockFormatted kg",
+                        fontSize = 12.sp,
+                        color = NoirColors.TextMuted
+                    )
+                    StatusPill(product.category.uppercase(), tone = PillTone.Neutral, showDot = false)
+                }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = "Precio: $priceFormatted/kg",
-                    fontSize = 12.sp,
-                    color = creamWarm,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Máx: $maxStockFormatted kg",
-                    fontSize = 12.sp,
-                    color = textMuted
-                )
-                Text(
-                    text = product.category,
-                    fontSize = 12.sp,
-                    color = creamPrimary
-                )
-            }
-
-            if (product.orderUnitType != "KG" || product.parentProductCode != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (product.orderUnitType != "KG") {
-                        Text(
-                            text = "${product.orderUnitType} (~${product.weightPerBoxKg}kg)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = creamWarm
-                        )
-                    }
-                    if (product.parentProductCode != null) {
-                        Text(
-                            text = "Derivado de #${product.parentProductCode}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textMuted
-                        )
+                if (product.orderUnitType != "KG" || product.parentProductCode != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (product.orderUnitType != "KG") {
+                            Text(
+                                text = "Caja: ~${product.weightPerBoxKg}kg",
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = NoirColors.Cream
+                            )
+                        }
+                        if (product.parentProductCode != null) {
+                            Text(
+                                text = "• Derivado de #${product.parentProductCode}",
+                                fontSize = 11.sp,
+                                color = NoirColors.TextSecondary
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        Row {
-            IconButton(onClick = onEdit) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = creamWarm)
-            }
-            IconButton(onClick = onDelete) {
-                Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", tint = textMuted)
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar", tint = NoirColors.Cream)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar", tint = NoirColors.Danger)
+                }
             }
         }
     }

@@ -1,143 +1,165 @@
-# 🥩 SGNIA Carnicería & Balanza Industrial POS
-> **Sistema Inteligente de Punto de Venta, Pesaje Dual en Tiempo Real, Control de Inventario, Lector de Códigos de Barras/QR y Despiece Artesanal para Carnicerías.**
-
----
-
-## 📍 Rutas del Proyecto y Archivos Instalables
-
-| Elemento | Ruta en tu Computadora |
-| :--- | :--- |
-| **Código Fuente del Proyecto** | `C:\Users\gmlve\Downloads\Inventario` |
-| **Archivo APK Instalable (Debug)** | `C:\Users\gmlve\Downloads\Inventario\app\build\outputs\apk\debug\app-debug.apk` |
-| **Módulo Principal de la App** | `C:\Users\gmlve\Downloads\Inventario\app\src\main\java\com\example\inventariocarniceria` |
-| **Video de Inicio (Splash)** | `C:\Users\gmlve\Downloads\Inventario\app\src\main\res\raw\logovideo.mp4` |
-| **Ícono Oficial de la App** | `C:\Users\gmlve\Downloads\Inventario\app\src\main\res\drawable\logo.png` (y carpetas `mipmap-*`) |
-
----
-
-## 📸 Capturas de Pantalla y Plantilla Visual Ejecutiva
-
 <div align="center">
 
-| Plantilla Ejecutiva: Menú Lateral Desplegable | Plantilla Ejecutiva: Tarjetas Numeradas y Básculas |
-| :---: | :---: |
-| ![Menú Lateral Ejecutiva](screenshots/plantilla_cerhan_menu_lateral.png) | ![Tarjetas Numeradas y Básculas](screenshots/plantilla_cerhan_panel_tarjetas.png) |
+# 🥩 SGNIA CARNICERÍA & BALANZA INDUSTRIAL POS
+### *Sistema Industrial de Pesaje en Vivo, Control de Canales, Punto de Venta y Despiece para Carnicerías*
 
-| Visor Industrial OLED de Báscula | Báscula Física Systel Cuora Max Conectada |
-| :---: | :---: |
-| ![Visor Industrial](screenshots/pantalla_visor_bascula.png) | ![Báscula Systel](screenshots/bascula_fisica_systel.jpg) |
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.1.20-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Android SDK](https://img.shields.io/badge/Android%20SDK-36-34A853?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202026-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Systel Cuora](https://img.shields.io/badge/Hardware-Systel%20Cuora%20TCP%2FIP-D9A441?style=for-the-badge&logo=scale&logoColor=white)](#-protocolo-industrial-systel-cuora-max)
+[![Offline First](https://img.shields.io/badge/Architecture-Offline--First%20Room%20DB-00C853?style=for-the-badge&logo=sqlite&logoColor=white)](#-arquitectura-offline-first)
+[![Design System](https://img.shields.io/badge/UI%2FUX-Noir%20%26%20Crema%20Bento-EEDDC8?style=for-the-badge&labelColor=0F0E0D&color=EEDDC8)](#-sistema-de-diseño-noir--crema)
+
+<p align="center">
+  <b>Desarrollado con orgullo por SGNIA COMPANY</b><br>
+  <i>“Software que Protege y Hace Crecer tu Negocio”</i><br>
+  <a href="https://sgnia.xyz"><b>🌐 sgnia.xyz</b></a> • 
+  <a href="https://wa.me/522761095688"><b>📱 WhatsApp Directo</b></a>
+</p>
+
+---
 
 </div>
 
----
+## 📌 Resumen Ejecutivo del Sistema
 
-## 🚀 ¿Qué es y Qué Hace la Aplicación?
-
-**SGNIA Carnicería** es una solución integral diseñada específicamente para carnicerías, rastros y obradores de corte de carne. Combina comunicación física TCP/IP con básculas industriales, lectores de código de barras (cámara y pistolas USB/Bluetooth), control de inventario de materias primas, rendimiento cárnico y consolidación multi-sucursal en una interfaz ejecutiva **Negro Mate & Crema Cálido**.
-
-### 1. ⚖️ Panel de Tienda con Doble Báscula Simultánea en Tiempo Real
-* **Pantalla Principal Unificada (`IndustrialScaleVisorScreen.kt`)**:
-  * Muestra simultáneamente **ambas básculas en tiempo real** mediante tarjetas numeradas independientes:
-    * **`01. Báscula 1 — Mostrador Principal`** (`192.168.100.40:10001` por defecto).
-    * **`02. Báscula 2 — Corte y Despiece`** (`192.168.100.50:10001` por defecto).
-  * Cada tarjeta cuenta con visor digital en color crema (`0.000 KG`), indicador de estado (`● ESTABLE` / `● LECTURA` / `● SIN SEÑAL`), selector de báscula activa, botón **`>0< TARA`** y captura rápida de peso.
-  * **`03. Corte Activo y Captura`**: Selector de corte del catálogo con buscador instantáneo, botones rápidos de ajuste de precio (`-$10`, `-$5`, `+$5`, `+$10`), botón de **Escáner de Cámara (QR / Código de Barras)** y cálculo automático del importe total.
-  * **`04. Sincronización de Red TCP/IP`**: Telemetría de paquetes recibidos, comando directo de prueba de red (`PING`), restablecimiento de IPs de fábrica con 1 toque y ajuste de IP/Puerto.
-  * **`Acceso Rápido` (Cuadrícula 2x2 en Crema)** y **`Resumen Global`** con gráfica vectorial en vivo.
-
-### 2. 🧭 Navegación Lateral Desplegable (`SgniaCerhanSidebar`) y Margen Seguro Superior
-* **Protección Total de Barra de Estado (`systemBarsPadding()`)**:
-  * Configurado desde la raíz en `MainActivity.kt` con fondo `#141312` para que **ninguna pantalla ni encabezado se encime con la hora, batería o notificaciones flotantes del teléfono**.
-* **Sin Barras Rojas ni Menús Inferiores Estorbosos**:
-  * Toda la navegación se concentra en un **Menú Lateral Izquierdo Desplegable (`ModalNavigationDrawer`)** activado desde el botón `☰ MENÚ` en la cabecera superior (`SgniaCerhanTopBar`):
-    * **En la Consola del Dueño (`ADMIN`)**: Menú lateral con acceso directo a *Inicio / Resumen*, *Catálogo de Cortes*, *Unificación Pedidos*, *Sucursales y Tiendas*, *Proveedores*, *Seguridad y PIN* y *Cerrar Sesión*.
-    * **En el Panel de Tienda (`ENCARGADO`)**: La pantalla principal muestra únicamente las **2 Básculas**, mientras que el menú desplegable lateral da acceso a *Recepción Mercancía*, *Pedidos de Surtido*, *Mi Inversión Local*, *Ajustes de Sistema* y *Cambiar Rol / Salir*.
-
-### 3. 📦 Lector Inteligente de Códigos de Barras y QR
-* **Soporte Dual de Hardware**:
-  1. **Cámara del Teléfono/Tableta**: Integra **CameraX** y **Google ML Kit** (`CameraBarcodeScannerDialog.kt`) con mira láser animada y control de linterna para cuartos fríos.
-  2. **Pistolas Lectoras Físicas (USB o Bluetooth)**: Reconoce escaneos en ráfaga a nivel de hardware (`dispatchKeyEvent` en `MainActivity.kt`), permitiendo disparar a la caja o ticket sin tocar la pantalla en **Básculas**, **Recepción de Mercancía** o **Catálogo**.
-* **Lógica Cárnica Especializada (`MeatBarcodeParser.kt`)**:
-  * **Cajas con peso en los últimos 4 dígitos**: Si la caja termina en `...2000`, la app detecta automáticamente que son `20.00 kg` y selecciona el corte (ej. *Caja Manitas de Puerco*).
-  * **Cajas de peso estándar**: Si la caja tiene un código fijo de barras, asigna el peso configurado en el catálogo (`weightPerBoxKg`, ej. 20 kg).
-  * **Tickets de balanza EAN-13 (Prefijos 20, 21, 28, 29)**: Desglosa automáticamente el PLU y los gramos pesados en mostrador.
-  * **Códigos QR Estructurados**: Procesa etiquetas con formato `PLU:45;PESO:20.0`.
-
-### 4. 🔪 Recepción de Mercancía, Despiece y Rendimiento Cárnico
-* **Control de Materia Prima y Rendimiento de Pierna de Cerdo (`StockReceptionScreen.kt`)**:
-  * Registro del peso inicial de la canal o pierna completa y recepción de cajas por código de barras.
-  * Captura de los cortes derivados resultantes (Bistec, Maciza fileteada, Maciza en trozo, Molida / Recortes) y residuo (Hueso, Grasa y Merma).
-  * Cálculo en tiempo real de porcentajes de rendimiento cárnico útil y alerta automática si la merma supera el umbral permitido (`4%`).
-  * **Descuento automático del padre**: Al pesar cualquier corte derivado, el sistema descuenta los kilos de la materia prima base para evitar faltantes falsos.
-
-### 5. 💼 Módulos Ejecutivos y Operativos Completos
-* **Login y Bóveda de Seguridad (`SecurityVaultScreen.kt`)**: Selección de rol (*Consola Dueño* vs *Panel de Tienda*), selector de sucursal activa, ingreso de PIN con puntos indicadores en color crema (`#EEDDC8`) y teclado numérico táctil de alto contraste.
-* **Consola Ejecutiva del Dueño (`ExecutiveOwnerDashboardScreen.kt`)**: Tarjetas numeradas (`01` a `04`) con inversión cárnica global, valor de venta proyectado, utilidad neta estimada, auditoría de mermas por sucursal, cuadrícula `Acceso Rápido` 2x2 y gráfica vectorial en `Resumen Global`.
-* **Unificación de Pedidos (`MasterOrderUnificationScreen.kt`)**: Consolida automáticamente las solicitudes de todas las sucursales, calcula cajas sugeridas y genera el mensaje de pedido para WhatsApp con 1 toque.
-* **Inversión Propia del Encargado (`ManagerInvestmentScreen.kt`)**: Control independiente para botanas y productos locales (chicharrones, manteca, carbón, salsas) con cálculo de bolsitas empacadas y margen de ganancia.
-* **Catálogo, Sucursales, Proveedores y Seguridad (`AdminCatalogScreen`, `AdminBranchesScreen`, `AdminSuppliersScreen`, `AdminSecurityScreen`)**: Administración integral con diseño unificado.
-
-### 6. 🎬 Video de Inicio Oficial e Ícono de Marca
-* **Video Splash Screen (`SplashScreen.kt`)**: Al abrir la aplicación se reproduce a pantalla completa y sin bordes el video oficial `logovideo.mp4` mediante `VideoView` nativo, transicionando automáticamente al login al finalizar.
-* **Ícono Oficial (`sglogo.png`)**: Integrado en todas las densidades de Android (`mipmap-mdpi` a `mipmap-xxxhdpi` e ícono adaptativo en `mipmap-anydpi-v26`) y en los encabezados de la aplicación.
+**SGNIA Carnicería & Balanza Industrial POS** es una plataforma móvil nativa de alto rendimiento desarrollada para optimizar la operación de carnicerías, rastros, frigoríficos y puntos de venta cárnicos. Diseñada bajo la filosofía **Offline-First**, el sistema no depende de internet para operar: se conecta directamente por red local TCP/IP a básculas industriales **Systel Cuora Max**, escanea etiquetas de cajas pesadas, calcula rendimientos de canal y consolida pedidos multi-tienda con exportación a WhatsApp y reportes PDF VIP.
 
 ---
 
-## 🎨 Sistema de Diseño Ejecutivo: *Negro Mate & Crema Cálido*
+## 🎨 Sistema de Diseño: *Noir & Crema (Bento Grid Industrial)*
 
-El 100% de las pantallas utilizan los componentes de `SgniaComponents.kt` basados en la plantilla ejecutiva:
+La interfaz visual fue concebida como un **instrumento de precisión de grado ejecutivo**, optimizada para ambientes industriales, cuartos fríos, poca iluminación y uso con manos húmedas o guantes de carnicero:
 
-* **Paleta de Colores**:
-  * **Fondo Principal**: Negro Carbón Mate (`#0F0E0D` / `#141312`).
-  * **Superficies y Tarjetas Numeradas**: Carbón Ejecutivo (`#181715` / `#1C1B19`) con bordes sutiles (`#2A2723`).
-  * **Acentos, Botones Principales y Selección Activa**: Crema Marfil Cálido (`#F3EFE6` / `#EEDDC8`) con texto en negro profundo (`#141312`).
-  * **Indicadores de Estado**: Verde Esmeralda (`#4ADE80`) para lecturas estables, Ámbar (`#FBBF24`) para avisos y Rojo (`#F87171`) para alertas de merma.
-* **Componentes Clave (`SgniaComponents.kt`)**:
-  * **`SgniaCerhanTopBar`**: Cabecera superior con botón `☰ MENÚ`, subtítulo en mayúsculas, título principal en crema y badge de estado.
-  * **`SgniaCerhanSidebar`**: Menú lateral izquierdo con perfil superior, píldora crema para la sección activa, badges numéricos y botón de salida.
-  * **`SgniaNumberedCard`**: Tarjetas ejecutivas con índice numerado (`01.`, `02.`, `03.`, `04.`), badge de estado con punto luminoso y pie de acción.
-  * **`SgniaQuickAccessGrid`**: Cuadrícula 2x2 de botones en color crema cálido con ícono circular oscuro.
-  * **`SgniaGlobalSummaryCard`**: Panel inferior con métricas clave y gráfica de línea suavizada con relleno degradado.
+* **Fondo Principal**: Negro Carbón Mate Profundo (`#0F0E0D`).
+* **Tarjetas Bento**: Carbón Superficie (`#181715`) con bordes finos de 1dp (`#2A2723` / `#3A352F`) y esquinas redondeadas ergonómicas (24dp / 18dp / 12dp).
+* **Tipografía y Acentos**: Crema Marfil Cálido (`#EEDDC8` / `#F3EFE6`) para máxima legibilidad sin fatiga ocular.
+* **Cifras Dominantes**: Números grandes en fuente Monospace (`56sp` y `36sp`) para leer kilos, importes y porcentajes de merma en menos de 2 segundos.
+* **Verde Esmeralda (`#4ADE80`)**: Reservado estrictamente para peso estable en báscula y estados positivos.
+* **Zonas Táctiles Ampliadas**: Botones con diana táctil mínima de $\ge$ 52dp y teclado numérico de 68dp.
 
----
-
-## 🛠️ Resumen Cronológico de Cambios Realizados
-
-1. **Adaptación Integral a la Plantilla Ejecutiva Negro & Crema**:
-   * Rediseño completo de las 12 pantallas del sistema (`SecurityVaultScreen`, `ExecutiveOwnerDashboardScreen`, `IndustrialScaleVisorScreen`, `StockReceptionScreen`, `OrdersScreen`, `ManagerInvestmentScreen`, `SettingsScreen`, `AdminCatalogScreen`, `MasterOrderUnificationScreen`, `AdminBranchesScreen`, `AdminSuppliersScreen`, `AdminSecurityScreen`).
-2. **Menú Lateral Izquierdo y Pantalla Principal de Doble Báscula**:
-   * Eliminación de barras superiores rojas y barras inferiores.
-   * Implementación de `ModalNavigationDrawer` con `SgniaCerhanSidebar` tanto para el Dueño como para el Encargado de Tienda.
-   * Visualización simultánea de **Báscula 1 (`01.`) y Báscula 2 (`02.`)** en la pantalla principal de tienda.
-3. **Corrección de Margen Superior (`systemBarsPadding`)**:
-   * Aplicación de `Modifier.background(Color(0xFF141312)).systemBarsPadding()` en `MainActivity.kt` para evitar cualquier superposición con el reloj, batería o notificaciones del celular.
-4. **Video de Inicio (`logovideo.mp4`) e Ícono Oficial (`sglogo.png`)**:
-   * Sustitución de la animación anterior por el reproductor de video nativo en `SplashScreen.kt` y actualización de todos los recursos `mipmap`.
-5. **Protocolo Systel Cuora Max + Escáner Universal de Códigos de Barras/QR**:
-   * Decodificación de tramas TCP/IP en tiempo real, teclado de peso manual, escáner con cámara (`CameraX` + `ML Kit`) y soporte para pistolas lectoras USB/Bluetooth (`MeatBarcodeParser.kt` con 30 pruebas unitarias).
+```
+┌─────────────────────────────────────────────────────────────┐
+│ SGNIA · CONSOLA EJECUTIVA                   [v1.0.0]        │
+├──────────────────────────────┬──────────────────────────────┤
+│ 01. BÁSCULA ACTIVA           │ 02. INVERSIÓN PROYECTADA     │
+│   24.580 KG                  │   $48,950.00 MXN             │
+│   ● ESTABLE · MOSTRADOR      │   ● 8 CORTES UNIFICADOS      │
+├──────────────────────────────┴──────────────────────────────┤
+│ 03. UNIFICACIÓN MAESTRA MULTI-TIENDA                        │
+│   [PLU 001] BISTEC DE RES     ▶ 145.20 kg   • Matriz + Sur  │
+│   [PLU 015] PIERNA DE CERDO   ▶  80.00 kg   • 4 Cajas       │
+├─────────────────────────────────────────────────────────────┤
+│ [ 💬 ENVIAR WHATSAPP MAESTRO ]      [ 📄 EXPORTAR PDF VIP ] │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🧪 Verificación y Compilación
+## ⚖️ Protocolo Industrial Systel Cuora Max (TCP/IP)
+
+El núcleo de comunicación (`TcpScaleManager.kt`) se comunica con módulos Lantronix y placas de red oficiales de **Systel Cuora Max V7.0 / V6.2 / V4.0**:
+
+* **Lectura Continua de Peso y Tara (Función 1 - 0x01)**: Lectura continua sin bloqueo de UI con telemetría de peso bruto, tara, estado estable/lectura y bytes recibidos.
+* **Firma Digital y Decimales (Función 2 - 0x02)**: Negociación binaria para detectar si la báscula opera con 0 o 2 decimales (`D0` vs `D2`).
+* **Sectores y Familias (Función 11 - 0x0B)**: Extracción directa de departamentos (Res, Cerdo, Pollo, Embutidos) de la memoria de la balanza.
+* **Extracción de Memoria PLU (Función 31 - 0x1F y Función 62 - 0x3E)**: Descarga automática de todos los códigos PLU, precios por kilo y nombres registrados físicamente en la báscula por red Wi-Fi/Ethernet.
+* **Captura de Ticket / Venta (Función 72 - 0x48)**: Reconocimiento nativo de tramas delimitadas por circunflejo (`Ticket^Fecha^Hora^Vendedor^PLU^Sector^Gramos`).
+* **Gestión Mono-Cliente Lantronix**: Pausa suave y reanudación automática de lectura para evitar saturar el hardware al descargar catálogos completos.
+
+---
+
+## 👥 Separación Estricta de Roles
+
+| Módulo / Capacidad | Rol Dueño (`ADMIN`) | Rol Encargado (`ENCARGADO`) |
+| :--- | :---: | :---: |
+| **Visor de 2 Básculas en Tiempo Real** | ❌ (Solo supervisión) | ✅ **100% Pantalla Principal** |
+| **Catálogo de Cortes (Precios/kg y PLUs)** | ❌ (Exclusivo de Tienda) | ✅ **Alta, Baja y Edición Local** |
+| **Recepción de Mercancía y Despiece** | ❌ | ✅ **Cálculo de Mermas y Cajas** |
+| **Pedidos de Tienda a Rastro** | ❌ | ✅ **Cálculo Cajas / Granel** |
+| **Unificación Maestra de Pedidos Multi-Tienda** | ✅ **100% Exclusivo Dueño** | ❌ |
+| **Directorio de Sucursales y PINs de Mostrador**| ✅ **100% Exclusivo Dueño** | ❌ |
+| **Directorio de Proveedores y Frigoríficos** | ✅ **100% Exclusivo Dueño** | ❌ |
+| **Acerca de SGNIA & Soporte Técnico** | ✅ | ✅ |
+
+---
+
+## 📱 Pantallas del Sistema
+
+### 🔐 Acceso y Seguridad
+1. **`SplashScreen.kt`**: Video loop institucional nativo (`logovideo.mp4`) con fallback gráfico de marca (`sglogo.png`).
+2. **`LegalAcceptanceScreen.kt`**: Pantalla inicial obligatoria para primera apertura tras instalar. Bloquea el acceso hasta que el usuario lea y marque los Términos y el Aviso de Privacidad. Consentimiento almacenado en **Jetpack DataStore** para no volver a interrumpir la operación.
+3. **`DocumentReaderScreen.kt`**: Lector de Términos y Condiciones / Aviso de Privacidad con secciones numeradas, placeholders legales y enlace web.
+4. **`SecurityVaultScreen.kt`**: Login corporativo con teclado numérico ampliado (68dp), selector visual de rol e ingreso de PIN de 4 dígitos.
+
+### 👔 Consola del Dueño (Admin)
+5. **`ExecutiveOwnerDashboardScreen.kt`**: Métricas de red, volumen total pedido, costos estimados, distribución por tienda y accesos ejecutivos.
+6. **`MasterOrderUnificationScreen.kt`**: Consolidación inteligente de todas las sucursales, desglose por corte y exportación con 1 toque a WhatsApp y PDF VIP.
+7. **`AdminBranchesScreen.kt`**: Gestión de tiendas, encargados asignados, teléfonos de contacto y PIN de mostrador.
+8. **`AdminSuppliersScreen.kt`**: Directorio de rastros, frigoríficos y categorías cárnicas suministradas.
+9. **`AdminSecurityScreen.kt`**: Bóveda protegida para actualización del PIN maestro del Dueño.
+
+### 🏪 Operación de Tienda (Encargado)
+10. **`IndustrialScaleVisorScreen.kt`**: Visor industrial de **Báscula 1** y **Báscula 2**, tara automática, selector de corte, panel BottomSheet para ajustes rápidos de precio (`-$10`, `-$5`, `+$5`, `+$10`) e importe en tiempo real.
+11. **`AdminCatalogScreen.kt`**: Catálogo local de cortes con buscador instantáneo, chips de categorías y productos derivados.
+12. **`StockReceptionScreen.kt`**: Recepción con pesaje directo de báscula, escáner de códigos de barras por cámara (`CameraX` + `ML Kit`) y alta al vuelo de cortes nuevos.
+13. **`OrdersScreen.kt`**: Cálculo de faltantes comparando existencias vs. stock máximo con redondeo automático hacia arriba en cajas cerradas (`ceil(shortage / pesoCaja)`).
+14. **`ManagerInvestmentScreen.kt`**: Módulo independiente de inversión local (bolsitas, botanas, chicharrón, manteca) con vista conmutable de tabla o tarjetas.
+15. **`SettingsScreen.kt`**: Configuración de IPs locales, puertos TCP de básculas y mantenimiento del sistema.
+16. **`AboutSgniaScreen.kt`**: Identidad corporativa de **SGNIA COMPANY**, fundador Gamaliel Velazquez Galicia (`GV`), soporte técnico por WhatsApp directo, correo, Google Maps y enlace a `sgnia.xyz`.
+
+---
+
+## 🛠️ Tecnologías y Librerías
+
+* **Lenguaje**: Kotlin 2.1.20
+* **Framework UI**: Jetpack Compose con BOM oficial 2026 y Material 3
+* **Persistencia Local**: Room SQLite con KSP (`androidx.room`)
+* **Preferencias Seguras**: Jetpack DataStore Preferences (`androidx.datastore:datastore-preferences`)
+* **Hardware de Red**: Sockets TCP/IP puros y protocolo binario Systel Cuora
+* **Visión Artificial**: Android CameraX y Google ML Kit Barcode Scanning
+* **Reportes Vectoriales**: Generador de PDF nativo Android (`PdfDocument`) y formateador de textos enriquecidos para WhatsApp
+
+---
+
+## 🧪 Pruebas Automatizadas y Calidad
+
+El proyecto cuenta con una suite integral de **33 pruebas unitarias automatizadas** que certifican el protocolo binario de pesaje, la extracción de PLUs y el parseo de códigos de barras:
 
 ```powershell
-# Ejecutar las 30 pruebas unitarias automatizadas
+# Ejecutar la suite completa de pruebas unitarias
 .\gradlew.bat testDebugUnitTest
 
-# Compilar el archivo APK instalable
+# Compilar y empaquetar el APK final de producción / depuración
 .\gradlew.bat assembleDebug
 ```
 
-* **Estado de Compilación**: `BUILD SUCCESSFUL` (Kotlin 2.1.20, Android SDK 36, Compose BOM 2026.03.01).
-* **Pruebas Unitarias**: 30 pruebas aprobadas en `MeatBarcodeParserTest.kt` (0 errores).
+> **Resultado**: `BUILD SUCCESSFUL` (33/33 pruebas superadas al 100%, 0 fallos).  
+> **Ubicación del APK**: `app/build/outputs/apk/debug/app-debug.apk`
 
 ---
 
-## 📱 ¿Cómo Instalar la App en un Dispositivo Android?
+## 🏢 Acerca de SGNIA COMPANY
 
-1. Conecta tu teléfono o tableta Android a la computadora por USB con la **Depuración USB activada** y ejecuta:
-   ```powershell
-   .\gradlew.bat installDebug
-   ```
-2. O copia directamente el archivo APK generado desde tu computadora a tu celular:
-   `C:\Users\gmlve\Downloads\Inventario\app\build\outputs\apk\debug\app-debug.apk`
+```
+  ____   ____ _   _ ___    _       ____ ___  __  __ ____   QUÉ PROTEGE Y HACE
+ / ___| / ___| \ | |_ _|  / \     / ___/ _ \|  \/  |  _ \  CRECER TU NEGOCIO
+ \___ \| |  _|  \| || |  / _ \   | |  | | | | |\/| | |_) | 
+  ___) | |_| | |\  || | / ___ \  | |__| |_| | |  | |  __/  Software Industrial
+ |____/ \____|_| \_|___/_/   \_\  \____\___/|_|  |_|_|     de Alto Rendimiento
+```
+
+* **Empresa**: **SGNIA COMPANY** (Software & Innovación Digital)
+* **Fundador & Dirección**: **Gamaliel Velazquez Galicia**
+* **Lema**: *“Software que Protege y Hace Crecer tu Negocio”*
+* **Sitio Web Oficial**: [https://sgnia.xyz](https://sgnia.xyz)
+* **Soporte Técnico WhatsApp**: [+52 276 109 5688](https://wa.me/522761095688)
+* **Correo de Contacto**: `gmlvega0025@gmail.com`
+* **Ubicación**: Juan Jiménez 405, Centro, 75120 Nopalucan de la Granja, Puebla, México.
+* **Redes Sociales**: TikTok [@sgn_ia](https://www.tiktok.com/@sgn_ia) • GitHub [@Gamavg06](https://github.com/Gamavg06)
+
+---
+
+<div align="center">
+  <sub>© 2026 SGNIA COMPANY. Todos los derechos reservados. Desarrollado con excelencia técnica para la industria cárnica.</sub>
+</div>

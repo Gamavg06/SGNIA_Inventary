@@ -45,14 +45,21 @@ import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
 import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
 import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.ui.screens.inventory.QendraCatalogImportDialog
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.NetworkCheck
 
 @Composable
 fun SettingsScreen(
     viewModel: InventoryViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenAbout: () -> Unit = {}
 ) {
     val scalesList by viewModel.scalesList.collectAsState()
+    val scaleState by viewModel.scaleState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
     var isScaleConfigDialogOpen by remember { mutableStateOf(false) }
@@ -113,7 +120,7 @@ fun SettingsScreen(
         }
 
         // ==========================================================
-        // TARJETA 03. CONFIGURAR BÁSCULAS EN RED
+        // TARJETA 03. RED DE BÁSCULAS (SINCRONIZACIÓN TCP/IP)
         // ==========================================================
         item {
             Column(
@@ -132,7 +139,7 @@ fun SettingsScreen(
                 ) {
                     Column {
                         Text("03.", fontSize = 18.sp, fontWeight = FontWeight.Black, color = creamPrimary)
-                        Text("Red de Básculas TCP/IP", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = creamWarm)
+                        Text("Red de Básculas", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = creamWarm)
                     }
                     Row(
                         modifier = Modifier
@@ -145,7 +152,7 @@ fun SettingsScreen(
                         Box(
                             modifier = Modifier
                                 .size(7.dp)
-                                .background(if (onlineCount > 0) creamPrimary else textMuted, CircleShape)
+                                .background(if (onlineCount > 0) Color(0xFF4ADE80) else textMuted, CircleShape)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -158,11 +165,37 @@ fun SettingsScreen(
                 }
 
                 Text(
-                    text = "Conexión simultánea activa: Báscula 1 y Báscula 2 transmiten en paralelo sin desconectarse, con servicio WakeLock en segundo plano.",
+                    text = "Sincronización de Red TCP/IP: configura IP/puerto, realiza pruebas de Ping, monitorea tráfico recibido o restablece IPs oficiales (.40 y .50).",
                     fontSize = 11.sp,
                     color = textMuted,
                     lineHeight = 15.sp
                 )
+
+                // Telemetría de Tráfico Recibido
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF121110))
+                        .border(1.dp, cardBorder, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Tráfico recibido: ${scaleState.totalBytesReceived} bytes",
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = creamPrimary
+                    )
+                    Text(
+                        text = scaleState.communicationMode,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        color = creamWarm
+                    )
+                }
 
                 Button(
                     onClick = { isScaleConfigDialogOpen = true },
@@ -172,13 +205,81 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .height(48.dp)
                 ) {
-                    Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.NetworkCheck, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "CONFIGURAR BÁSCULAS (${scalesList.size} REGISTRADAS)",
+                        text = "PING Y EDITAR IP / PUERTO (${scalesList.size} BÁSCULAS)",
                         fontWeight = FontWeight.Black,
                         fontSize = 12.sp
                     )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { viewModel.resetToOfficialScaleIps() },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = creamWarm),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                    ) {
+                        Icon(Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Restablecer IPs (.40/.50)", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = { viewModel.openQendraImportDialog() },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = creamPrimary),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                    ) {
+                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Catálogo Qendra", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+
+        // ==========================================================
+        // TARJETA: ACERCA DE SGNIA COMPANY & SOPORTE
+        // ==========================================================
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text("SGNIA COMPANY", fontSize = 16.sp, fontWeight = FontWeight.Black, color = creamPrimary)
+                    Text("Software & Soporte Técnico • v1.0.0", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = creamWarm)
+                }
+
+                Text(
+                    text = "Soporte técnico directo vía WhatsApp (+52 276 109 5688), contacto del desarrollador y arquitectura offline.",
+                    fontSize = 11.sp,
+                    color = textMuted
+                )
+
+                Button(
+                    onClick = onOpenAbout,
+                    colors = ButtonDefaults.buttonColors(containerColor = creamWarm, contentColor = darkText),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text("VER INFORMACIÓN DE SGNIA & SOPORTE", fontWeight = FontWeight.Black, fontSize = 11.sp)
                 }
             }
         }
@@ -309,6 +410,13 @@ fun SettingsScreen(
         ScaleNetworkConfigDialog(
             viewModel = viewModel,
             onDismiss = { isScaleConfigDialogOpen = false }
+        )
+    }
+
+    if (uiState.isQendraImportOpen) {
+        QendraCatalogImportDialog(
+            viewModel = viewModel,
+            onDismiss = { viewModel.closeQendraImportDialog() }
         )
     }
 }

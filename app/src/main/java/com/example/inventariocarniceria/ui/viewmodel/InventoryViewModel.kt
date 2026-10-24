@@ -86,7 +86,8 @@ data class InventoryUiState(
     val quickCreateCode: Int? = null,
     val isPriceAdjustmentOpen: Boolean = false,
     val isQendraImportOpen: Boolean = false,
-    val isDespieceOpen: Boolean = false
+    val isDespieceOpen: Boolean = false,
+    val detectedScalePlu: Int? = null
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -214,9 +215,33 @@ class InventoryViewModel(
         viewModelScope.launch {
             scaleState.collectLatest { state ->
                 val plu = state.lastPluCode
-                if (plu != null && plu.toString() != _uiState.value.codeInput) {
-                    onCodeInputChanged(plu.toString())
+                if (plu != null && plu > 0 && plu != _uiState.value.detectedScalePlu) {
+                    onScalePluDetected(plu)
                 }
+            }
+        }
+    }
+
+    fun onScalePluDetected(pluCode: Int) {
+        viewModelScope.launch {
+            val products = allProducts.value
+            val found = products.find { it.localCode == pluCode || it.code == pluCode }
+            if (found != null) {
+                _uiState.value = _uiState.value.copy(
+                    codeInput = found.localCode.toString(),
+                    selectedProduct = found,
+                    isProductNotFound = false,
+                    detectedScalePlu = pluCode,
+                    snackbarMessage = "🥩 Báscula: PLU #$pluCode detectado (${found.name})"
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    codeInput = pluCode.toString(),
+                    selectedProduct = null,
+                    isProductNotFound = true,
+                    detectedScalePlu = pluCode,
+                    snackbarMessage = "⚖️ Báscula: PLU #$pluCode recibido (no registrado en catálogo aún)"
+                )
             }
         }
     }

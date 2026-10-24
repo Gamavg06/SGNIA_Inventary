@@ -111,4 +111,61 @@ class ScaleFrameParserTest {
         assertEquals(0.0, err!!.weight, 0.0001)
         assertEquals("PE4", err.errorCode)
     }
+
+    @Test
+    fun `parseCuoraPluListResponse decodes Function 31 PLU list for both Cuora Max 6-digit and Cuora 2 4-digit`() {
+        val rawMax = ScaleFrameParser.buildCuoraCommand(1, 31, "N000001V0N000024V1N000105V2F")
+        val listMax = ScaleFrameParser.parseCuoraPluListResponse(rawMax)
+        assertEquals(3, listMax.size)
+        assertEquals(1 to true, listMax[0])
+        assertEquals(24 to true, listMax[1])
+        assertEquals(105 to true, listMax[2])
+
+        val rawCuora2 = ScaleFrameParser.buildCuoraCommand(2, 31, "N0001V0N0024V1F")
+        val listCuora2 = ScaleFrameParser.parseCuoraPluListResponse(rawCuora2)
+        assertEquals(2, listCuora2.size)
+        assertEquals(1 to false, listCuora2[0])
+        assertEquals(24 to false, listCuora2[1])
+    }
+
+    @Test
+    fun `parseCuoraSinglePluResponse decodes Function 62 V7_0 V6_2 and Function 3 V4_0 accurately`() {
+        val sectors = mapOf(1 to "RES", 2 to "CERDO", 5 to "LACTEOS")
+
+        // 1. Prueba con trama oficial de Form1.vb (Función 3 - Cuora V4.0):
+        val vbData = "00012Activia Bebible Fr00050000050000001050000U000000SSOtros datos"
+        val vbPacket = ScaleFrameParser.buildCuoraCommand(1, 3, vbData)
+        val parsedVb = ScaleFrameParser.parseCuoraSinglePluResponse(vbPacket, vbPacket.size, priceDecimals = 2, sectorsMap = sectors)
+        assertNotNull(parsedVb)
+        assertEquals(1, parsedVb!!.code)
+        assertEquals("Activia Bebible Fr", parsedVb.name)
+        assertEquals(5.00, parsedVb.price, 0.001)
+        assertEquals("LACTEOS", parsedVb.section)
+
+        // 2. Prueba con trama oficial Función 62 (Cuora Max V6.2):
+        // [6 NroPLU: 000024][1 Gestión: 0][18 Nombre: MANITAS DE PUERCO ][6 Precio1: 007500][6 Precio2: 007500][6 CodPLU: 000024][2 Sector: 02][4 Vto: 0000][1 Tipo: P]
+        val v62Data = "000024" + "0" + "MANITAS DE PUERCO " + "007500" + "007500" + "000024" + "02" + "0000" + "P" + "0000"
+        val v62Packet = ScaleFrameParser.buildCuoraCommand(1, 62, v62Data)
+        val parsedV62 = ScaleFrameParser.parseCuoraSinglePluResponse(v62Packet, v62Packet.size, priceDecimals = 2, sectorsMap = sectors)
+        assertNotNull(parsedV62)
+        assertEquals(24, parsedV62!!.code)
+        assertEquals("MANITAS DE PUERCO", parsedV62.name)
+        assertEquals(75.00, parsedV62.price, 0.001)
+        assertEquals("CERDO", parsedV62.section)
+    }
+
+    @Test
+    fun `ASCII parse extracts PLU and weight from Cuora Function 72 and ticket frames`() {
+        val func72 = "000000123^23/10/26^14:30:00^01^000024^02^0000^01250^00000^000000009375F"
+        val res72 = ScaleFrameParser.parse(func72)
+        assertNotNull(res72)
+        assertEquals(24, res72!!.pluCode)
+        assertEquals(1.250, res72.weight, 0.0001)
+
+        val ticket = "01;24;1.060;75.00#"
+        val resTicket = ScaleFrameParser.parse(ticket)
+        assertNotNull(resTicket)
+        assertEquals(24, resTicket!!.pluCode)
+        assertEquals(1.060, resTicket.weight, 0.0001)
+    }
 }

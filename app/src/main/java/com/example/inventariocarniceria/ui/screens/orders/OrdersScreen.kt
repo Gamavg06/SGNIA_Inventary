@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,19 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -44,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -53,9 +47,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.InventoryCaptureEntity
 import com.example.inventariocarniceria.data.local.ProductEntity
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.ui.design.BentoCard
+import com.example.inventariocarniceria.ui.design.BigMetric
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirPrimaryButton
+import com.example.inventariocarniceria.ui.design.NoirRadius
+import com.example.inventariocarniceria.ui.design.NoirSecondaryButton
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import com.example.inventariocarniceria.utils.PdfExporter
 import com.example.inventariocarniceria.utils.WhatsAppExporter
@@ -75,14 +77,6 @@ fun OrdersScreen(
     var isManualOrderOpen by remember { mutableStateOf(false) }
     var selectedOrderProduct by remember { mutableStateOf<ProductEntity?>(null) }
     var selectedCategoryFilter by remember { mutableStateOf("Todas") }
-
-    val matteBg = Color(0xFF0F0E0D)
-    val cardBg = Color(0xFF181715)
-    val cardBorder = Color(0xFF282623)
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-    val darkText = Color(0xFF141312)
 
     val productMap = remember(allProducts) {
         allProducts.associateBy { it.code }
@@ -132,91 +126,100 @@ fun OrdersScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(matteBg)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .background(NoirColors.Background)
+            .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+        verticalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
     ) {
-        // ==========================================================
-        // SALUDO EJECUTIVO ESTILO CERHAN
-        // ==========================================================
-        item {
-            SgniaCerhanGreetingHeader(
-                userName = "Pedidos de Surtido",
-                subtitle = "Requisición de Cajas y Cortes Faltantes • ${uiState.currentBranch.ifBlank { "Sucursal" }}"
-            )
-        }
-
-        // ==========================================================
-        // TARJETAS NUMERADAS 01. Y 02.
-        // ==========================================================
+        // ENCABEZADO
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "01.",
-                    title = "Total a Pedir",
-                    subtitle = String.format(Locale.US, "%.2f kg • %d Cajas", totalShortageKg, totalBoxesCount),
-                    icon = Icons.Default.ShoppingCart,
-                    showWaveChart = true
-                )
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "02.",
-                    title = "En Requisición",
-                    subtitle = "${nonDerivedOrders.size} cortes por surtir",
-                    icon = Icons.Default.Inventory2,
-                    showWaveChart = false
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    NoirLabel("MOSTRADOR · ${uiState.currentBranch.uppercase()}", color = NoirColors.Gold)
+                    Text(
+                        text = "Pedidos de Surtido",
+                        style = NoirType.display.copy(fontSize = 24.sp),
+                        color = NoirColors.TextPrimary
+                    )
+                    Text(
+                        text = "Requisición inteligente de faltantes a rastro y mayoreo",
+                        style = NoirType.bodySmall,
+                        color = NoirColors.TextMuted
+                    )
+                }
+
+                if (nonDerivedOrders.isNotEmpty()) {
+                    IconButton(
+                        onClick = { viewModel.clearAllCaptures() },
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(NoirRadius.sm))
+                            .background(NoirColors.SurfaceRaised)
+                            .border(1.dp, NoirColors.Hairline, RoundedCornerShape(NoirRadius.sm))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteSweep,
+                            contentDescription = "Limpiar Pedido",
+                            tint = NoirColors.Danger,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
         }
 
-        // ==========================================================
-        // BOTÓN PRINCIPAL AGREGAR PRODUCTO + CHIPS DE FILTRO
-        // ==========================================================
+        // BENTO HERO
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(cardBg)
-                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                BentoCard(
+                    modifier = Modifier.weight(1.1f),
+                    contentPadding = PaddingValues(NoirSpace.md)
                 ) {
-                    Button(
-                        onClick = {
-                            selectedOrderProduct = null
-                            isManualOrderOpen = true
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Agregar Corte / Caja al Pedido", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                    }
-
-                    if (nonDerivedOrders.isNotEmpty()) {
-                        OutlinedButton(
-                            onClick = { viewModel.clearAllCaptures() },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = creamWarm),
-                            modifier = Modifier.height(46.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Limpiar", modifier = Modifier.size(16.dp))
-                        }
-                    }
+                    BigMetric(
+                        value = String.format(Locale.US, "%.1f", totalShortageKg),
+                        label = "FALTANTE TOTAL",
+                        unit = "KG",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.Cream
+                    )
+                    StatusPill("$totalBoxesCount CAJAS ESTIMADAS", tone = PillTone.Positive)
                 }
+
+                BentoCard(
+                    modifier = Modifier.weight(0.9f),
+                    contentPadding = PaddingValues(NoirSpace.md)
+                ) {
+                    BigMetric(
+                        value = "${nonDerivedOrders.size}",
+                        label = "EN REQUISICIÓN",
+                        unit = "LÍNEAS",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.TextPrimary
+                    )
+                    StatusPill("POR ENVIAR", tone = PillTone.Pending)
+                }
+            }
+        }
+
+        // BOTÓN AGREGAR MANUAL + FILTROS
+        item {
+            BentoCard(
+                contentPadding = PaddingValues(NoirSpace.md),
+                verticalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+            ) {
+                NoirPrimaryButton(
+                    text = "Agregar Corte / Caja al Pedido",
+                    icon = Icons.Default.Add,
+                    onClick = {
+                        selectedOrderProduct = null
+                        isManualOrderOpen = true
+                    }
+                )
 
                 val orderCategories = listOf("Todas", "Carnicería", "Lácteos y Quesos", "Jamones y Embutidos", "Cremería y Abarrotes")
                 LazyRow(
@@ -225,79 +228,72 @@ fun OrdersScreen(
                 ) {
                     items(orderCategories) { cat ->
                         val isSelected = cat == selectedCategoryFilter
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedCategoryFilter = cat },
-                            label = {
-                                Text(
-                                    text = cat,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = creamPrimary,
-                                selectedLabelColor = darkText,
-                                containerColor = Color(0xFF121110),
-                                labelColor = textMuted
+                        val bg = if (isSelected) NoirColors.Cream else NoirColors.SurfaceRaised
+                        val fg = if (isSelected) NoirColors.OnCream else NoirColors.TextSecondary
+                        val border = if (isSelected) NoirColors.Cream else NoirColors.Hairline
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(NoirRadius.pill))
+                                .background(bg)
+                                .border(1.dp, border, RoundedCornerShape(NoirRadius.pill))
+                                .clickable { selectedCategoryFilter = cat }
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = cat.uppercase(),
+                                style = NoirType.label.copy(fontSize = 10.sp),
+                                color = fg
                             )
-                        )
+                        }
                     }
                 }
             }
         }
 
-        // ==========================================================
-        // TARJETA 03. TABLA DE REQUISICIÓN DE PEDIDO
-        // ==========================================================
+        // TABLA BENTO GRID: REQUISICIÓN DE PEDIDO
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(cardBg)
-                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            BentoCard(
+                contentPadding = PaddingValues(NoirSpace.md),
+                verticalArrangement = Arrangement.spacedBy(NoirSpace.xs)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFF121110))
+                        .clip(RoundedCornerShape(NoirRadius.sm))
+                        .background(NoirColors.SurfaceSunken)
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("CÓD", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
-                    Text("PRODUCTO", modifier = Modifier.weight(1.8f), fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
-                    Text("EXISTENCIA", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = textMuted)
-                    Text("A PEDIR", modifier = Modifier.weight(1.4f), fontWeight = FontWeight.Black, fontSize = 11.sp, textAlign = TextAlign.End, color = creamPrimary)
-                    Spacer(modifier = Modifier.width(64.dp))
+                    Text("PLU", modifier = Modifier.weight(0.6f), style = NoirType.label.copy(fontSize = 11.sp), color = NoirColors.TextSecondary)
+                    Text("PRODUCTO", modifier = Modifier.weight(1.8f), style = NoirType.label.copy(fontSize = 11.sp), color = NoirColors.TextSecondary)
+                    Text("EXISTE", modifier = Modifier.weight(1.0f), style = NoirType.label.copy(fontSize = 11.sp), textAlign = TextAlign.End, color = NoirColors.TextMuted)
+                    Text("A PEDIR", modifier = Modifier.weight(1.4f), style = NoirType.label.copy(fontSize = 11.sp), textAlign = TextAlign.End, color = NoirColors.Cream)
+                    Spacer(modifier = Modifier.width(60.dp))
                 }
 
                 if (displayOrders.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 24.dp),
+                            .padding(vertical = 32.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
                                 text = if (nonDerivedOrders.isEmpty()) "No hay pedidos pendientes" else "Sin pedidos en esta categoría",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = creamPrimary
+                                style = NoirType.title,
+                                color = NoirColors.TextPrimary
                             )
                             Text(
-                                text = "Toca 'Agregar Corte / Caja al Pedido' arriba para capturar faltantes.",
-                                fontSize = 11.sp,
-                                color = textMuted
+                                text = "Usa 'Agregar Corte / Caja al Pedido' arriba para ingresar faltantes.",
+                                style = NoirType.bodySmall,
+                                color = NoirColors.TextMuted
                             )
                         }
                     }
                 } else {
-                    displayOrders.forEach { order ->
+                    displayOrders.forEachIndexed { index, order ->
                         val product = productMap[order.productCode]
                         OrderItemRow(
                             order = order,
@@ -310,119 +306,62 @@ fun OrdersScreen(
                                 viewModel.deleteOrderItem(order.productCode)
                             }
                         )
-                        HorizontalDivider(color = cardBorder)
+                        if (index < displayOrders.lastIndex) {
+                            HorizontalDivider(color = NoirColors.Hairline, thickness = 0.5.dp)
+                        }
                     }
                 }
             }
         }
 
-        // ==========================================================
-        // TARJETA 04. EXPORTACIÓN EJECUTIVA (WHATSAPP / PDF)
-        // ==========================================================
+        // ACCIONES DE ENVÍO Y REPORTES
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(cardBg)
-                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
             ) {
-                Text(
-                    text = "04. Exportar Pedido y Corte",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Black,
-                    color = creamPrimary
+                NoirPrimaryButton(
+                    text = "WhatsApp Tienda",
+                    icon = Icons.Default.Share,
+                    enabled = nonDerivedOrders.isNotEmpty(),
+                    onClick = { WhatsAppExporter.shareToWhatsApp(context, nonDerivedOrders) },
+                    modifier = Modifier.weight(1.2f)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = { WhatsAppExporter.shareToWhatsApp(context, nonDerivedOrders) },
-                        enabled = nonDerivedOrders.isNotEmpty(),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = creamPrimary,
-                            contentColor = darkText,
-                            disabledContainerColor = Color(0xFF23211E),
-                            disabledContentColor = textMuted
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("WhatsApp", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                    }
 
-                    Button(
-                        onClick = {
-                            PdfExporter.generateAndShareVipInventoryPdf(
-                                context = context,
-                                orders = nonDerivedOrders,
-                                allProducts = allProducts,
-                                branchName = uiState.currentBranch,
-                                managerName = "Encargado (${uiState.currentBranch})"
-                            )
-                        },
-                        enabled = nonDerivedOrders.isNotEmpty(),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = creamWarm,
-                            contentColor = darkText,
-                            disabledContainerColor = Color(0xFF23211E),
-                            disabledContentColor = textMuted
-                        )
-                    ) {
-                        Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("PDF Pedido", fontWeight = FontWeight.Black, fontSize = 12.sp)
-                    }
-                }
-
-                OutlinedButton(
+                NoirSecondaryButton(
+                    text = "PDF Pedido",
+                    icon = Icons.Default.PictureAsPdf,
+                    enabled = nonDerivedOrders.isNotEmpty(),
                     onClick = {
-                        val salesSource = if (recentCaptures.isNotEmpty()) recentCaptures else nonDerivedOrders
-                        PdfExporter.generateAndShareVipSalesReport(
+                        PdfExporter.generateAndShareVipInventoryPdf(
                             context = context,
-                            captures = salesSource,
+                            orders = nonDerivedOrders,
                             allProducts = allProducts,
                             branchName = uiState.currentBranch,
                             managerName = "Encargado (${uiState.currentBranch})"
                         )
                     },
-                    enabled = nonDerivedOrders.isNotEmpty() || recentCaptures.isNotEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(46.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = creamPrimary)
-                ) {
-                    Icon(imageVector = Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("GENERAR CORTE DE VENTAS (PDF)", fontWeight = FontWeight.Black, fontSize = 11.sp)
-                }
+                    modifier = Modifier.weight(0.9f)
+                )
             }
         }
 
-        // ==========================================================
-        // RESUMEN GLOBAL DE SURTIDO
-        // ==========================================================
         item {
-            SgniaCerhanGlobalSummaryCard(
-                metric1Label = "Faltante Total",
-                metric1Value = String.format(Locale.US, "%.2f kg", totalShortageKg),
-                metric1Sub = "$totalBoxesCount Cajas / Paquetes estimados",
-                metric2Label = "Líneas de Pedido",
-                metric2Value = "${nonDerivedOrders.size} Cortes",
-                metric2Sub = "Listos para surtido central",
-                barValues = listOf(0.50f, 0.82f, 0.64f, 0.91f, 0.58f, 0.87f, 0.75f, 0.96f)
+            NoirSecondaryButton(
+                text = "GENERAR CORTE DE VENTAS (PDF)",
+                icon = Icons.Default.PictureAsPdf,
+                enabled = nonDerivedOrders.isNotEmpty() || recentCaptures.isNotEmpty(),
+                onClick = {
+                    val salesSource = if (recentCaptures.isNotEmpty()) recentCaptures else nonDerivedOrders
+                    PdfExporter.generateAndShareVipSalesReport(
+                        context = context,
+                        captures = salesSource,
+                        allProducts = allProducts,
+                        branchName = uiState.currentBranch,
+                        managerName = "Encargado (${uiState.currentBranch})"
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -451,10 +390,6 @@ fun OrderItemRow(
     onItemClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-
     val effectiveUnitType = if (order.unitType.isNotBlank() && order.unitType != "KG") order.unitType else (product?.orderUnitType ?: "KG")
     val boxWeight = product?.weightPerBoxKg ?: 0.0
 
@@ -462,26 +397,26 @@ fun OrderItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onItemClick() }
-            .padding(horizontal = 8.dp, vertical = 10.dp),
+            .padding(horizontal = 4.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val codeFormatted = String.format(Locale.US, "%03d", order.productCode)
 
         Text(
             text = codeFormatted,
-            modifier = Modifier.weight(0.5f),
+            modifier = Modifier.weight(0.6f),
             fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Black,
+            fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
-            color = creamWarm
+            color = NoirColors.Gold
         )
 
         Column(modifier = Modifier.weight(1.8f)) {
             Text(
                 text = order.productName,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = creamPrimary
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = NoirColors.TextPrimary
             )
             val packNote = when (effectiveUnitType) {
                 "BARRA" -> "Barra ~${boxWeight} kg"
@@ -495,22 +430,23 @@ fun OrderItemRow(
             if (packNote != null) {
                 Text(
                     text = packNote,
-                    fontSize = 10.sp,
-                    color = textMuted
+                    fontSize = 11.sp,
+                    color = NoirColors.TextMuted
                 )
             }
         }
 
-        val stockDisplay = String.format(Locale.US, "%.2f kg", order.capturedWeight)
+        val stockDisplay = String.format(Locale.US, "%.1f kg", order.capturedWeight)
         Text(
             text = stockDisplay,
-            modifier = Modifier.weight(1.1f),
-            fontSize = 11.sp,
+            modifier = Modifier.weight(1.0f),
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp,
             textAlign = TextAlign.End,
-            color = textMuted
+            color = NoirColors.TextMuted
         )
 
-        val kgFormatted = String.format(Locale.US, "%.2f", order.shortage)
+        val kgFormatted = String.format(Locale.US, "%.1f", order.shortage)
         val unitsToOrder = if (order.orderedUnits > 0) {
             order.orderedUnits
         } else if (boxWeight > 0 && order.shortage > 0) {
@@ -518,45 +454,47 @@ fun OrderItemRow(
         } else 0.0
 
         val toOrderDisplay = when (effectiveUnitType) {
-            "CAJA" -> "${unitsToOrder.toInt()} CAJA(S)\n(~$kgFormatted kg)"
-            "BARRA" -> "${unitsToOrder.toInt()} BARRA(S)\n(~$kgFormatted kg)"
-            "PAQUETE" -> "${unitsToOrder.toInt()} PQTE(S)\n(~$kgFormatted kg)"
-            "BOLSA" -> "${unitsToOrder.toInt()} BOLSA(S)\n(~$kgFormatted kg)"
-            else -> String.format(Locale.US, "%.2f kg", order.shortage)
+            "CAJA" -> "${unitsToOrder.toInt()} CAJAS\n(~$kgFormatted kg)"
+            "BARRA" -> "${unitsToOrder.toInt()} BARRAS\n(~$kgFormatted kg)"
+            "PAQUETE" -> "${unitsToOrder.toInt()} PQTES\n(~$kgFormatted kg)"
+            "BOLSA" -> "${unitsToOrder.toInt()} BOLSAS\n(~$kgFormatted kg)"
+            else -> String.format(Locale.US, "%.1f kg", order.shortage)
         }
 
         Text(
             text = toOrderDisplay,
             modifier = Modifier.weight(1.4f),
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Black,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.End,
-            color = creamPrimary
+            color = NoirColors.Cream
         )
 
         Row(
+            modifier = Modifier.width(60.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End
         ) {
             IconButton(
                 onClick = onItemClick,
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Editar",
-                    tint = creamWarm,
+                    tint = NoirColors.Cream,
                     modifier = Modifier.size(16.dp)
                 )
             }
             IconButton(
                 onClick = onDeleteClick,
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Eliminar",
-                    tint = textMuted,
+                    tint = NoirColors.Danger,
                     modifier = Modifier.size(16.dp)
                 )
             }

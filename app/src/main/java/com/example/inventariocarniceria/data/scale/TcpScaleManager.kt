@@ -115,29 +115,226 @@ object ScaleFrameParser {
     // 10. Entero con signo de 4-5 dígitos (ej: "+1250" -> 1.250 kg)
     private val signedIntRegex = Regex("""([+-])\s*(\d{4,5})\b""")
 
-    // 11. PLU / Código de artículo
-    private val pluRegex = Regex("""(?:PLU|COD|ART|ITEM)[:;\s=]+(\d+)""", RegexOption.IGNORE_CASE)
+    // 11. PLU / Código de artículo (ej. "PLU:24", "PLU 24", "COD:24", "ART: 24", "P0024")
+    private val pluRegex = Regex("""(?:PLU|COD|ART|ITEM)[:;\s=]*#?(\d{1,5})\b""", RegexOption.IGNORE_CASE)
+    private val pluPrefixSinglePRegex = Regex("""^P0*([1-9]\d{0,4})#?$""", RegexOption.IGNORE_CASE)
+
+    /**
+     * Construye cualquier trama oficial del protocolo Systel Cuora Max V7.0 / V6.2 / Cuora 2 V4.0:
+     * [Dirección (1 byte: 0..99)] + [Función (1 byte)] + [Cadena de datos ASCII] + [Verificación XOR (1 byte)]
+     */
+    fun buildCuoraCommand(scaleAddress: Int, functionCode: Int, asciiPayload: String = ""): ByteArray {
+        val addr = scaleAddress.coerceIn(0, 99).toByte()
+        val func = (functionCode and 0xFF).toByte()
+        val payloadBytes = asciiPayload.toByteArray(Charsets.ISO_8859_1)
+        val frame = ByteArray(2 + payloadBytes.size + 1)
+        frame[0] = addr
+        frame[1] = func
+        System.arraycopy(payloadBytes, 0, frame, 2, payloadBytes.size)
+        var crc = (addr.toInt() and 0xFF) xor (func.toInt() and 0xFF)
+        for (b in payloadBytes) {
+            crc = crc xor (b.toInt() and 0xFF)
+        }
+        frame[frame.size - 1] = crc.toByte()
+        return frame
+    }
 
     /**
      * Construye la trama oficial de 3 bytes para Solicitud de Peso, Estabilidad y Tara (Función 1)
      * según el "Protocolo de comunicación CUORA MAX V7.0 / V6.2 / CUORA 2 V4.0" (Pág. 3 y 4):
      * [Dirección (1 byte: 0..99)] + [Función (1 byte: 0x01)] + [Verificación XOR (1 byte: Dirección xor Función)]
      */
-    fun buildCuoraWeightRequest(scaleAddress: Int): ByteArray {
-        val addr = scaleAddress.coerceIn(0, 99).toByte()
-        val func: Byte = 0x01
-        val crc = (addr.toInt() xor func.toInt()).toByte()
-        return byteArrayOf(addr, func, crc)
-    }
+    fun buildCuoraWeightRequest(scaleAddress: Int): ByteArray = buildCuoraCommand(scaleAddress, 1)
+
+    /**
+     * Construye la trama oficial de 3 bytes para Solicitud de Firma Digital (Función 2 = 0x02)
+     */
+    fun buildCuoraDigitalSignatureRequest(scaleAddress: Int): ByteArray = buildCuoraCommand(scaleAddress, 2)
+
+    /**
+     * Construye la trama oficial de 3 bytes para Envío de Lista de Sectores (Función 11 = 0x0B)
+     */
+    fun buildCuoraSectorsListRequest(scaleAddress: Int): ByteArray = buildCuoraCommand(scaleAddress, 11)
 
     /**
      * Construye la trama oficial de 3 bytes para Solicitud de Estado / PING (Función 23 = 0x17)
      */
-    fun buildCuoraPingRequest(scaleAddress: Int): ByteArray {
-        val addr = scaleAddress.coerceIn(0, 99).toByte()
-        val func: Byte = 23.toByte()
-        val crc = (addr.toInt() xor func.toInt()).toByte()
-        return byteArrayOf(addr, func, crc)
+    fun buildCuoraPingRequest(scaleAddress: Int): ByteArray = buildCuoraCommand(scaleAddress, 23)
+
+    /**
+     * Construye la trama oficial de 3 bytes para Solicitud de Listado de Todos los PLU Cargados (Función 31 = 0x1F)
+     */
+    fun buildCuoraPluListRequest(scaleAddress: Int): ByteArray = buildCuoraCommand(scaleAddress, 31)
+
+    /**
+     * Construye la trama oficial para Solicitud de un PLU Extendido desde la balanza a la PC (Función 62 = 0x3E)
+     * Formato de datos: 6 números ASCII (000001 a 999999)
+     */
+    fun buildCuoraExtendedPluRequest(scaleAddress: Int, pluNumber: Int): ByteArray {
+        val param = String.format(java.util.Locale.US, "%06d", pluNumber.coerceIn(1, 999999))
+        return buildCuoraCommand(scaleAddress, 62, param)
+    }
+
+    /**
+     * Construye la trama oficial para Solicitud de un PLU estándar desde la balanza a la PC (Función 3 = 0x03)
+     * Usado en Cuora 2 V4.0 (4 dígitos: 0001..4000) o Cuora Max legado (6 dígitos)
+     */
+    fun buildCuoraLegacyPluRequest(scaleAddress: Int, pluNumber: Int, sixDigits: Boolean = false): ByteArray {
+        val param = if (sixDigits) {
+            String.format(java.util.Locale.US, "%06d", pluNumber.coerceIn(1, 999999))
+        } else {
+            String.format(java.util.Locale.US, "%04d", pluNumber.coerceIn(1, 9999))
+        }
+        return buildCuoraCommand(scaleAddress, 3, param)
+    }
+
+    /**
+     * Extrae la cantidad de decimales de precio ('0' o '2') de la respuesta a Función 2 (Firma Digital)
+     * Formato respuesta: [IP][0x02] FxxxxCxxxxxxSxxxxPxxxxxAxxxD[0|2] [CRC]
+     */
+    fun parseCuoraDigitalSignatureDecimals(bytes: ByteArray, length: Int = bytes.size): Int? {
+        if (length < 6) return null
+        val ascii = String(bytes, 0, length, Charsets.ISO_8859_1)
+        val match = Regex("""F\d{4}C\d{6}S\d{4}P\d{5}A\d{3}D(\d)""").find(ascii)
+            ?: Regex("""D([02])""").find(ascii)
+        return match?.groupValues?.get(1)?.toIntOrNull()
+    }
+
+    /**
+     * Decodifica la respuesta de Función 11 (Lista de sectores/secciones separadas por ';'):
+     * Formato respuesta: [IP][11] [01NOMBRE SECTOR     ;02OTRO SECTOR       ;] [CRC]
+     */
+    fun parseCuoraSectorsResponse(bytes: ByteArray, length: Int = bytes.size): Map<Int, String> {
+        if (length < 4) return emptyMap()
+        var start = 0
+        var end = length
+        if ((bytes[0].toInt() and 0xFF) in 1..99 && (bytes[1].toInt() and 0xFF) == 11) {
+            start = 2
+            end = (length - 1).coerceAtLeast(start)
+        }
+        val ascii = String(bytes, start, end - start, Charsets.ISO_8859_1)
+        val map = mutableMapOf<Int, String>()
+        ascii.split(";").forEach { token ->
+            val clean = token.filter { it in ' '..'~' }
+            if (clean.length >= 3) {
+                val secId = clean.substring(0, 2).toIntOrNull()
+                val secName = clean.substring(2).trim()
+                if (secId != null && secId in 1..99 && secName.isNotBlank()) {
+                    map[secId] = secName
+                }
+            }
+        }
+        return map
+    }
+
+    /**
+     * Decodifica la respuesta de Función 31 (Listado de todos los PLUs cargados en memoria):
+     * Formato respuesta: [IP][31] N000001V0N000002V1...F [CRC] (6 dígitos en Cuora Max, 4 dígitos en Cuora 2)
+     * Retorna lista de pares: (Número de PLU, esDe6Digitos)
+     */
+    fun parseCuoraPluListResponse(bytes: ByteArray, length: Int = bytes.size): List<Pair<Int, Boolean>> {
+        if (length < 4) return emptyList()
+        val ascii = String(bytes, 0, length, Charsets.ISO_8859_1)
+        val regex = Regex("""N(\d{4,6})V\d""")
+        val seen = mutableSetOf<Int>()
+        val result = mutableListOf<Pair<Int, Boolean>>()
+        regex.findAll(ascii).forEach { m ->
+            val rawNum = m.groupValues[1]
+            val pluNum = rawNum.toIntOrNull()
+            if (pluNum != null && pluNum > 0 && seen.add(pluNum)) {
+                result.add(pluNum to (rawNum.length == 6))
+            }
+        }
+        return result
+    }
+
+    /**
+     * Decodifica la respuesta de Función 62 (PLU Extendido Cuora Max V7.0 / V6.2) o Función 3 (PLU Cuora 2 V4.0):
+     * - Función 62 (V7.0): [6 dígitos Nro PLU][1 char Gestión][18 chars Nombre][10x6 dígitos Precios/Rangos][6 dígitos Código PLU][2 dígitos Sector][4 dígitos Vto][1 char Tipo Venta: P/U/E/C]...
+     * - Función 62 (V6.2): [6 dígitos Nro PLU][1 char Gestión][18 chars Nombre][2x6 dígitos Precios][6 dígitos Código PLU][2 dígitos Sector][4 dígitos Vto][1 char Tipo Venta: P/U/E/C]...
+     * - Función 3  (V4.0): [4 dígitos Nro PLU][1 char Versión][18 chars Nombre][2x6 dígitos Precios][5 dígitos Código PLU][2 dígitos Sección][4 dígitos Vto][1 char Tipo Venta: P/U]...
+     */
+    fun parseCuoraSinglePluResponse(
+        bytes: ByteArray,
+        length: Int = bytes.size,
+        priceDecimals: Int? = null,
+        sectorsMap: Map<Int, String> = emptyMap()
+    ): ParsedPluPreview? {
+        if (length < 30) return null
+        var start = 0
+        var end = length
+        val firstByte = bytes[0].toInt() and 0xFF
+        val secondByte = bytes[1].toInt() and 0xFF
+        if (firstByte in 1..99 && (secondByte == 62 || secondByte == 3)) {
+            start = 2
+            end = (length - 1).coerceAtLeast(start)
+        }
+        val ascii = String(bytes, start, end - start, Charsets.ISO_8859_1)
+
+        // 1. Intentar formato Función 62 (6 dígitos de Nro PLU al inicio)
+        val match62 = Regex("""^(\d{6})([0-9A-Za-z])(.{18})(\d{6})""").find(ascii)
+        if (match62 != null) {
+            val pluNum = match62.groupValues[1].toIntOrNull() ?: return null
+            val name = match62.groupValues[3].trim().ifBlank { "PLU $pluNum" }
+            val rawPrice1 = match62.groupValues[4].toLongOrNull() ?: 0L
+
+            var pluCode = pluNum
+            var sectorId = 1
+
+            if (ascii.length >= 98 && ascii[97] in "PUECpuec") {
+                // Cuora Max V7.0 (5 listas de precio + 5 rangos = 60 bytes desde offset 25 hasta 85)
+                pluCode = ascii.substring(85, 91).toIntOrNull()?.takeIf { it > 0 } ?: pluNum
+                sectorId = ascii.substring(91, 93).toIntOrNull()?.takeIf { it > 0 } ?: 1
+            } else if (ascii.length >= 50 && ascii[49] in "PUECpuec") {
+                // Cuora Max V6.2 (2 listas de precio = 12 bytes desde offset 25 hasta 37)
+                pluCode = ascii.substring(37, 43).toIntOrNull()?.takeIf { it > 0 } ?: pluNum
+                sectorId = ascii.substring(43, 45).toIntOrNull()?.takeIf { it > 0 } ?: 1
+            }
+
+            val price = when (priceDecimals) {
+                2 -> rawPrice1 / 100.0
+                0 -> rawPrice1.toDouble()
+                else -> if (rawPrice1 >= 1000L) rawPrice1 / 100.0 else rawPrice1.toDouble()
+            }
+            val section = sectorsMap[sectorId]?.takeIf { it.isNotBlank() } ?: "General"
+            return ParsedPluPreview(
+                code = pluCode,
+                name = name,
+                price = price,
+                section = section
+            )
+        }
+
+        // 2. Intentar formato Función 3 (4 dígitos de Nro PLU al inicio - Cuora 2 V4.0)
+        val match3 = Regex("""^(\d{4})([0-9A-Za-z])(.{18})(\d{6})""").find(ascii)
+        if (match3 != null) {
+            val pluNum = match3.groupValues[1].toIntOrNull() ?: return null
+            val name = match3.groupValues[3].trim().ifBlank { "PLU $pluNum" }
+            val rawPrice1 = match3.groupValues[4].toLongOrNull() ?: 0L
+
+            val pluCode = if (ascii.length >= 40) {
+                ascii.substring(35, 40).toIntOrNull()?.takeIf { it > 0 } ?: pluNum
+            } else pluNum
+
+            val sectorId = if (ascii.length >= 42) {
+                ascii.substring(40, 42).toIntOrNull()?.takeIf { it > 0 } ?: 1
+            } else 1
+
+            val price = when (priceDecimals) {
+                2 -> rawPrice1 / 100.0
+                0 -> rawPrice1.toDouble()
+                else -> if (rawPrice1 >= 1000L) rawPrice1 / 100.0 else rawPrice1.toDouble()
+            }
+            val section = sectorsMap[sectorId]?.takeIf { it.isNotBlank() } ?: "General"
+            return ParsedPluPreview(
+                code = pluCode,
+                name = name,
+                price = price,
+                section = section
+            )
+        }
+
+        return null
     }
 
     /**
@@ -248,25 +445,44 @@ object ScaleFrameParser {
                          clean.contains("MOV", ignoreCase = true)
         var isStable = !isUnstable
 
-        // 2. Extracción de PLU
+        // 2. Extracción de PLU tolerante (Transmisión de ticket, Función 72 Cuora Max o selección en teclado de báscula)
         var pluCode = pluRegex.find(clean)?.groupValues?.get(1)?.toIntOrNull()
+        if (pluCode == null) {
+            pluCode = pluPrefixSinglePRegex.find(clean)?.groupValues?.get(1)?.toIntOrNull()
+        }
+        var cuoraTicketWeightKg: Double? = null
+        if (clean.contains("^")) {
+            // Formato Oficial Cuora Max Función 72: TicketId^Fecha^Hora^Vendedor^PLU^Sector^Unidades^Gramos^Drenado^ImporteF
+            val caretParts = clean.trimEnd('F', 'f').split("^")
+            if (caretParts.size >= 8) {
+                val ticketPlu = caretParts[4].trim().toIntOrNull()
+                val ticketGrams = caretParts[7].trim().toDoubleOrNull()
+                if (ticketPlu != null && ticketPlu > 0) {
+                    pluCode = ticketPlu
+                }
+                if (ticketGrams != null && ticketGrams > 0.0) {
+                    cuoraTicketWeightKg = ticketGrams / 1000.0
+                }
+            }
+        }
         if (pluCode == null && clean.contains(";")) {
-            val parts = clean.split(";")
+            val parts = clean.replace("#", "").split(";").map { it.trim() }
             if (parts.size >= 2) {
-                val candidate = parts[0].trim().toIntOrNull()
-                if (candidate != null && candidate in 1..9999) {
-                    pluCode = candidate
-                } else if (parts.size >= 3) {
-                    val candidate2 = parts[1].trim().toIntOrNull()
-                    if (candidate2 != null && candidate2 in 1..9999) {
-                        pluCode = candidate2
-                    }
+                // Formato estándar ticket báscula: [Estación 1 o 2];[PLU];[Peso];[Precio] ej. "01;24;1.060;75.00"
+                val p0 = parts[0].toIntOrNull()
+                val p1 = parts[1].toIntOrNull()
+                if (parts.size >= 3 && p0 in 1..9 && p1 != null && p1 in 1..9999 && !parts[1].contains(".") && !parts[1].contains(",")) {
+                    pluCode = p1
+                } else if (p0 != null && p0 in 1..9999 && !parts[0].contains(".") && !parts[0].contains(",")) {
+                    pluCode = p0
+                } else if (p1 != null && p1 in 1..9999 && !parts[1].contains(".") && !parts[1].contains(",")) {
+                    pluCode = p1
                 }
             }
         }
 
         // 3. Extracción de Peso tolerante (PRIORIDAD MÁXIMA ANTES DE ERRORES)
-        var parsedWeight: Double? = null
+        var parsedWeight: Double? = cuoraTicketWeightKg
 
         // Prioridad 1A: Formato Oficial Systel Cuora Max / Cuora 2 en gramos + 'e'/'i' + tara (ej: "002000e000000", "000250i000000", "02000e00")
         if (!clean.contains(".") && !clean.contains(",")) {
@@ -419,26 +635,119 @@ object ScaleFrameParser {
 }
 
 object ScaleCatalogParser {
+    /**
+     * Analizador inteligente y tolerante de catálogos de PLUs para básculas Systel Cuora Max / Qendra / Itasa / Excel / CSV.
+     * Soporta:
+     * - Formatos con o sin encabezados (PLU, Código, Nombre, Descripción, Precio, Sección/Depto)
+     * - Delimitadores: ';', ',', '\t', '|'
+     * - Exportaciones oficiales de Qendra (ej. "Numero;Descripcion;Precio;Seccion...")
+     * - Formatos simples tipo "1;Bistec de Res;185.00;Res" o "24, Manitas de Puerco, $75.00"
+     */
     fun parse(rawText: String): List<ParsedPluPreview> {
         val list = mutableListOf<ParsedPluPreview>()
-        for (rawLine in rawText.lines()) {
-            val line = rawLine.trim()
-            if (line.isEmpty() || line.startsWith("#") || line.startsWith("//")) continue
-            val delimiter = when {
+        val lines = rawText.lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && !it.startsWith("#") && !it.startsWith("//") }
+        if (lines.isEmpty()) return emptyList()
+
+        val firstLine = lines.first()
+        val delimiter = when {
+            firstLine.contains(";") -> ";"
+            firstLine.contains("|") -> "|"
+            firstLine.contains("\t") -> "\t"
+            firstLine.contains(",") -> ","
+            else -> ";"
+        }
+
+        var headerMap: Map<String, Int>? = null
+        val firstTokens = firstLine.split(delimiter).map { it.trim().trim('"', '\'').lowercase() }
+        val hasHeader = firstTokens.any {
+            it.contains("plu") || it.contains("cod") || it.contains("art") ||
+            it.contains("nom") || it.contains("desc") || it.contains("prec") || it.contains("item")
+        }
+
+        var startIdx = 0
+        if (hasHeader) {
+            val map = mutableMapOf<String, Int>()
+            firstTokens.forEachIndexed { idx, h ->
+                when {
+                    (h.contains("plu") || h.contains("cod") || h == "id" || h == "num" || h == "numero") && !map.containsKey("code") -> map["code"] = idx
+                    (h.contains("nom") || h.contains("desc") || h.contains("art") || h.contains("prod") || h.contains("detalle")) && !map.containsKey("name") -> map["name"] = idx
+                    (h.contains("prec") || h.contains("price") || h.contains("cost") || h.contains("pvp") || h.contains("importe")) && !map.containsKey("price") -> map["price"] = idx
+                    (h.contains("sec") || h.contains("dep") || h.contains("fam") || h.contains("cat") || h.contains("grupo")) && !map.containsKey("sec") -> map["sec"] = idx
+                }
+            }
+            if (map.containsKey("code") && map.containsKey("name")) {
+                headerMap = map
+                startIdx = 1
+            }
+        }
+
+        for (i in startIdx until lines.size) {
+            val line = lines[i]
+            val lineDelim = when {
                 line.contains(";") -> ";"
                 line.contains("|") -> "|"
                 line.contains("\t") -> "\t"
                 line.contains(",") -> ","
-                else -> null
-            } ?: continue
+                else -> delimiter
+            }
+            val tokens = line.split(lineDelim).map { it.trim().trim('"', '\'') }
+            if (tokens.size < 3) continue
 
-            val tokens = line.split(delimiter).map { it.trim().trim('"', '\'') }
-            if (tokens.size >= 3) {
-                val code = tokens[0].toIntOrNull() ?: continue
-                val name = tokens[1]
-                val priceStr = tokens[2].replace("$", "").replace(" ", "").replace(",", ".")
-                val price = priceStr.toDoubleOrNull() ?: 0.0
-                val sec = if (tokens.size >= 4 && tokens[3].isNotBlank()) tokens[3] else "General"
+            var code: Int? = null
+            var name: String? = null
+            var price: Double = 0.0
+            var sec: String = "General"
+
+            if (headerMap != null) {
+                val codeIdx = headerMap["code"] ?: 0
+                val nameIdx = headerMap["name"] ?: 1
+                val priceIdx = headerMap["price"]
+                val secIdx = headerMap["sec"]
+
+                code = tokens.getOrNull(codeIdx)?.toIntOrNull()
+                name = tokens.getOrNull(nameIdx)
+                val priceStr = priceIdx?.let { tokens.getOrNull(it) }?.replace("$", "")?.replace(" ", "")?.replace(",", ".")
+                price = priceStr?.toDoubleOrNull() ?: 0.0
+                sec = secIdx?.let { tokens.getOrNull(it) }?.takeIf { it.isNotBlank() } ?: "General"
+            } else {
+                // Heurística automática sin encabezado
+                // 1. Encontrar el índice del código numérico (entero entre 1 y 999999)
+                val codeIndex = tokens.indexOfFirst { token ->
+                    val num = token.toIntOrNull()
+                    num != null && num in 1..999999
+                }
+                if (codeIndex != -1) {
+                    code = tokens[codeIndex].toIntOrNull()
+                    val otherTokens = tokens.filterIndexed { index, _ -> index != codeIndex }
+
+                    // 2. Encontrar el precio (número con punto/coma o signo $)
+                    val priceIndex = otherTokens.indexOfFirst { t ->
+                        val cleanNum = t.replace("$", "").replace(" ", "").replace(",", ".")
+                        cleanNum.toDoubleOrNull() != null && (t.contains(".") || t.contains(",") || t.contains("$"))
+                    }
+
+                    if (priceIndex != -1) {
+                        price = otherTokens[priceIndex].replace("$", "").replace(" ", "").replace(",", ".").toDoubleOrNull() ?: 0.0
+                        val nameTokens = otherTokens.filterIndexed { idx, _ -> idx != priceIndex }
+                        name = nameTokens.firstOrNull { it.isNotBlank() }
+                        sec = nameTokens.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "General"
+                    } else {
+                        // Si no hay decimal explícito pero hay al menos 2 tokens restantes
+                        name = otherTokens.firstOrNull { it.isNotBlank() }
+                        val possiblePrice = otherTokens.getOrNull(1)?.replace("$", "")?.replace(" ", "")?.replace(",", ".")?.toDoubleOrNull()
+                        if (possiblePrice != null) {
+                            price = possiblePrice
+                            sec = otherTokens.getOrNull(2)?.takeIf { it.isNotBlank() } ?: "General"
+                        } else {
+                            sec = otherTokens.getOrNull(1)?.takeIf { it.isNotBlank() } ?: "General"
+                        }
+                    }
+                }
+            }
+
+            if (code != null && !name.isNullOrBlank()) {
                 list.add(ParsedPluPreview(code, name, price, sec))
             }
         }
@@ -1186,13 +1495,200 @@ class TcpScaleManager(
         }
     }
 
-    // --- INFORMACIÓN DE EXTRACCIÓN DE PLUs EN MÓDULOS MONO-CLIENTE ---
+    // --- EXTRACCIÓN DIRECTA DE PLUs DESDE LA MEMORIA DE LA BÁSCULA VÍA TCP/IP (FUNCIONES 2, 11, 31, 62 Y 3) ---
     suspend fun extractPlusFromScale(scaleId: Int): Pair<List<ParsedPluPreview>, String> = withContext(Dispatchers.IO) {
         val target = _scalesList.value.find { it.id == scaleId } ?: _scale1Config.value
-        Pair(
-            emptyList(),
-            "Enlace TCP activo con ${target.name} (${target.ip}). Las básculas Systel Cuora Max en el puerto 10001 emiten exclusivamente pesaje en vivo de celda de carga. Para cargar tu catálogo real de productos, exporta el archivo de Qendra en tu PC y presiona '📁 Subir Archivo de Qendra (.txt/.csv)' o pega tu lista."
-        )
+
+        // 1. Pausar temporalmente el sondeo de peso en segundo plano de esta báscula (Lantronix es mono-cliente)
+        scaleJobs[target.id]?.cancel()
+        delay(150)
+
+        var socket: Socket? = null
+        try {
+            val sock = Socket()
+            sock.tcpNoDelay = true
+            sock.connect(InetSocketAddress(target.ip, target.port), 2500)
+            sock.soTimeout = 300
+            socket = sock
+
+            val input = sock.getInputStream()
+            val output = sock.getOutputStream()
+            val readBuf = ByteArray(1024)
+
+            fun sendAndReadBurst(cmd: ByteArray, waitUntilF: Boolean = false, maxWaitMs: Long = 1200L): ByteArray {
+                // Limpiar bytes residuales del buffer de entrada
+                try {
+                    while (input.available() > 0) {
+                        input.read(readBuf)
+                    }
+                } catch (_: Exception) {}
+
+                output.write(cmd)
+                output.flush()
+
+                val out = java.io.ByteArrayOutputStream()
+                val start = System.currentTimeMillis()
+                var timeoutsAfterData = 0
+
+                while (System.currentTimeMillis() - start < maxWaitMs) {
+                    try {
+                        val n = input.read(readBuf)
+                        if (n <= 0) break
+                        out.write(readBuf, 0, n)
+                        timeoutsAfterData = 0
+
+                        val currentBytes = out.toByteArray()
+                        if (waitUntilF) {
+                            val str = String(currentBytes, Charsets.ISO_8859_1)
+                            // En Función 31 la trama termina con 'F' + 1 byte CRC
+                            val fIndex = str.lastIndexOf('F')
+                            if (fIndex >= 3 && currentBytes.size >= fIndex + 2) {
+                                break
+                            }
+                        }
+                    } catch (_: SocketTimeoutException) {
+                        if (out.size() > 0) {
+                            timeoutsAfterData++
+                            if (!waitUntilF || timeoutsAfterData >= 2) {
+                                break
+                            }
+                        }
+                    }
+                }
+                return out.toByteArray()
+            }
+
+            // 2. Descubrir o verificar la Dirección (ID 1..99) de la báscula Cuora Max
+            var discoveredAddr = prefs?.getInt("cuora_addr_${target.ip}", -1) ?: -1
+            val candidates = mutableListOf<Int>()
+            if (discoveredAddr in 1..99) candidates.add(discoveredAddr)
+            candidates.addAll(listOf(1, 2, target.id))
+            val lastOctet = target.ip.substringAfterLast(".").trim().toIntOrNull()
+            if (lastOctet != null) {
+                if (lastOctet in 1..99) candidates.add(lastOctet)
+                if ((lastOctet / 10) in 1..9) candidates.add(lastOctet / 10)
+                if ((lastOctet % 10) in 1..9) candidates.add(lastOctet % 10)
+            }
+            for (id in 3..25) candidates.add(id)
+
+            var activeAddr = -1
+            for (cand in candidates.distinct()) {
+                val probeResp = sendAndReadBurst(ScaleFrameParser.buildCuoraWeightRequest(cand), maxWaitMs = 350L)
+                if (probeResp.size >= 5) {
+                    val respAddr = probeResp[0].toInt() and 0xFF
+                    if (respAddr in 1..99) {
+                        activeAddr = respAddr
+                        prefs?.edit()?.putInt("cuora_addr_${target.ip}", activeAddr)?.apply()
+                        break
+                    }
+                }
+            }
+
+            if (activeAddr !in 1..99) {
+                activeAddr = if (discoveredAddr in 1..99) discoveredAddr else target.id.coerceIn(1, 99)
+            }
+
+            // 3. Consultar Firma Digital (Función 2) para conocer cantidad de decimales de precio (0 o 2)
+            val sigBytes = sendAndReadBurst(ScaleFrameParser.buildCuoraDigitalSignatureRequest(activeAddr), maxWaitMs = 600L)
+            val priceDecimals = ScaleFrameParser.parseCuoraDigitalSignatureDecimals(sigBytes)
+
+            // 4. Consultar Lista de Sectores / Departamentos (Función 11)
+            val secBytes = sendAndReadBurst(ScaleFrameParser.buildCuoraSectorsListRequest(activeAddr), maxWaitMs = 900L)
+            val sectorsMap = ScaleFrameParser.parseCuoraSectorsResponse(secBytes)
+
+            // 5. Consultar Listado de Todos los PLUs Cargados en Memoria (Función 31)
+            var pluListBytes = sendAndReadBurst(
+                ScaleFrameParser.buildCuoraPluListRequest(activeAddr),
+                waitUntilF = true,
+                maxWaitMs = 2500L
+            )
+            var pluEntries = ScaleFrameParser.parseCuoraPluListResponse(pluListBytes)
+            if (pluEntries.isEmpty()) {
+                // Segundo intento con mayor margen de espera
+                pluListBytes = sendAndReadBurst(
+                    ScaleFrameParser.buildCuoraPluListRequest(activeAddr),
+                    waitUntilF = true,
+                    maxWaitMs = 3500L
+                )
+                pluEntries = ScaleFrameParser.parseCuoraPluListResponse(pluListBytes)
+            }
+
+            if (pluEntries.isEmpty()) {
+                return@withContext Pair(
+                    emptyList(),
+                    "Enlace TCP activo con ${target.name} (${target.ip}, ID:$activeAddr), pero la báscula reportó 0 PLUs cargados en su memoria interna (Función 31). También puedes subir tu archivo de Qendra (.txt/.csv)."
+                )
+            }
+
+            // 6. Descargar el detalle de cada PLU (Función 62 para Cuora Max V6.2/V7.0, con fallback a Función 3 para Cuora 2 V4.0)
+            val extractedList = mutableListOf<ParsedPluPreview>()
+            var forceLegacyFunc3 = false
+
+            for ((pluNum, isSixDigits) in pluEntries) {
+                val useFunc3 = forceLegacyFunc3 || !isSixDigits
+                val req = if (!useFunc3) {
+                    ScaleFrameParser.buildCuoraExtendedPluRequest(activeAddr, pluNum)
+                } else {
+                    ScaleFrameParser.buildCuoraLegacyPluRequest(activeAddr, pluNum, sixDigits = false)
+                }
+
+                var resp = sendAndReadBurst(req, maxWaitMs = 500L)
+                val binCheck = ScaleFrameParser.parseCuoraBinary(resp, resp.size)
+                if (!useFunc3 && binCheck?.protocolErrorCode == "E4") {
+                    // Si el firmware no soporta Función 62 (E4), conmutar automáticamente a Función 3
+                    forceLegacyFunc3 = true
+                    resp = sendAndReadBurst(
+                        ScaleFrameParser.buildCuoraLegacyPluRequest(activeAddr, pluNum, sixDigits = false),
+                        maxWaitMs = 500L
+                    )
+                }
+
+                val parsedPlu = ScaleFrameParser.parseCuoraSinglePluResponse(
+                    bytes = resp,
+                    length = resp.size,
+                    priceDecimals = priceDecimals,
+                    sectorsMap = sectorsMap
+                )
+                if (parsedPlu != null) {
+                    extractedList.add(parsedPlu)
+                }
+            }
+
+            if (extractedList.isNotEmpty()) {
+                Pair(
+                    extractedList,
+                    "✅ Se extrajeron ${extractedList.size} PLUs directamente de la memoria de ${target.name} (${target.ip}, ID:$activeAddr). Revisa la lista y pulsa 'Guardar Catálogo'."
+                )
+            } else {
+                // Si la Función 31 devolvió los códigos pero Función 62/3 no devolvió nombres, crear vista previa con los códigos detectados
+                val fallbackList = pluEntries.map { (num, _) ->
+                    ParsedPluPreview(code = num, name = "PLU #$num", price = 0.0, section = "General")
+                }
+                Pair(
+                    fallbackList,
+                    "⚠️ Se detectaron ${fallbackList.size} códigos PLU en ${target.name} (ID:$activeAddr). Revisa la vista previa antes de guardar."
+                )
+            }
+        } catch (e: ConnectException) {
+            Pair(
+                emptyList(),
+                "Conexión rechazada por ${target.name} (${target.ip}). Cierra Qendra en la PC si está abierto (el módulo Lantronix es mono-cliente)."
+            )
+        } catch (e: SocketTimeoutException) {
+            Pair(
+                emptyList(),
+                "Tiempo agotado al conectar con ${target.name} (${target.ip}). Verifica que la báscula esté encendida y conectada al Wi-Fi."
+            )
+        } catch (e: Exception) {
+            Pair(
+                emptyList(),
+                "Error al extraer PLUs de ${target.name}: ${e.localizedMessage ?: "Fallo de red"}"
+            )
+        } finally {
+            try { socket?.close() } catch (_: Exception) {}
+            // Reactivar inmediatamente el hilo de lectura de peso en vivo de esta báscula
+            startScaleWorker(target.id)
+        }
     }
 
     fun setManualWeight(weight: Double) {

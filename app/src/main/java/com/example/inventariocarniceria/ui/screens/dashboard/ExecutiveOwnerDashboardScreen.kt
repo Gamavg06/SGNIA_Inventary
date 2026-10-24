@@ -3,37 +3,46 @@ package com.example.inventariocarniceria.ui.screens.dashboard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircleOutline
-import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.ContentCut
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.MergeType
+import androidx.compose.material.icons.automirrored.filled.MergeType
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.inventariocarniceria.theme.SgniaTheme
+import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.theme.SgniaThemeMode
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
-import com.example.inventariocarniceria.ui.components.SgniaCerhanQuickAccessCard
-import com.example.inventariocarniceria.ui.components.SgniaQuickActionItem
+import com.example.inventariocarniceria.ui.design.BentoCard
+import com.example.inventariocarniceria.ui.design.BigMetric
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirPrimaryButton
+import com.example.inventariocarniceria.ui.design.NoirSecondaryButton
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import com.example.inventariocarniceria.utils.PdfExporter
 import java.util.Locale
@@ -67,178 +76,234 @@ fun ExecutiveOwnerDashboardScreen(
 
     val totalMasterKg = consolidatedItems.sumOf { it.second }
     val totalMasterCost = consolidatedItems.sumOf { it.third }
+    val activeBranchesCount = branchOrders.map { it.branchName }.distinct().size
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(SgniaTheme.colors.backgroundPrimary),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .background(NoirColors.Background)
+            .padding(horizontal = NoirSpace.screen, vertical = NoirSpace.sm),
+        verticalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
     ) {
         // ==========================================
-        // SALUDO PRINCIPAL ESTILO CERHAN
+        // 1. ENCABEZADO EJECUTIVO
         // ==========================================
         item {
-            SgniaCerhanGreetingHeader(
-                title = "Buenas tardes, Administrador Principal",
-                subtitle = "Desde aquí llevas el control maestro de Carnicería SGNIA: qué cortes hay, pedidos por sucursal y quién los tiene a su cargo."
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                NoirLabel("Consola de Dirección General", color = NoirColors.TextMuted)
+                Text(
+                    text = "Panel Maestro",
+                    style = NoirType.display,
+                    color = NoirColors.TextPrimary
+                )
+                Text(
+                    text = "Consolidado de compras, unificación multi-sucursal y proveedores.",
+                    style = NoirType.bodySmall,
+                    color = NoirColors.TextSecondary
+                )
+            }
         }
 
         // ==========================================
-        // 01. INVENTARIO / CATÁLOGO DE CORTES
+        // 2. HERO BENTO: VOLUMEN E IMPORTE MAESTRO
         // ==========================================
         item {
-            SgniaCerhanNumberedCard(
-                numberPrefix = "01.",
-                title = "Catálogo Maestro de Cortes",
-                description = "Catálogo de carnes y abarrotes, búsqueda por PLU o nombre y alta de nuevos productos.",
-                bottomMetric = "Total Cortes Registrados: ${allProducts.size}",
-                primaryIcon = Icons.Default.Inventory2,
-                secondaryIcon = Icons.Default.Search,
-                showChart = true,
-                onClick = { onNavigateToSection?.invoke("catalogo") }
-            )
-        }
-
-        // ==========================================
-        // 02. UNIFICACIÓN DE PEDIDOS Y SURTIDO
-        // ==========================================
-        item {
-            SgniaCerhanNumberedCard(
-                numberPrefix = "02.",
-                title = "Unificación de Pedidos y Abasto",
-                description = "Qué solicita cada sucursal, consolidado de cajas/kilos y orden maestra para proveedores.",
-                bottomMetric = "Volumen a Surtir: ${String.format(Locale.US, "%.1f", totalMasterKg)} kg ($${String.format(Locale.US, "%.0f", totalMasterCost)})",
-                primaryIcon = Icons.Default.MergeType,
-                secondaryIcon = Icons.Default.Description,
-                showChart = false,
+            BentoCard(
+                modifier = Modifier.fillMaxWidth(),
+                hero = true,
                 onClick = { onNavigateToSection?.invoke("unificacion") }
-            )
-        }
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    NoirLabel("Volumen consolidado a surtir", color = NoirColors.OnCreamSecondary)
+                    StatusPill(
+                        text = if (consolidatedItems.isNotEmpty()) "$activeBranchesCount tiendas" else "Al día",
+                        tone = if (consolidatedItems.isNotEmpty()) PillTone.Pending else PillTone.Positive
+                    )
+                }
 
-        // ==========================================
-        // 03. REPORTES Y RENDIMIENTO DE DESPIECE
-        // ==========================================
-        item {
-            SgniaCerhanNumberedCard(
-                numberPrefix = "03.",
-                title = "Reportes y Rendimiento Cárnico",
-                description = "Balance de pierna sin hueso (carne vendible vs merma) y exportación de reportes a PDF.",
-                bottomMetric = "Cortes en Pedido: ${consolidatedItems.size} • Rendimiento: ${String.format(Locale.US, "%.1f", despieceState.yieldPercentage)}%",
-                primaryIcon = Icons.Default.Assessment,
-                secondaryIcon = Icons.Default.PictureAsPdf,
-                showChart = true,
-                onClick = {
-                    if (branchOrders.isNotEmpty()) {
-                        val captures = consolidatedItems.map { (first, totalKg, _) ->
-                            com.example.inventariocarniceria.data.local.InventoryCaptureEntity(
-                                productCode = first.productCode,
-                                productName = first.productName,
-                                capturedWeight = 0.0,
-                                maxStock = totalKg,
-                                shortage = totalKg
-                            )
-                        }
-                        PdfExporter.generateAndShareVipInventoryPdf(
-                            context = context,
-                            orders = captures,
-                            allProducts = allProducts,
-                            branchName = "CONSOLIDADO CADENA MULTI-TIENDA",
-                            managerName = "Dirección General / Administrador SGNIA"
+                BigMetric(
+                    value = String.format(Locale.US, "%.1f", totalMasterKg),
+                    unit = "kg",
+                    style = NoirType.metricXL,
+                    valueColor = NoirColors.OnCream,
+                    labelColor = NoirColors.OnCreamSecondary
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Column {
+                        Text(
+                            text = "Importe estimado de compra",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = NoirColors.OnCreamSecondary
                         )
-                    } else {
-                        onNavigateToSection?.invoke("unificacion")
+                        Text(
+                            text = String.format(Locale.US, "$%,.2f MXN", totalMasterCost),
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = NoirColors.OnCream
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "VER PEDIDOS",
+                            style = NoirType.label.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                            color = NoirColors.OnCream
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MergeType,
+                            contentDescription = null,
+                            tint = NoirColors.OnCream,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
-            )
+            }
         }
 
         // ==========================================
-        // 04. SUCURSALES, ENCARGADOS Y PROVEEDORES
+        // 3. SUB-GRID BENTO: SUCURSALES Y RENDIMIENTO
         // ==========================================
         item {
-            SgniaCerhanNumberedCard(
-                numberPrefix = "04.",
-                title = "Sucursales e Instalaciones",
-                description = "Tiendas activas, asignación de encargados, contraseñas y directorio de proveedores.",
-                bottomMetric = "Total Sucursales: ${allBranches.size} • Proveedores: ${allSuppliers.size}",
-                primaryIcon = Icons.Default.Business,
-                secondaryIcon = Icons.Default.LocalShipping,
-                showChart = false,
-                onClick = { onNavigateToSection?.invoke("sucursales") }
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
+            ) {
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    onClick = { onNavigateToSection?.invoke("sucursales") }
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        NoirLabel("Red de Tiendas")
+                        Icon(
+                            Icons.Default.Business,
+                            contentDescription = null,
+                            tint = NoirColors.Cream,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    BigMetric(
+                        value = "${allBranches.size}",
+                        unit = if (allBranches.size == 1) "tienda" else "tiendas",
+                        style = NoirType.metricL
+                    )
+                    StatusPill(
+                        text = "${allSuppliers.size} proveedores",
+                        tone = PillTone.Neutral
+                    )
+                }
+
+                BentoCard(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        NoirLabel("Rendimiento")
+                        StatusPill("Cárnico", PillTone.Positive)
+                    }
+                    BigMetric(
+                        value = String.format(Locale.US, "%.1f", despieceState.yieldPercentage),
+                        unit = "%",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.Emerald
+                    )
+                    Text(
+                        text = "${consolidatedItems.size} cortes en orden",
+                        style = NoirType.bodySmall.copy(fontSize = 12.sp),
+                        color = NoirColors.TextSecondary
+                    )
+                }
+            }
         }
 
         // ==========================================
-        // ACCESO RÁPIDO (CUADRÍCULA 2x2 BOTONES CREMA)
+        // 4. ACCIONES RÁPIDAS EJECUTIVAS
         // ==========================================
         item {
-            SgniaCerhanQuickAccessCard(
-                title = "Acceso Rápido",
-                actions = listOf(
-                    SgniaQuickActionItem(
-                        label = "Nuevo Corte",
-                        icon = Icons.Default.AddCircleOutline,
-                        onClick = {
-                            viewModel.openNewProductEditor()
-                            onNavigateToSection?.invoke("catalogo")
-                        }
-                    ),
-                    SgniaQuickActionItem(
-                        label = "Ver Pedidos",
-                        icon = Icons.Default.MergeType,
-                        onClick = { onNavigateToSection?.invoke("unificacion") }
-                    ),
-                    SgniaQuickActionItem(
-                        label = "Nuevo Reporte",
+            Column(verticalArrangement = Arrangement.spacedBy(NoirSpace.xs)) {
+                NoirLabel("Operaciones Maestras", color = NoirColors.TextMuted)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
+                ) {
+                    NoirPrimaryButton(
+                        text = "Unificar Pedidos",
+                        icon = Icons.AutoMirrored.Filled.MergeType,
+                        onClick = { onNavigateToSection?.invoke("unificacion") },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    NoirSecondaryButton(
+                        text = "Proveedores",
+                        icon = Icons.Default.LocalShipping,
+                        onClick = { onNavigateToSection?.invoke("proveedores") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
+                ) {
+                    NoirSecondaryButton(
+                        text = "Reporte PDF VIP",
                         icon = Icons.Default.PictureAsPdf,
                         onClick = {
                             if (branchOrders.isNotEmpty()) {
                                 val captures = consolidatedItems.map { (first, totalKg, _) ->
-                            com.example.inventariocarniceria.data.local.InventoryCaptureEntity(
-                                productCode = first.productCode,
-                                productName = first.productName,
-                                capturedWeight = 0.0,
-                                maxStock = totalKg,
-                                shortage = totalKg
-                            )
-                        }
-                        PdfExporter.generateAndShareVipInventoryPdf(
-                            context = context,
-                            orders = captures,
-                            allProducts = allProducts,
-                            branchName = "CONSOLIDADO CADENA MULTI-TIENDA",
-                            managerName = "Dirección General / Administrador SGNIA"
-                        )
+                                    com.example.inventariocarniceria.data.local.InventoryCaptureEntity(
+                                        productCode = first.productCode,
+                                        productName = first.productName,
+                                        capturedWeight = 0.0,
+                                        maxStock = totalKg,
+                                        shortage = totalKg
+                                    )
+                                }
+                                PdfExporter.generateAndShareVipInventoryPdf(
+                                    context = context,
+                                    orders = captures,
+                                    allProducts = allProducts,
+                                    branchName = "CONSOLIDADO CADENA MULTI-TIENDA",
+                                    managerName = "Dirección General / Administrador SGNIA"
+                                )
                             } else {
                                 onNavigateToSection?.invoke("unificacion")
                             }
-                        }
-                    ),
-                    SgniaQuickActionItem(
-                        label = "Nueva Sucursal",
-                        icon = Icons.Default.PersonAdd,
-                        onClick = { onNavigateToSection?.invoke("sucursales") }
+                        },
+                        modifier = Modifier.weight(1f)
                     )
-                )
-            )
-        }
 
-        // ==========================================
-        // RESUMEN GLOBAL CON GRÁFICAS VECTORIALES
-        // ==========================================
-        item {
-            SgniaCerhanGlobalSummaryCard(
-                title = "Resumen Global",
-                firstLabel = "Total Cortes Activos en Catálogo:",
-                firstValue = "${allProducts.size}",
-                secondLabel = "Total Sucursales y Proveedores:",
-                secondValue = "${allBranches.size + allSuppliers.size}"
-            )
+                    NoirSecondaryButton(
+                        text = "Nueva Tienda",
+                        icon = Icons.Default.PersonAdd,
+                        onClick = { onNavigateToSection?.invoke("sucursales") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
 
         item {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(NoirSpace.lg))
         }
     }
 }

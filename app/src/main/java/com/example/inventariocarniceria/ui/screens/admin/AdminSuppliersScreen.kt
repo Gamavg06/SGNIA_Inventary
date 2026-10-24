@@ -1,15 +1,16 @@
 package com.example.inventariocarniceria.ui.screens.admin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,13 +39,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.ui.design.BentoCard
+import com.example.inventariocarniceria.ui.design.BigMetric
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirRadius
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 
 @Composable
@@ -54,31 +63,23 @@ fun AdminSuppliersScreen(
     val suppliers by viewModel.allSuppliers.collectAsState()
     var isAddOpen by remember { mutableStateOf(false) }
 
-    val matteBg = Color(0xFF0F0E0D)
-    val cardBg = Color(0xFF181715)
-    val cardBorder = Color(0xFF282623)
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-    val darkText = Color(0xFF141312)
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = matteBg,
+        containerColor = NoirColors.Background,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { isAddOpen = true },
-                containerColor = creamPrimary,
-                contentColor = darkText,
-                shape = RoundedCornerShape(16.dp)
+                containerColor = NoirColors.Cream,
+                contentColor = NoirColors.OnCream,
+                shape = RoundedCornerShape(NoirRadius.md)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = NoirSpace.md, vertical = NoirSpace.xs),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Agregar Proveedor")
+                    Icon(Icons.Default.Add, contentDescription = "Agregar Proveedor", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("NUEVO PROVEEDOR", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Text("NUEVO PROVEEDOR", style = NoirType.label.copy(color = NoirColors.OnCream, fontWeight = FontWeight.Bold))
                 }
             }
         }
@@ -86,70 +87,118 @@ fun AdminSuppliersScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(matteBg)
+                .background(NoirColors.Background)
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+            verticalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
         ) {
-            SgniaCerhanGreetingHeader(
-                userName = "Proveedores y Rastro",
-                subtitle = "Directorio de Frigoríficos, Carnes y Embutidos"
-            )
-
+            // ENCABEZADO
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "01.",
-                    title = "Proveedores",
-                    subtitle = "${suppliers.size} empresas activas",
-                    icon = Icons.Default.LocalShipping,
-                    showWaveChart = true
-                )
-                SgniaCerhanNumberedCard(
-                    modifier = Modifier.weight(1f),
-                    number = "02.",
-                    title = "Abastecimiento",
-                    subtitle = "Res, Cerdo, Pollo y Lácteos",
-                    icon = Icons.Default.Inventory2,
-                    showWaveChart = false
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    NoirLabel("DIRECCIÓN GENERAL · CADENA DE SUMINISTRO", color = NoirColors.Gold)
+                    Text(
+                        text = "Proveedores",
+                        style = NoirType.display.copy(fontSize = 24.sp),
+                        color = NoirColors.TextPrimary
+                    )
+                    Text(
+                        text = "Directorio de frigoríficos, rastros y distribuidores cárnicos",
+                        style = NoirType.bodySmall,
+                        color = NoirColors.TextMuted
+                    )
+                }
             }
 
-            if (suppliers.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+            // BENTO HERO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+            ) {
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.md)
                 ) {
-                    Text("Aún no hay proveedores registrados.", color = textMuted)
+                    BigMetric(
+                        value = "${suppliers.size}",
+                        label = "EMPRESAS",
+                        unit = "ACTIVAS",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.Cream
+                    )
+                    StatusPill("DIRECTORIO MATRIZ", tone = PillTone.Positive)
+                }
+
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.md)
+                ) {
+                    BigMetric(
+                        value = "Rastro",
+                        label = "ABASTECIMIENTO",
+                        unit = "MAYOREO",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.TextPrimary
+                    )
+                    StatusPill("RES · CERDO · POLLO", tone = PillTone.Neutral)
+                }
+            }
+
+            // LISTA DE PROVEEDORES
+            if (suppliers.isEmpty()) {
+                BentoCard(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(NoirSpace.xl),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Aún no hay proveedores registrados", style = NoirType.title, color = NoirColors.TextPrimary)
+                            Text("Agrega introductores y frigoríficos con '+ NUEVO PROVEEDOR'.", style = NoirType.bodySmall, color = NoirColors.TextMuted)
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(NoirSpace.xs)
                 ) {
                     items(suppliers) { supplier ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(cardBg)
-                                .border(1.dp, cardBorder, RoundedCornerShape(16.dp))
-                                .padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        BentoCard(
+                            contentPadding = PaddingValues(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(supplier.name, fontWeight = FontWeight.Black, fontSize = 15.sp, color = creamPrimary)
-                                Text("Contacto: ${supplier.contactName} (${supplier.phone})", fontSize = 12.sp, color = textMuted)
-                                Text("Líneas: ${supplier.suppliedCategories}", fontSize = 12.sp, color = creamWarm, fontWeight = FontWeight.Bold)
-                            }
-                            IconButton(onClick = { viewModel.deleteSupplier(supplier) }) {
-                                Icon(imageVector = Icons.Default.Delete, contentDescription = "Borrar", tint = textMuted)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(supplier.name, style = NoirType.title.copy(fontSize = 15.sp), color = NoirColors.TextPrimary)
+                                        Spacer(Modifier.width(8.dp))
+                                        StatusPill("SURTIDOR", tone = PillTone.Neutral, showDot = false)
+                                    }
+
+                                    Text(
+                                        "Contacto: ${supplier.contactName} (${supplier.phone})",
+                                        style = NoirType.bodySmall,
+                                        color = NoirColors.TextSecondary
+                                    )
+
+                                    Text(
+                                        "Líneas: ${supplier.suppliedCategories}",
+                                        style = NoirType.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = NoirColors.Cream
+                                    )
+                                }
+
+                                IconButton(onClick = { viewModel.deleteSupplier(supplier) }) {
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Borrar", tint = NoirColors.Danger)
+                                }
                             }
                         }
                     }
@@ -166,14 +215,59 @@ fun AdminSuppliersScreen(
 
         AlertDialog(
             onDismissRequest = { isAddOpen = false },
-            containerColor = cardBg,
-            title = { Text("REGISTRAR PROVEEDOR", fontWeight = FontWeight.Black, color = creamPrimary) },
+            containerColor = NoirColors.Surface,
+            shape = RoundedCornerShape(NoirRadius.lg),
+            title = { Text("REGISTRAR PROVEEDOR", style = NoirType.title, color = NoirColors.TextPrimary) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre Proveedor / Frigorífico") }, singleLine = true)
-                    OutlinedTextField(value = contact, onValueChange = { contact = it }, label = { Text("Nombre de Contacto") }, singleLine = true)
-                    OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Teléfono de Pedidos") }, singleLine = true)
-                    OutlinedTextField(value = categories, onValueChange = { categories = it }, label = { Text("Categorías que surte (ej. Res, Cerdo)") }, singleLine = true)
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Nombre Proveedor / Frigorífico", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = contact,
+                        onValueChange = { contact = it },
+                        label = { Text("Nombre de Contacto", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Teléfono de Pedidos", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = categories,
+                        onValueChange = { categories = it },
+                        label = { Text("Categorías (ej. Res, Cerdo, Pollo)", color = NoirColors.TextSecondary) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = NoirColors.Cream,
+                            unfocusedBorderColor = NoirColors.Hairline,
+                            focusedTextColor = NoirColors.TextPrimary,
+                            unfocusedTextColor = NoirColors.TextPrimary
+                        ),
+                        singleLine = true
+                    )
                 }
             },
             confirmButton = {
@@ -184,10 +278,13 @@ fun AdminSuppliersScreen(
                             isAddOpen = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = creamPrimary, contentColor = darkText)
-                ) { Text("Guardar Proveedor", fontWeight = FontWeight.Black) }
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.Cream, contentColor = NoirColors.OnCream),
+                    shape = RoundedCornerShape(NoirRadius.md)
+                ) { Text("Guardar Proveedor", style = NoirType.button) }
             },
-            dismissButton = { TextButton(onClick = { isAddOpen = false }) { Text("Cancelar", color = creamWarm) } }
+            dismissButton = {
+                TextButton(onClick = { isAddOpen = false }) { Text("Cancelar", color = NoirColors.Cream) }
+            }
         )
     }
 }

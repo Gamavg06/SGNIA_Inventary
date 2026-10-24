@@ -74,8 +74,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.LocalProductEntity
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.ui.design.BentoCard
+import com.example.inventariocarniceria.ui.design.BigMetric
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirRadius
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import java.util.Locale
 
@@ -123,24 +130,24 @@ fun ManagerInvestmentScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = Color(0xFF0F0E0D),
+        containerColor = NoirColors.Background,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     itemToEdit = null
                     isAddOrEditDialogOpen = true
                 },
-                containerColor = Color(0xFFF3EFE6),
-                contentColor = Color(0xFF141312),
-                shape = RoundedCornerShape(16.dp)
+                containerColor = NoirColors.Cream,
+                contentColor = NoirColors.OnCream,
+                shape = RoundedCornerShape(NoirRadius.md)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp),
+                    modifier = Modifier.padding(horizontal = NoirSpace.md, vertical = NoirSpace.xs),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Nueva Inversión")
+                    Icon(Icons.Default.Add, contentDescription = "Nueva Inversión", modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("NUEVA INVERSIÓN", fontWeight = FontWeight.Black)
+                    Text("NUEVA INVERSIÓN", style = NoirType.label.copy(color = NoirColors.OnCream, fontWeight = FontWeight.Bold))
                 }
             }
         }
@@ -148,37 +155,64 @@ fun ManagerInvestmentScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF0F0E0D))
+                .background(NoirColors.Background)
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+            verticalArrangement = Arrangement.spacedBy(NoirSpace.gutter)
         ) {
-            SgniaCerhanGreetingHeader(
-                userName = "Mi Inversión Local",
-                subtitle = "Control de Bolsitas, Botanas y Venta Unitaria • ${uiState.currentBranch.ifBlank { "Sucursal" }}"
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
+            // ENCABEZADO
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                SgniaCerhanNumberedCard(
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    NoirLabel("TIENDA LOCAL · EMBOLSADO Y BOTANAS", color = NoirColors.Gold)
+                    Text(
+                        text = "Mi Inversión Local",
+                        style = NoirType.display.copy(fontSize = 24.sp),
+                        color = NoirColors.TextPrimary
+                    )
+                    Text(
+                        text = "Control de bolsitas, botanas y venta unitaria • ${uiState.currentBranch.ifBlank { "Sucursal" }}",
+                        style = NoirType.bodySmall,
+                        color = NoirColors.TextMuted
+                    )
+                }
+            }
+
+            // BENTO HERO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+            ) {
+                BentoCard(
                     modifier = Modifier.weight(1f),
-                    number = "01.",
-                    title = "Por Hacer",
-                    subtitle = "$totalToMakeBags bolsas ($totalToMakePieces pzas)",
-                    icon = Icons.Default.PrecisionManufacturing,
-                    showWaveChart = true
-                )
-                SgniaCerhanNumberedCard(
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(NoirSpace.md)
+                ) {
+                    BigMetric(
+                        value = "$totalToMakeBags",
+                        label = "POR HACER",
+                        unit = "BOLSAS",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.Cream
+                    )
+                    StatusPill("$totalToMakePieces PZAS REQUERIDAS", tone = PillTone.Pending)
+                }
+
+                BentoCard(
                     modifier = Modifier.weight(1f),
-                    number = "02.",
-                    title = "Existencia y Valor",
-                    subtitle = String.format(Locale.US, "%d bolsas • $%.2f", totalStockBags, totalProjectedValue),
-                    icon = Icons.Default.CardGiftcard,
-                    showWaveChart = false
-                )
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(NoirSpace.md)
+                ) {
+                    BigMetric(
+                        value = String.format(Locale.US, "$%,.0f", totalProjectedValue),
+                        label = "VALOR PROYECTADO",
+                        unit = "MXN",
+                        style = NoirType.metricL,
+                        valueColor = NoirColors.TextPrimary
+                    )
+                    StatusPill("$totalStockBags EN STOCK", tone = PillTone.Positive)
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
