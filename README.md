@@ -6,7 +6,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.1.20-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Android SDK](https://img.shields.io/badge/Android%20SDK-36-34A853?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202026-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Systel Cuora](https://img.shields.io/badge/Hardware-Systel%20Cuora%20TCP%2FIP-D9A441?style=for-the-badge&logo=scale&logoColor=white)](#-protocolo-industrial-systel-cuora-max)
+[![Multi-Scale TCP/IP](https://img.shields.io/badge/Hardware-Multi--Scale%20TCP%2FIP-D9A441?style=for-the-badge&logo=scale&logoColor=white)](#-protocolos-industriales-y-conectividad-multiescala)
 [![Offline First](https://img.shields.io/badge/Architecture-Offline--First%20Room%20DB-00C853?style=for-the-badge&logo=sqlite&logoColor=white)](#-arquitectura-offline-first)
 [![Design System](https://img.shields.io/badge/UI%2FUX-Noir%20%26%20Crema%20Bento-EEDDC8?style=for-the-badge&labelColor=0F0E0D&color=EEDDC8)](#-sistema-de-diseño-noir--crema)
 
@@ -23,7 +23,7 @@
 
 ## 📌 Resumen Ejecutivo del Sistema
 
-**SGNIA Carnicería & Balanza Industrial POS** es una plataforma móvil nativa de alto rendimiento desarrollada para optimizar la operación de carnicerías, rastros, frigoríficos y puntos de venta cárnicos. Diseñada bajo la filosofía **Offline-First**, el sistema no depende de internet para operar: se conecta directamente por red local TCP/IP a básculas industriales **Systel Cuora Max**, escanea etiquetas de cajas pesadas, calcula rendimientos de canal y consolida pedidos multi-tienda con exportación a WhatsApp y reportes PDF VIP.
+**SGNIA Carnicería & Balanza Industrial POS** es una plataforma móvil nativa de alto rendimiento desarrollada para optimizar la operación de carnicerías, rastros, frigoríficos y puntos de venta cárnicos. Diseñada bajo la filosofía **Offline-First**, el sistema no depende de internet para operar: se conecta directamente por red local TCP/IP a básculas industriales (Systel, Torrey, Rhino, Mettler Toledo, CAS, etc.), escanea etiquetas de cajas pesadas, calcula rendimientos de canal y consolida pedidos multi-tienda con exportación a WhatsApp y reportes PDF VIP.
 
 ---
 
@@ -31,8 +31,8 @@
 
 La interfaz visual fue concebida como un **instrumento de precisión de grado ejecutivo**, optimizada para ambientes industriales, cuartos fríos, poca iluminación y uso con manos húmedas o guantes de carnicero:
 
-* **Fondo Principal**: Negro Carbón Mate Profundo (`#0F0E0D`).
-* **Tarjetas Bento**: Carbón Superficie (`#181715`) con bordes finos de 1dp (`#2A2723` / `#3A352F`) y esquinas redondeadas ergonómicas (24dp / 18dp / 12dp).
+* **Fondo Principal**: Negro Carbón Mate Profundo (`#0F0E0D` y `#181715`).
+* **Tarjetas Bento**: Carbón Superficie (`#22201D` / `#1F1D1A`) con bordes finos de 1dp (`#2A2723`) y esquinas redondeadas ergonómicas (24dp / 18dp / 12dp).
 * **Tipografía y Acentos**: Crema Marfil Cálido (`#EEDDC8` / `#F3EFE6`) para máxima legibilidad sin fatiga ocular.
 * **Cifras Dominantes**: Números grandes en fuente Monospace (`56sp` y `36sp`) para leer kilos, importes y porcentajes de merma en menos de 2 segundos.
 * **Verde Esmeralda (`#4ADE80`)**: Reservado estrictamente para peso estable en báscula y estados positivos.
@@ -56,16 +56,16 @@ La interfaz visual fue concebida como un **instrumento de precisión de grado ej
 
 ---
 
-## ⚖️ Protocolo Industrial Systel Cuora Max (TCP/IP)
+## ⚖️ Protocolos Industriales y Conectividad Multiescala
 
-El núcleo de comunicación (`TcpScaleManager.kt`) se comunica con módulos Lantronix y placas de red oficiales de **Systel Cuora Max V7.0 / V6.2 / V4.0**:
+El núcleo de pesaje en red (`TcpScaleManager.kt`) opera directamente sobre sockets TCP/IP puros y soporta de 1 a 10+ básculas concurrentes en tiempo real:
 
-* **Lectura Continua de Peso y Tara (Función 1 - 0x01)**: Lectura continua sin bloqueo de UI con telemetría de peso bruto, tara, estado estable/lectura y bytes recibidos.
-* **Firma Digital y Decimales (Función 2 - 0x02)**: Negociación binaria para detectar si la báscula opera con 0 o 2 decimales (`D0` vs `D2`).
-* **Sectores y Familias (Función 11 - 0x0B)**: Extracción directa de departamentos (Res, Cerdo, Pollo, Embutidos) de la memoria de la balanza.
-* **Extracción de Memoria PLU (Función 31 - 0x1F y Función 62 - 0x3E)**: Descarga automática de todos los códigos PLU, precios por kilo y nombres registrados físicamente en la báscula por red Wi-Fi/Ethernet.
-* **Captura de Ticket / Venta (Función 72 - 0x48)**: Reconocimiento nativo de tramas delimitadas por circunflejo (`Ticket^Fecha^Hora^Vendedor^PLU^Sector^Gramos`).
-* **Gestión Mono-Cliente Lantronix**: Pausa suave y reanudación automática de lectura para evitar saturar el hardware al descargar catálogos completos.
+* **Systel Cuora Max / Neo / Croma**: Tramas binarias (Función 1 - Solicitud de peso y tara, Función 2 - Firma digital y decimales, Función 11 - Sectores, Función 31/62 - Extracción directa de PLUs y precios desde la memoria de la balanza).
+* **Torrey (W-LABEL, L-EQ, PCR, MFQ)**: Sondeo rápido ASCII `'W'` (0x57) o `'P\r\n'` con lectura en tiempo real.
+* **Rhino (BAR-8, BAC, I-PEP)**: Lectura continua y sondeo por comando ASCII `'P'`.
+* **Mettler Toledo**: Protocolo estándar industrial MT-SICS (`'S\r\n'`, `'SI\r\n'`).
+* **CAS & Genéricas**: Soporte de flujo continuo y tramas delimitadas universales.
+* **Catálogo Integrado con Auto-Configuración**: Al dar de alta una báscula, el sistema busca por marca y modelo, asignando automáticamente puertos por defecto y protocolos recomendados con prueba de ping en vivo.
 
 ---
 
@@ -73,7 +73,7 @@ El núcleo de comunicación (`TcpScaleManager.kt`) se comunica con módulos Lant
 
 | Módulo / Capacidad | Rol Dueño (`ADMIN`) | Rol Encargado (`ENCARGADO`) |
 | :--- | :---: | :---: |
-| **Visor de 2 Básculas en Tiempo Real** | ❌ (Solo supervisión) | ✅ **100% Pantalla Principal** |
+| **Visor Dinámico de Básculas (1 a 10+)** | ❌ (Solo supervisión) | ✅ **100% Pantalla Principal** |
 | **Catálogo de Cortes (Precios/kg y PLUs)** | ❌ (Exclusivo de Tienda) | ✅ **Alta, Baja y Edición Local** |
 | **Recepción de Mercancía y Despiece** | ❌ | ✅ **Cálculo de Mermas y Cajas** |
 | **Pedidos de Tienda a Rastro** | ❌ | ✅ **Cálculo Cajas / Granel** |
@@ -89,7 +89,7 @@ El núcleo de comunicación (`TcpScaleManager.kt`) se comunica con módulos Lant
 ### 🔐 Acceso y Seguridad
 1. **`SplashScreen.kt`**: Video loop institucional nativo (`logovideo.mp4`) con fallback gráfico de marca (`sglogo.png`).
 2. **`LegalAcceptanceScreen.kt`**: Pantalla inicial obligatoria para primera apertura tras instalar. Bloquea el acceso hasta que el usuario lea y marque los Términos y el Aviso de Privacidad. Consentimiento almacenado en **Jetpack DataStore** para no volver a interrumpir la operación.
-3. **`DocumentReaderScreen.kt`**: Lector de Términos y Condiciones / Aviso de Privacidad con secciones numeradas, placeholders legales y enlace web.
+3. **`DocumentReaderScreen.kt`**: Lector de Términos y Condiciones / Aviso de Privacidad con datos oficiales de SGNIA COMPANY.
 4. **`SecurityVaultScreen.kt`**: Login corporativo con teclado numérico ampliado (68dp), selector visual de rol e ingreso de PIN de 4 dígitos.
 
 ### 👔 Consola del Dueño (Admin)
@@ -100,12 +100,12 @@ El núcleo de comunicación (`TcpScaleManager.kt`) se comunica con módulos Lant
 9. **`AdminSecurityScreen.kt`**: Bóveda protegida para actualización del PIN maestro del Dueño.
 
 ### 🏪 Operación de Tienda (Encargado)
-10. **`IndustrialScaleVisorScreen.kt`**: Visor industrial de **Báscula 1** y **Báscula 2**, tara automática, selector de corte, panel BottomSheet Bento Noir & Crema para ajustes rápidos de precio (`-$10`, `-$5`, `+$5`, `+$10`) e importe en tiempo real.
+10. **`IndustrialScaleVisorScreen.kt`**: Visor industrial dinámico con soporte simultáneo de 1 a 10+ básculas (Systel, Torrey, Rhino, Mettler Toledo, CAS, etc.), tara independiente por báscula, selector de corte, panel BottomSheet Bento Noir & Crema para ajustes rápidos de precio e importe en tiempo real.
 11. **`AdminCatalogScreen.kt`**: Catálogo local de cortes con buscador instantáneo, chips de categorías y productos derivados.
 12. **`StockReceptionScreen.kt`**: Recepción con pesaje directo de báscula, escáner de códigos de barras por cámara (`CameraX` + `ML Kit`) y alta al vuelo de cortes nuevos.
 13. **`OrdersScreen.kt`**: Cálculo de faltantes comparando existencias vs. stock máximo con redondeo automático hacia arriba en cajas cerradas (`ceil(shortage / pesoCaja)`).
 14. **`ManagerInvestmentScreen.kt`**: Módulo independiente de inversión local (bolsitas, botanas, chicharrón, manteca) con vista conmutable de tabla o tarjetas.
-15. **`SettingsScreen.kt`**: Configuración de IPs locales, puertos TCP de básculas, acceso a licencias y mantenimiento del sistema.
+15. **`SettingsScreen.kt`**: Configuración de red y catálogo inteligente de básculas (búsqueda de marcas/modelos, auto-configuración de puertos y protocolos, prueba de ping), acceso a licencias y mantenimiento.
 16. **`LicenseActivationScreen.kt`**: Activación y renovación de licencias industriales mediante firma criptográfica HMAC-SHA256, detección de manipulación de reloj y enlace de solicitud directo a WhatsApp.
 17. **`AboutSgniaScreen.kt`**: Identidad corporativa de **SGNIA COMPANY**, fundador Gamaliel Velazquez Galicia (`GV`), soporte técnico por WhatsApp directo, correo, Google Maps y enlace a `sgnia.xyz`.
 
@@ -118,34 +118,33 @@ El software implementa un **motor de licenciamiento comercial 100% offline**, di
 ### 🛡️ Niveles de Licencia y Modalidades Comerciales:
 1. ⏱️ **Demo en Vivo (10 Minutos - `10M`)**: Diseñado para que Gamaliel demuestre el software directamente en el mostrador del cliente antes de cerrar el trato.
 2. 📅 **Prueba Comercial (7 Días - `07D`)**: Periodo de evaluación gratuito para que el carnicero compruebe el valor operativo con sus cortes y básculas reales.
-3. 📆 **Renta Mensual (30 Días - `01M`)**: Modalidad de suscripción recurrente para clientes que prefieren pago mensual (Clientes B, C, D).
+3. 📆 **Renta Mensual (30 Días - `01M`)**: Modalidad de suscripción recurrente para clientes que prefieren pago mensual.
 4. 🗓️ **Renta Anual (365 Días - `01Y`)**: Contrato anual con descuento para fidelización de clientes de largo plazo.
-5. ♾️ **Compra Definitiva / Perpetua (`LIFE`)**: Licencia vitalicia para clientes que compran el software completo (Cliente A).
+5. ♾️ **Compra Definitiva / Perpetua (`LIFE`)**: Licencia vitalicia para clientes que adquieren el sistema definitivo.
 
 ### ⚙️ Protocolo Criptográfico:
-* **Firma HMAC-SHA256**: La clave se genera a partir del `Hardware ID` único de la tablet (`SGN-XXXX-XXXX`), el código de duración y un token aleatorio, firmados con la clave maestra privada de SGNIA COMPANY.
+* **Firma HMAC-SHA256**: La clave se genera a partir del `Hardware ID` único del dispositivo (`SGN-XXXX-XXXX`), el código de duración y un token aleatorio, firmados con la clave maestra privada de SGNIA COMPANY.
 * **Anti-Rollback de Reloj**: El sistema registra en almacenamiento seguro el timestamp más alto observado. Si el usuario intenta atrasar la fecha en Android para extender su licencia, el sistema bloquea la app de inmediato (`CLOCK_TAMPERED`).
 * **Consumo Único de Claves**: Cada clave contiene un token de consumo único; una clave expirada no puede reutilizarse en el mismo equipo.
 
-### 📱 Aplicación Compañera para el Celular: `SGNIA Keygen Admin`
-Incluida en el módulo `:keygen` del repositorio:
-* Instalable directamente en el teléfono personal de Gamaliel Velazquez.
-* Permite pegar el `Hardware ID` del cliente con un solo toque.
-* Selector visual de duraciones (10 min, 7 días, 1 mes, 1 año, de por vida).
-* Botón **"Enviar por WhatsApp"** con mensaje pre-redactado listo para enviar al cliente.
-* Historial local de claves generadas para control de cobranza y renovaciones.
+### 📱 Aplicación Compañera: `SGNIA Keygen Admin`
+Incluida en el módulo `:keygen`:
+* Permite gestionar la cartera de clientes agrupados por Propietario/Dueño y por Sucursales físicas.
+* Asignación de Hardware IDs individuales para cada sucursal contratada.
+* Generación instantánea de claves criptográficas y cálculo automático de montos a cobrar (renta mensual, anual o compra definitiva).
+* Emisión automática de comprobantes de compra oficiales con identidad corporativa SGNIA y envío directo por WhatsApp.
 
 ---
 
-## 📦 Ecosistema de 3 Aplicaciones Generadas
+## 🏛️ Arquitectura Modular del Sistema
 
-El ecosistema ahora está dividido en **tres aplicaciones nativas independientes pero perfectamente enlazadas**:
+El ecosistema está estructurado en **tres módulos independientes pero coordinados**:
 
-| Aplicación | Destino | Rol y Funcionalidad Principal | Archivo APK | Tamaño |
-| :--- | :--- | :--- | :--- | :---: |
-| 🥩 **SGNIA Carnicería POS** | Tablet de Mostrador de cada Sucursal | **Encargado de Tienda**: 2 Básculas Systel Cuora Max TCP/IP en vivo, tara, catálogo de cortes, recepción / despiece con mermas, pedidos de surtido de tienda y licencia de la tablet. | `release_apks/SGNIA_Carniceria_POS_v1.0.apk` | ~49.3 MB |
-| 👔 **SGNIA Consola Dueño** | Teléfono / Tablet Personal del Dueño | **Propietario**: Unificación Maestra multi-tienda (consolida los pedidos de todas las sucursales en un solo pedido para el rastro con WhatsApp y PDF VIP), directorio de sucursales con PINs y proveedores. | `release_apks/SGNIA_Consola_Dueno_v1.0.apk` | ~49.3 MB |
-| 🔑 **SGNIA Keygen Admin** | Celular de Gamaliel Velazquez (Desarrollador) | **Administración y Cobranza**: Cartera de dueños/carnicerías con gestión multitienda (Hardware IDs por sucursal), generación criptográfica de claves (10m, 7d, 1m, 1y, LIFE) y envío del paquete completo por WhatsApp. | `release_apks/SGNIA_Keygen_Admin_v1.0.apk` | ~19.0 MB |
+| Módulo | Entorno de Uso | Alcance y Funcionalidad |
+| :--- | :--- | :--- |
+| 🥩 **SGNIA Carnicería POS** | Tablet de Mostrador en Sucursal | **Encargado de Tienda**: Visor multiescala dinámico (1 a 10+ básculas TCP/IP en vivo), tara independiente, catálogo de cortes, recepción / despiece con cálculo de mermas, pedidos de surtido y activación de licencia por Hardware ID. |
+| 👔 **SGNIA Consola Dueño** | Teléfono / Tablet del Propietario | **Propietario / Gerencia**: Unificación Maestra multi-tienda (consolidación automática de pedidos de todas las sucursales en un único pedido para el rastro con envío a WhatsApp y PDF VIP), supervisión de sucursales con PINs y directorio de proveedores. |
+| 🔑 **SGNIA Keygen Admin** | Dispositivo del Desarrollador | **Gestión Comercial y Licenciamiento**: Administración de cartera por Dueño, registro de sucursales, generación de llaves criptográficas offline, control de pagos y emisión de comprobantes oficiales de compra. |
 
 ---
 
@@ -155,7 +154,7 @@ El ecosistema ahora está dividido en **tres aplicaciones nativas independientes
 * **Framework UI**: Jetpack Compose con BOM oficial 2026 y Material 3
 * **Persistencia Local**: Room SQLite con KSP (`androidx.room`) y JSON DataStore
 * **Preferencias Seguras**: Jetpack DataStore Preferences (`androidx.datastore:datastore-preferences`)
-* **Hardware de Red**: Sockets TCP/IP puros y protocolo binario Systel Cuora
+* **Hardware de Red**: Sockets TCP/IP puros y protocolos industriales (Systel, Torrey, Rhino, Mettler Toledo, CAS, etc.)
 * **Visión Artificial**: Android CameraX y Google ML Kit Barcode Scanning
 * **Reportes Vectoriales**: Generador de PDF nativo Android (`PdfDocument`) y formateador de textos enriquecidos para WhatsApp
 
@@ -168,20 +167,15 @@ El proyecto cuenta con una suite integral de **37 pruebas unitarias automatizada
 ```powershell
 # Ejecutar la suite completa de pruebas unitarias
 .\gradlew.bat testDebugUnitTest
-
-# Compilar y empaquetar los 3 APKs (Tienda POS + Consola Dueño + Keygen Admin)
-.\gradlew.bat assembleDebug
 ```
 
-> **Resultado**: `BUILD SUCCESSFUL` (37/37 pruebas superadas al 100%, 0 fallos).  
-> **Ubicación de APKs**:  
-> - 🏪 Tienda Mostrador: `release_apks/SGNIA_Carniceria_POS_v1.0.apk`  
-> - 👔 Consola Dueño: `release_apks/SGNIA_Consola_Dueno_v1.0.apk`  
-> - 🔑 Keygen Celular: `release_apks/SGNIA_Keygen_Admin_v1.0.apk`
+> **Resultado**: `BUILD SUCCESSFUL` (37/37 pruebas superadas al 100%, 0 fallos).
 
 ---
 
-## 🏢 Acerca de SGNIA COMPANY
+## 📞 Contacto & SGNIA COMPANY
+
+<div align="center">
 
 ```
   ____   ____ _   _ ___    _       ____ ___  __  __ ____   QUÉ PROTEGE Y HACE
@@ -191,14 +185,25 @@ El proyecto cuenta con una suite integral de **37 pruebas unitarias automatizada
  |____/ \____|_| \_|___/_/   \_\  \____\___/|_|  |_|_|     de Alto Rendimiento
 ```
 
-* **Empresa**: **SGNIA COMPANY** (Software & Innovación Digital)
-* **Fundador & Dirección**: **Gamaliel Velazquez Galicia**
-* **Lema**: *“Software que Protege y Hace Crecer tu Negocio”*
+### **SGNIA COMPANY**
+*“Software que Protege y Hace Crecer tu Negocio”*  
+**Desarrollo de Software e Innovación Digital**
+
+</div>
+
+* **Liderazgo Técnico & Fundador**: **Gamaliel Velazquez Galicia**
+* **Disponibilidad**: *Disponible para cotizar proyectos 2026*
 * **Sitio Web Oficial**: [https://sgnia.xyz](https://sgnia.xyz)
-* **Soporte Técnico WhatsApp**: [+52 276 109 5688](https://wa.me/522761095688)
-* **Correo de Contacto**: `gmlvega0025@gmail.com`
-* **Ubicación**: Juan Jiménez 405, Centro, 75120 Nopalucan de la Granja, Puebla, México.
-* **Redes Sociales**: TikTok [@sgn_ia](https://www.tiktok.com/@sgn_ia) • GitHub [@Gamavg06](https://github.com/Gamavg06)
+* **WhatsApp Directo**: [+52 276 109 5688](https://wa.me/522761095688)
+* **Correo Electrónico**: [gmlvega0025@gmail.com](mailto:gmlvega0025@gmail.com)
+* **Dirección**: Juan Jiménez 405, Centro, C.P. 75120, Nopalucan de la Granja, Puebla, México.
+* **Redes y Portafolio**:
+  * TikTok: [@sgn_ia](https://www.tiktok.com/@sgn_ia)
+  * GitHub: [@Gamavg06](https://github.com/Gamavg06)
+  * Biografía del Fundador: [https://sgnia.xyz/fundador](https://sgnia.xyz/fundador)
+
+> 🔒 **Nota sobre Licenciamiento y Distribución**:  
+> La distribución de las aplicaciones y la activación de licencias se realizan exclusivamente de forma directa y privada bajo contrato con SGNIA COMPANY. Para solicitar demostraciones en vivo en tu negocio, cotizaciones o contratación de licencias, comunícate a través de los canales de contacto oficiales arriba indicados.
 
 ---
 
