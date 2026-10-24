@@ -25,18 +25,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Button
@@ -68,8 +74,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -98,6 +106,12 @@ private const val HMAC_SECRET_SEED = "SGNIA_ENTERPRISE_KEY_2026_SECURITY_SALT_GA
 private const val PREFS_KEYGEN = "sgnia_keygen_admin_database"
 private const val KEY_OWNERS_JSON = "owners_portfolio_json"
 
+private const val PREFS_PRICING = "sgnia_keygen_pricing_config"
+private const val KEY_PRICE_MONTHLY = "price_monthly"
+private const val KEY_PRICE_ANNUAL = "price_annual"
+private const val KEY_PRICE_LIFETIME = "price_lifetime"
+private const val KEY_PRICE_TRIAL = "price_trial"
+
 enum class KeygenTier(val code: String, val label: String, val badge: String) {
     DEMO_10M("10M", "10 Minutos (Demo en Vivo)", "⏱️ DEMO 10 MIN"),
     TRIAL_7D("07D", "7 Días (Prueba Comercial)", "📅 PRUEBA 7 DÍAS"),
@@ -105,6 +119,13 @@ enum class KeygenTier(val code: String, val label: String, val badge: String) {
     RENTAL_1Y("01Y", "Renta Anual (365 días)", "🗓️ RENTA ANUAL"),
     LIFETIME("LIFE", "Licencia Perpetua / Venta Definitiva", "♾️ LICENCIA PERPETUA")
 }
+
+data class PricingConfig(
+    val monthlyRentPerBranch: Double = 600.0,
+    val annualRentPerBranch: Double = 5500.0,
+    val lifetimePerBranch: Double = 12000.0,
+    val trialPerBranch: Double = 0.0
+)
 
 data class BranchItem(
     val id: String = UUID.randomUUID().toString(),
@@ -122,6 +143,10 @@ data class OwnerRecord(
     val email: String,
     val membershipTier: KeygenTier,
     val branches: List<BranchItem>,
+    val pricePerBranch: Double = 0.0,
+    val totalAmount: Double = 0.0,
+    val paymentStatus: String = "NO_PAGADO", // "PAGADO" o "NO_PAGADO"
+    val paymentMethod: String = "Transferencia Bancaria",
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -140,6 +165,8 @@ class MainActivity : ComponentActivity() {
 fun KeygenAdminApp() {
     val context = LocalContext.current
     var ownersList by remember { mutableStateOf(loadOwnersFromPrefs(context)) }
+    var pricingConfig by remember { mutableStateOf(loadPricingConfig(context)) }
+    var isShowingPricingDialog by remember { mutableStateOf(false) }
 
     // Estados de navegación interna
     var selectedOwnerForView by remember { mutableStateOf<OwnerRecord?>(null) }
@@ -149,9 +176,23 @@ fun KeygenAdminApp() {
         ownersList = loadOwnersFromPrefs(context)
     }
 
+    if (isShowingPricingDialog) {
+        PricingConfigDialog(
+            currentConfig = pricingConfig,
+            onDismiss = { isShowingPricingDialog = false },
+            onSave = { updatedConfig ->
+                savePricingConfig(context, updatedConfig)
+                pricingConfig = updatedConfig
+                isShowingPricingDialog = false
+                Toast.makeText(context, "Tarifario maestro actualizado", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
     if (isCreatingOwner) {
         CreateOrEditOwnerScreen(
             existingOwner = null,
+            pricingConfig = pricingConfig,
             onDismiss = { isCreatingOwner = false },
             onSave = { newOwner ->
                 saveOwnerToPrefs(context, newOwner)
@@ -162,6 +203,7 @@ fun KeygenAdminApp() {
     } else if (selectedOwnerForView != null) {
         OwnerDetailScreen(
             owner = selectedOwnerForView!!,
+            pricingConfig = pricingConfig,
             onBack = { selectedOwnerForView = null },
             onUpdateOwner = { updated ->
                 saveOwnerToPrefs(context, updated)
@@ -178,7 +220,8 @@ fun KeygenAdminApp() {
         OwnerPortfolioScreen(
             owners = ownersList,
             onSelectOwner = { selectedOwnerForView = it },
-            onCreateNewOwner = { isCreatingOwner = true }
+            onCreateNewOwner = { isCreatingOwner = true },
+            onOpenPricing = { isShowingPricingDialog = true }
         )
     }
 }
@@ -190,7 +233,8 @@ fun KeygenAdminApp() {
 fun OwnerPortfolioScreen(
     owners: List<OwnerRecord>,
     onSelectOwner: (OwnerRecord) -> Unit,
-    onCreateNewOwner: () -> Unit
+    onCreateNewOwner: () -> Unit,
+    onOpenPricing: () -> Unit
 ) {
     Scaffold(
         containerColor = NoirBg,
@@ -249,20 +293,37 @@ fun OwnerPortfolioScreen(
                                 color = NoirCream
                             )
                             Text(
-                                text = "Cartera de Licencias",
+                                text = "Cartera de Clientes",
                                 style = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NoirTextPrimary)
                             )
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(100.dp))
-                            .background(NoirEmerald.copy(alpha = 0.15f))
-                            .border(1.dp, NoirEmerald.copy(alpha = 0.4f), RoundedCornerShape(100.dp))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("${owners.size} CLIENTES", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NoirEmerald)
+                        // Botón de Tarifario Maestro
+                        IconButton(
+                            onClick = onOpenPricing,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(NoirSurfaceRaised)
+                                .border(1.dp, NoirHairline, RoundedCornerShape(10.dp))
+                        ) {
+                            Icon(Icons.Default.Settings, contentDescription = "Tarifario Maestro", tint = NoirCream, modifier = Modifier.size(20.dp))
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(NoirEmerald.copy(alpha = 0.15f))
+                                .border(1.dp, NoirEmerald.copy(alpha = 0.4f), RoundedCornerShape(100.dp))
+                                .padding(horizontal = 10.dp, vertical = 5.dp)
+                        ) {
+                            Text("${owners.size} CLIENTES", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NoirEmerald)
+                        }
                     }
                 }
 
@@ -282,11 +343,12 @@ fun OwnerPortfolioScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.padding(20.dp)
                         ) {
                             Icon(Icons.Default.Store, contentDescription = null, tint = NoirTextSecondary, modifier = Modifier.size(44.dp))
                             Text("Aún no tienes clientes registrados", fontWeight = FontWeight.Bold, color = NoirTextPrimary, fontSize = 14.sp)
-                            Text("Pulsa '+ Nuevo Cliente' para registrar al dueño de una carnicería y sus sucursales.", fontSize = 11.sp, color = NoirTextSecondary)
+                            Text("Pulsa '+ Nuevo Cliente' para registrar al dueño de una carnicería, cotizar sus sucursales y generar comprobantes.", fontSize = 12.sp, color = NoirTextSecondary)
                         }
                     }
                 }
@@ -308,6 +370,8 @@ fun OwnerCardSummary(
     owner: OwnerRecord,
     onClick: () -> Unit
 ) {
+    val isPaid = owner.paymentStatus == "PAGADO"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,37 +406,56 @@ fun OwnerCardSummary(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(
-                            when (owner.membershipTier) {
-                                KeygenTier.LIFETIME -> NoirEmerald.copy(alpha = 0.15f)
-                                KeygenTier.RENTAL_1M, KeygenTier.RENTAL_1Y -> NoirCream.copy(alpha = 0.15f)
-                                else -> NoirAmber.copy(alpha = 0.15f)
-                            }
-                        )
-                        .border(
-                            1.dp,
-                            when (owner.membershipTier) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // Badge de Membresía
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(
+                                when (owner.membershipTier) {
+                                    KeygenTier.LIFETIME -> NoirEmerald.copy(alpha = 0.15f)
+                                    KeygenTier.RENTAL_1M, KeygenTier.RENTAL_1Y -> NoirCream.copy(alpha = 0.15f)
+                                    else -> NoirAmber.copy(alpha = 0.15f)
+                                }
+                            )
+                            .border(
+                                1.dp,
+                                when (owner.membershipTier) {
+                                    KeygenTier.LIFETIME -> NoirEmerald
+                                    KeygenTier.RENTAL_1M, KeygenTier.RENTAL_1Y -> NoirCream
+                                    else -> NoirAmber
+                                },
+                                RoundedCornerShape(100.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = owner.membershipTier.badge,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = when (owner.membershipTier) {
                                 KeygenTier.LIFETIME -> NoirEmerald
                                 KeygenTier.RENTAL_1M, KeygenTier.RENTAL_1Y -> NoirCream
                                 else -> NoirAmber
-                            },
-                            RoundedCornerShape(100.dp)
+                            }
                         )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = owner.membershipTier.badge,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = when (owner.membershipTier) {
-                            KeygenTier.LIFETIME -> NoirEmerald
-                            KeygenTier.RENTAL_1M, KeygenTier.RENTAL_1Y -> NoirCream
-                            else -> NoirAmber
-                        }
-                    )
+                    }
+
+                    // Badge de Pago
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(if (isPaid) NoirEmerald.copy(alpha = 0.15f) else NoirDanger.copy(alpha = 0.15f))
+                            .border(1.dp, if (isPaid) NoirEmerald else NoirDanger, RoundedCornerShape(100.dp))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = if (isPaid) "PAGADO" else "PENDIENTE",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (isPaid) NoirEmerald else NoirDanger
+                        )
+                    }
                 }
             }
 
@@ -384,7 +467,7 @@ fun OwnerCardSummary(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "🏬 ${owner.branches.size} Sucursales vinculadas",
+                    text = "🏬 ${owner.branches.size} Sucursales",
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
@@ -392,10 +475,11 @@ fun OwnerCardSummary(
                 )
 
                 Text(
-                    text = "Ver Sucursales ▶",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp,
-                    color = NoirCream
+                    text = "Total: $${String.format(Locale.US, "%,.2f", owner.totalAmount)} MXN",
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.sp,
+                    color = if (isPaid) NoirEmerald else NoirAmber
                 )
             }
         }
@@ -403,11 +487,127 @@ fun OwnerCardSummary(
 }
 
 // =========================================================================
-// PANTALLA 2: REGISTRO DE CLIENTE Y LICENCIAMIENTO SGNIA (FORMULARIO EXACTO)
+// DIÁLOGO: TARIFARIO MAESTRO (CONFIGURACIÓN DE PRECIOS BASE)
+// =========================================================================
+@Composable
+fun PricingConfigDialog(
+    currentConfig: PricingConfig,
+    onDismiss: () -> Unit,
+    onSave: (PricingConfig) -> Unit
+) {
+    var monthlyStr by remember { mutableStateOf(currentConfig.monthlyRentPerBranch.toString()) }
+    var annualStr by remember { mutableStateOf(currentConfig.annualRentPerBranch.toString()) }
+    var lifetimeStr by remember { mutableStateOf(currentConfig.lifetimePerBranch.toString()) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = NoirSurface),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.dp, NoirCream.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("TARIFARIO MAESTRO SGNIA", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = NoirCream, fontWeight = FontWeight.Bold)
+                        Text("Precios Base por Sucursal", fontSize = 16.sp, fontWeight = FontWeight.Black, color = NoirTextPrimary)
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = NoirTextSecondary)
+                    }
+                }
+
+                Text(
+                    text = "Configura los precios sugeridos al crear contratos con nuevos dueños. Siempre podrás editarlos individualmente.",
+                    fontSize = 12.sp,
+                    color = NoirTextSecondary
+                )
+
+                OutlinedTextField(
+                    value = monthlyStr,
+                    onValueChange = { monthlyStr = it },
+                    label = { Text("Renta Mensual por Sucursal (MXN)", color = NoirTextSecondary) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = outlinedColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = annualStr,
+                    onValueChange = { annualStr = it },
+                    label = { Text("Renta Anual por Sucursal (MXN)", color = NoirTextSecondary) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = outlinedColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = lifetimeStr,
+                    onValueChange = { lifetimeStr = it },
+                    label = { Text("Licencia Perpetua / Venta Definitiva (MXN)", color = NoirTextSecondary) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = outlinedColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, NoirHairline),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirTextSecondary)
+                    ) {
+                        Text("Cancelar")
+                    }
+
+                    Button(
+                        onClick = {
+                            val newConfig = PricingConfig(
+                                monthlyRentPerBranch = monthlyStr.toDoubleOrNull() ?: 600.0,
+                                annualRentPerBranch = annualStr.toDoubleOrNull() ?: 5500.0,
+                                lifetimePerBranch = lifetimeStr.toDoubleOrNull() ?: 12000.0,
+                                trialPerBranch = 0.0
+                            )
+                            onSave(newConfig)
+                        },
+                        modifier = Modifier.weight(1.3f),
+                        colors = ButtonDefaults.buttonColors(containerColor = NoirCream, contentColor = NoirOnCream),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Guardar Tarifas", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// =========================================================================
+// PANTALLA 2: REGISTRO DE CLIENTE, SUCURSALES Y COTIZACIÓN COMERCIAL
 // =========================================================================
 @Composable
 fun CreateOrEditOwnerScreen(
     existingOwner: OwnerRecord?,
+    pricingConfig: PricingConfig,
     onDismiss: () -> Unit,
     onSave: (OwnerRecord) -> Unit
 ) {
@@ -428,6 +628,42 @@ fun CreateOrEditOwnerScreen(
                 add(BranchItem(name = "Sucursal Matriz - Centro"))
             }
         }
+    }
+
+    // Campos de precios y estado de pago
+    val defaultUnitPrice = when (selectedTier) {
+        KeygenTier.RENTAL_1M -> pricingConfig.monthlyRentPerBranch
+        KeygenTier.RENTAL_1Y -> pricingConfig.annualRentPerBranch
+        KeygenTier.LIFETIME -> pricingConfig.lifetimePerBranch
+        KeygenTier.DEMO_10M, KeygenTier.TRIAL_7D -> 0.0
+    }
+
+    var pricePerBranchStr by remember {
+        mutableStateOf(
+            existingOwner?.let { String.format(Locale.US, "%.2f", it.pricePerBranch) }
+                ?: String.format(Locale.US, "%.2f", defaultUnitPrice)
+        )
+    }
+
+    var totalAmountStr by remember {
+        mutableStateOf(
+            existingOwner?.let { String.format(Locale.US, "%.2f", it.totalAmount) }
+                ?: String.format(Locale.US, "%.2f", defaultUnitPrice * branches.size)
+        )
+    }
+
+    var isPaid by remember { mutableStateOf(existingOwner?.paymentStatus == "PAGADO") }
+    var paymentMethod by remember { mutableStateOf(existingOwner?.paymentMethod ?: "Transferencia Bancaria") }
+
+    fun recalculateTotals(tier: KeygenTier, count: Int) {
+        val unit = when (tier) {
+            KeygenTier.RENTAL_1M -> pricingConfig.monthlyRentPerBranch
+            KeygenTier.RENTAL_1Y -> pricingConfig.annualRentPerBranch
+            KeygenTier.LIFETIME -> pricingConfig.lifetimePerBranch
+            KeygenTier.DEMO_10M, KeygenTier.TRIAL_7D -> 0.0
+        }
+        pricePerBranchStr = String.format(Locale.US, "%.2f", unit)
+        totalAmountStr = String.format(Locale.US, "%.2f", unit * count)
     }
 
     fun generateKeyForBranch(index: Int) {
@@ -591,7 +827,7 @@ fun CreateOrEditOwnerScreen(
                             color = NoirCream
                         )
                         Text(
-                            text = "${branches.size} Sucursales contratadas",
+                            text = "${branches.size} Sucursales",
                             fontFamily = FontFamily.Monospace,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
@@ -607,7 +843,10 @@ fun CreateOrEditOwnerScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(if (isSelected) NoirCream else NoirSurfaceRaised)
                                 .border(1.dp, if (isSelected) NoirCream else NoirHairline, RoundedCornerShape(12.dp))
-                                .clickable { selectedTier = tier }
+                                .clickable {
+                                    selectedTier = tier
+                                    recalculateTotals(tier, branches.size)
+                                }
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
@@ -632,7 +871,122 @@ fun CreateOrEditOwnerScreen(
             }
         }
 
-        // BLOQUE 3: REGISTRO DE SUCURSALES (Vincular Hardware ID & Claves)
+        // BLOQUE 3: PRECIOS, FACTURACIÓN Y ESTADO DE PAGO
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = NoirSurface),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, NoirHairline)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "3. CONDICIONES COMERCIALES Y COBRO",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        color = NoirCream
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = pricePerBranchStr,
+                            onValueChange = {
+                                pricePerBranchStr = it
+                                val unit = it.toDoubleOrNull() ?: 0.0
+                                totalAmountStr = String.format(Locale.US, "%.2f", unit * branches.size)
+                            },
+                            modifier = Modifier.weight(1f),
+                            label = { Text("Precio x Sucursal (MXN)", color = NoirTextSecondary) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = outlinedColors()
+                        )
+
+                        OutlinedTextField(
+                            value = totalAmountStr,
+                            onValueChange = { totalAmountStr = it },
+                            modifier = Modifier.weight(1f),
+                            label = { Text("Total a Cobrar (MXN)", color = NoirTextSecondary) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = outlinedColors()
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = paymentMethod,
+                        onValueChange = { paymentMethod = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Método de Pago (ej. Transferencia, Efectivo)", color = NoirTextSecondary) },
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = outlinedColors()
+                    )
+
+                    // Estado de Pago: Toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Estado del Pago:",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NoirTextPrimary
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Botón Pagado
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (isPaid) NoirEmerald else NoirSurfaceRaised)
+                                    .border(1.dp, if (isPaid) NoirEmerald else NoirHairline, RoundedCornerShape(10.dp))
+                                    .clickable { isPaid = true }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "🟢 PAGADA",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 11.sp,
+                                    color = if (isPaid) Color.Black else NoirTextSecondary
+                                )
+                            }
+
+                            // Botón No Pagado
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (!isPaid) NoirDanger else NoirSurfaceRaised)
+                                    .border(1.dp, if (!isPaid) NoirDanger else NoirHairline, RoundedCornerShape(10.dp))
+                                    .clickable { isPaid = false }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = "🔴 NO PAGADA",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 11.sp,
+                                    color = if (!isPaid) Color.White else NoirTextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // BLOQUE 4: REGISTRO DE SUCURSALES (Vincular Hardware ID & Claves)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -640,7 +994,7 @@ fun CreateOrEditOwnerScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "3. REGISTRO DE SUCURSALES",
+                    text = "4. REGISTRO DE SUCURSALES (${branches.size})",
                     fontFamily = FontFamily.Monospace,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
@@ -651,6 +1005,8 @@ fun CreateOrEditOwnerScreen(
                     onClick = {
                         val num = branches.size + 1
                         branches.add(BranchItem(name = "Sucursal $num"))
+                        val unit = pricePerBranchStr.toDoubleOrNull() ?: 0.0
+                        totalAmountStr = String.format(Locale.US, "%.2f", unit * branches.size)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = NoirSurfaceRaised, contentColor = NoirCream),
                     border = BorderStroke(1.dp, NoirCream.copy(alpha = 0.5f)),
@@ -690,7 +1046,11 @@ fun CreateOrEditOwnerScreen(
                         )
 
                         if (branches.size > 1) {
-                            IconButton(onClick = { branches.removeAt(index) }) {
+                            IconButton(onClick = {
+                                branches.removeAt(index)
+                                val unit = pricePerBranchStr.toDoubleOrNull() ?: 0.0
+                                totalAmountStr = String.format(Locale.US, "%.2f", unit * branches.size)
+                            }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = NoirDanger, modifier = Modifier.size(18.dp))
                             }
                         }
@@ -824,6 +1184,10 @@ fun CreateOrEditOwnerScreen(
                             email = email.trim(),
                             membershipTier = selectedTier,
                             branches = branches.toList(),
+                            pricePerBranch = pricePerBranchStr.toDoubleOrNull() ?: 0.0,
+                            totalAmount = totalAmountStr.toDoubleOrNull() ?: 0.0,
+                            paymentStatus = if (isPaid) "PAGADO" else "NO_PAGADO",
+                            paymentMethod = paymentMethod.trim().ifBlank { "Transferencia Bancaria" },
                             createdAt = existingOwner?.createdAt ?: System.currentTimeMillis()
                         )
                         onSave(record)
@@ -840,11 +1204,12 @@ fun CreateOrEditOwnerScreen(
 }
 
 // =========================================================================
-// PANTALLA 3: DETALLE DEL DUEÑO Y GESTIÓN DE SUS SUCURSALES
+// PANTALLA 3: DETALLE DEL DUEÑO, COBRO Y GENERACIÓN DE COMPROBANTE OFICIAL
 // =========================================================================
 @Composable
 fun OwnerDetailScreen(
     owner: OwnerRecord,
+    pricingConfig: PricingConfig,
     onBack: () -> Unit,
     onUpdateOwner: (OwnerRecord) -> Unit,
     onDeleteOwner: (OwnerRecord) -> Unit
@@ -856,6 +1221,7 @@ fun OwnerDetailScreen(
     if (isEditing) {
         CreateOrEditOwnerScreen(
             existingOwner = owner,
+            pricingConfig = pricingConfig,
             onDismiss = { isEditing = false },
             onSave = { updated ->
                 onUpdateOwner(updated)
@@ -864,6 +1230,8 @@ fun OwnerDetailScreen(
         )
         return
     }
+
+    val isPaid = owner.paymentStatus == "PAGADO"
 
     LazyColumn(
         modifier = Modifier
@@ -900,7 +1268,7 @@ fun OwnerDetailScreen(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     IconButton(onClick = { isEditing = true }) {
-                        Icon(Icons.Default.Store, contentDescription = "Editar", tint = NoirCream)
+                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = NoirCream)
                     }
                     IconButton(onClick = { onDeleteOwner(owner) }) {
                         Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = NoirDanger)
@@ -910,72 +1278,179 @@ fun OwnerDetailScreen(
             HorizontalDivider(color = NoirHairline, modifier = Modifier.padding(vertical = 6.dp))
         }
 
-        // TARJETA DE MEMBRESÍA Y DATOS DE CONTACTO
+        // TARJETA FINANCIERA Y CONTROL DE COBRO
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = NoirSurface),
                 shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, NoirHairline)
+                border = BorderStroke(1.dp, if (isPaid) NoirEmerald.copy(alpha = 0.5f) else NoirDanger.copy(alpha = 0.5f))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("CONTRATO SGNIA", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = NoirCream, fontWeight = FontWeight.Bold)
-                        Text(owner.membershipTier.badge, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = NoirEmerald)
+                        Text("ESTADO DE COBRO Y CONTRATO", fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = NoirCream, fontWeight = FontWeight.Bold)
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(if (isPaid) NoirEmerald.copy(alpha = 0.15f) else NoirDanger.copy(alpha = 0.15f))
+                                .border(1.dp, if (isPaid) NoirEmerald else NoirDanger, RoundedCornerShape(100.dp))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (isPaid) "● PAGADO" else "● PENDIENTE DE COBRO",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                color = if (isPaid) NoirEmerald else NoirDanger
+                            )
+                        }
                     }
 
-                    Text("Teléfono WhatsApp: ${owner.phoneWhatsApp.ifBlank { "No registrado" }}", fontSize = 12.sp, color = NoirTextPrimary)
-                    Text("Correo: ${owner.email.ifBlank { "No registrado" }}", fontSize = 12.sp, color = NoirTextSecondary)
-                    Text("Registrado el: ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(owner.createdAt))}", fontSize = 11.sp, color = NoirTextSecondary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Column {
+                            Text(
+                                text = "Precio x Sucursal:",
+                                fontSize = 11.sp,
+                                color = NoirTextSecondary
+                            )
+                            Text(
+                                text = "$${String.format(Locale.US, "%,.2f", owner.pricePerBranch)} MXN",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = NoirTextPrimary
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "TOTAL DEL CONTRATO (${owner.branches.size} suc.):",
+                                fontSize = 11.sp,
+                                color = NoirTextSecondary
+                            )
+                            Text(
+                                text = "$${String.format(Locale.US, "%,.2f", owner.totalAmount)} MXN",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 20.sp,
+                                color = if (isPaid) NoirEmerald else NoirAmber
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "Método: ${owner.paymentMethod} • Plan: ${owner.membershipTier.label}",
+                        fontSize = 11.sp,
+                        color = NoirTextSecondary
+                    )
+
+                    // Botón para alternar Pagado / No pagado
+                    Button(
+                        onClick = {
+                            val newStatus = if (isPaid) "NO_PAGADO" else "PAGADO"
+                            val updated = owner.copy(paymentStatus = newStatus)
+                            onUpdateOwner(updated)
+                            val msg = if (newStatus == "PAGADO") "Contrato marcado como PAGADO 🟢" else "Contrato marcado como PENDIENTE 🔴"
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isPaid) NoirSurfaceRaised else NoirEmerald,
+                            contentColor = if (isPaid) NoirCream else Color.Black
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, if (isPaid) NoirHairlineStrong else NoirEmerald),
+                        modifier = Modifier.fillMaxWidth().height(42.dp)
+                    ) {
+                        Text(
+                            text = if (isPaid) "Cambiar a PENDIENTE DE COBRO 🔴" else "Marcar como PAGADA 🟢",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }
 
-        // BOTÓN: ENVIAR TODAS LAS CLAVES POR WHATSAPP AL DUEÑO
+        // BOTONES DE COMPROBANTES: PDF OFICIAL Y WHATSAPP
         item {
-            Button(
-                onClick = {
-                    val sb = StringBuilder()
-                    sb.append("🥩 *SGNIA CARNICERÍA POS · PAQUETE DE ACTIVACIONES*\n")
-                    sb.append("Estimado(a) *${owner.ownerName}* (*${owner.companyName}*):\n\n")
-                    sb.append("Aquí tienes las claves de activación para tus *${owner.branches.size} sucursales*:\n")
-                    sb.append("Plan contratado: *${owner.membershipTier.label}*\n\n")
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // 1. GENERAR PDF OFICIAL CON LOGOS
+                Button(
+                    onClick = {
+                        try {
+                            val pdfFile = PdfReceiptGenerator.generateReceiptPdf(context, owner)
+                            PdfReceiptGenerator.shareReceiptPdf(context, pdfFile)
+                            Toast.makeText(context, "Comprobante PDF generado exitosamente", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error al generar PDF: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirCream, contentColor = NoirOnCream),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Icon(Icons.Default.Description, contentDescription = null, tint = NoirOnCream, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("📄 Generar y Compartir Comprobante Oficial (PDF)", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                }
 
-                    owner.branches.forEachIndexed { i, b ->
-                        sb.append("🏬 *SUCURSAL ${i + 1}:* ${b.name}\n")
-                        sb.append("   📱 Hardware ID: `${b.hardwareId}`\n")
-                        sb.append("   🔑 Clave: `${b.generatedKey}`\n\n")
-                    }
+                // 2. ENVIAR RESUMEN POR WHATSAPP
+                Button(
+                    onClick = {
+                        val sb = StringBuilder()
+                        sb.append("🥩 *SGNIA COMPANY · COMPROBANTE DE LICENCIAMIENTO*\n")
+                        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+                        sb.append("Cliente: *${owner.ownerName}*\n")
+                        sb.append("Empresa: *${owner.companyName.ifBlank { "Carnicería" }}*\n")
+                        sb.append("Plan: *${owner.membershipTier.label}*\n")
+                        sb.append("Sucursales activas: *${owner.branches.size}*\n")
+                        sb.append("Importe Total: *$${String.format(Locale.US, "%,.2f", owner.totalAmount)} MXN*\n")
+                        sb.append("Estado de Pago: *${if (isPaid) "🟢 PAGADO" else "🔴 PENDIENTE"}*\n")
+                        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n")
+                        sb.append("🔑 *CLAVES DE ACTIVACIÓN INDUSTRIAL:*\n\n")
 
-                    sb.append("*Instrucciones:*\n")
-                    sb.append("1. Abre la app en la tablet de cada tienda.\n")
-                    sb.append("2. Ve a 'Licencia de Operación'.\n")
-                    sb.append("3. Ingresa la clave correspondiente a esa sucursal y pulsa 'ACTIVAR'.\n\n")
-                    sb.append("_SGNIA COMPANY • Software que Protege y Hace Crecer tu Negocio_\n")
-                    sb.append("https://sgnia.xyz")
+                        owner.branches.forEachIndexed { i, b ->
+                            sb.append("🏬 *${i + 1}. ${b.name}*\n")
+                            sb.append("   📱 Hardware ID: `${b.hardwareId}`\n")
+                            sb.append("   🔐 Clave: `${b.generatedKey}`\n\n")
+                        }
 
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, sb.toString())
-                    }
-                    context.startActivity(Intent.createChooser(intent, "Enviar Paquete a Dueño"))
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366), contentColor = Color.Black),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-            ) {
-                Icon(Icons.Default.Share, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("📲 Enviar Paquete Completo por WhatsApp al Dueño", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                        sb.append("*Instrucciones de Activación:*\n")
+                        sb.append("1. Abre la app en la tablet de cada tienda.\n")
+                        sb.append("2. Ve a 'Licencia de Operación'.\n")
+                        sb.append("3. Ingresa la clave correspondiente y pulsa 'ACTIVAR'.\n\n")
+                        sb.append("_Gamaliel Velazquez Galicia • Liderazgo Técnico_\n")
+                        sb.append("_SGNIA COMPANY • Software que Protege y Hace Crecer tu Negocio_\n")
+                        sb.append("https://sgnia.xyz • WhatsApp: +52 276 109 5688")
+
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, sb.toString())
+                        }
+                        context.startActivity(Intent.createChooser(intent, "Enviar Comprobante a Dueño"))
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366), contentColor = Color.Black),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("💬 Enviar Comprobante y Claves por WhatsApp", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Black)
+                }
             }
         }
 
@@ -1031,6 +1506,10 @@ fun OwnerDetailScreen(
                 }
             }
         }
+
+        item {
+            Spacer(modifier = Modifier.height(20.dp))
+        }
     }
 }
 
@@ -1045,8 +1524,28 @@ fun outlinedColors() = OutlinedTextFieldDefaults.colors(
 )
 
 // =========================================================================
-// PERSISTENCIA LOCAL EN SHARREDPREFERENCES (CARTERA DE CLIENTES PERMANENTE)
+// PERSISTENCIA LOCAL EN SHARED PREFERENCES
 // =========================================================================
+private fun loadPricingConfig(context: Context): PricingConfig {
+    val prefs = context.getSharedPreferences(PREFS_PRICING, Context.MODE_PRIVATE)
+    return PricingConfig(
+        monthlyRentPerBranch = prefs.getFloat(KEY_PRICE_MONTHLY, 600f).toDouble(),
+        annualRentPerBranch = prefs.getFloat(KEY_PRICE_ANNUAL, 5500f).toDouble(),
+        lifetimePerBranch = prefs.getFloat(KEY_PRICE_LIFETIME, 12000f).toDouble(),
+        trialPerBranch = prefs.getFloat(KEY_PRICE_TRIAL, 0f).toDouble()
+    )
+}
+
+private fun savePricingConfig(context: Context, config: PricingConfig) {
+    val prefs = context.getSharedPreferences(PREFS_PRICING, Context.MODE_PRIVATE)
+    prefs.edit()
+        .putFloat(KEY_PRICE_MONTHLY, config.monthlyRentPerBranch.toFloat())
+        .putFloat(KEY_PRICE_ANNUAL, config.annualRentPerBranch.toFloat())
+        .putFloat(KEY_PRICE_LIFETIME, config.lifetimePerBranch.toFloat())
+        .putFloat(KEY_PRICE_TRIAL, config.trialPerBranch.toFloat())
+        .apply()
+}
+
 private fun loadOwnersFromPrefs(context: Context): List<OwnerRecord> {
     val prefs = context.getSharedPreferences(PREFS_KEYGEN, Context.MODE_PRIVATE)
     val jsonStr = prefs.getString(KEY_OWNERS_JSON, null) ?: return emptyList()
@@ -1080,6 +1579,10 @@ private fun loadOwnersFromPrefs(context: Context): List<OwnerRecord> {
                     email = obj.optString("email", ""),
                     membershipTier = tier,
                     branches = branchList,
+                    pricePerBranch = obj.optDouble("pricePerBranch", 0.0),
+                    totalAmount = obj.optDouble("totalAmount", 0.0),
+                    paymentStatus = obj.optString("paymentStatus", "NO_PAGADO"),
+                    paymentMethod = obj.optString("paymentMethod", "Transferencia Bancaria"),
                     createdAt = obj.optLong("createdAt", System.currentTimeMillis())
                 )
             )
@@ -1116,6 +1619,10 @@ private fun saveAllOwners(context: Context, list: List<OwnerRecord>) {
         obj.put("phoneWhatsApp", o.phoneWhatsApp)
         obj.put("email", o.email)
         obj.put("tier", o.membershipTier.name)
+        obj.put("pricePerBranch", o.pricePerBranch)
+        obj.put("totalAmount", o.totalAmount)
+        obj.put("paymentStatus", o.paymentStatus)
+        obj.put("paymentMethod", o.paymentMethod)
         obj.put("createdAt", o.createdAt)
 
         val bArray = JSONArray()
