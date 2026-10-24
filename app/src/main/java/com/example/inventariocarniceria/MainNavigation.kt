@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MergeType
 import androidx.compose.material.icons.filled.Scale
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.inventariocarniceria.data.licensing.LicenseManager
 import com.example.inventariocarniceria.data.preferences.LegalPreferences
 import com.example.inventariocarniceria.theme.SgniaTheme
 import com.example.inventariocarniceria.ui.components.SgniaCerhanSidebar
@@ -49,6 +51,7 @@ import com.example.inventariocarniceria.ui.screens.admin.MasterOrderUnificationS
 import com.example.inventariocarniceria.ui.screens.auth.SecurityVaultScreen
 import com.example.inventariocarniceria.ui.screens.dashboard.ExecutiveOwnerDashboardScreen
 import com.example.inventariocarniceria.ui.screens.legal.LegalAcceptanceScreen
+import com.example.inventariocarniceria.ui.screens.licensing.LicenseActivationScreen
 import com.example.inventariocarniceria.ui.screens.manager.ManagerInvestmentScreen
 import com.example.inventariocarniceria.ui.screens.orders.OrdersScreen
 import com.example.inventariocarniceria.ui.screens.reception.StockReceptionScreen
@@ -69,6 +72,11 @@ fun MainNavigation(viewModel: InventoryViewModel) {
     val context = LocalContext.current
     val legalPrefs = remember { LegalPreferences(context) }
     val isTermsAccepted by legalPrefs.isTermsAccepted.collectAsState(initial = null)
+    var licenseInfo by remember { mutableStateOf(LicenseManager.checkLicense(context)) }
+
+    LaunchedEffect(showSplash) {
+        licenseInfo = LicenseManager.checkLicense(context)
+    }
 
     SgniaTheme(themeMode = themeMode) {
         if (showSplash) {
@@ -78,6 +86,12 @@ fun MainNavigation(viewModel: InventoryViewModel) {
         } else if (isTermsAccepted == false) {
             LegalAcceptanceScreen(
                 onAcceptanceComplete = { /* DataStore Flow actualiza automáticamente el estado */ }
+            )
+        } else if (licenseInfo.status != LicenseManager.LicenseStatus.ACTIVE) {
+            LicenseActivationScreen(
+                onActivationSuccess = {
+                    licenseInfo = LicenseManager.checkLicense(context)
+                }
             )
         } else if (!uiState.isLoggedIn) {
             // LOGIN EJECUTIVO ADAPTADO A LA PLANTILLA CERHAN (NEGRO MATE Y CREMA)
@@ -110,6 +124,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                     SgniaSidebarItem("sucursales", "Sucursales y Tiendas", Icons.Default.Business),
                     SgniaSidebarItem("proveedores", "Proveedores", Icons.Default.LocalShipping),
                     SgniaSidebarItem("seguridad", "Seguridad y PIN", Icons.Default.Lock),
+                    SgniaSidebarItem("licencia", "Licencia de Software", Icons.Default.Security),
                     SgniaSidebarItem("acerca_de", "Acerca de SGNIA", Icons.Default.Info)
                 )
             }
@@ -166,6 +181,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                                 "sucursales" -> AdminBranchesScreen(viewModel = viewModel)
                                 "proveedores" -> AdminSuppliersScreen(viewModel = viewModel)
                                 "seguridad" -> AdminSecurityScreen(viewModel = viewModel)
+                                "licencia" -> LicenseActivationScreen(onBack = { selectedOwnerSection = "home" })
                                 "acerca_de" -> AboutSgniaScreen(onBack = { selectedOwnerSection = "home" })
                                 else -> MasterOrderUnificationScreen(viewModel = viewModel)
                             }
@@ -197,6 +213,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                     SgniaSidebarItem("pedidos", "Pedidos de Surtido", Icons.AutoMirrored.Filled.ReceiptLong, if (pendingOrders.isNotEmpty()) "${pendingOrders.size}" else null),
                     SgniaSidebarItem("inversion", "Mi Inversión Local", Icons.Default.CardGiftcard),
                     SgniaSidebarItem("ajustes", "Ajustes de Sistema", Icons.Default.Settings),
+                    SgniaSidebarItem("licencia", "Licencia de Software", Icons.Default.Security),
                     SgniaSidebarItem("acerca_de", "Acerca de SGNIA", Icons.Default.Info)
                 )
             }
@@ -253,8 +270,10 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                                 "inversion" -> ManagerInvestmentScreen(viewModel = viewModel)
                                 "ajustes" -> SettingsScreen(
                                     viewModel = viewModel,
-                                    onOpenAbout = { selectedStoreSection = "acerca_de" }
+                                    onOpenAbout = { selectedStoreSection = "acerca_de" },
+                                    onOpenLicensing = { selectedStoreSection = "licencia" }
                                 )
+                                "licencia" -> LicenseActivationScreen(onBack = { selectedStoreSection = "ajustes" })
                                 "acerca_de" -> AboutSgniaScreen(onBack = { selectedStoreSection = "ajustes" })
                             }
                         }

@@ -256,7 +256,12 @@ fun IndustrialScaleVisorScreen(
             onDismissRequest = { isCaptureSheetOpen = false },
             sheetState = sheetState,
             containerColor = CardBgColor,
-            contentColor = PrimaryTextColor
+            contentColor = PrimaryTextColor,
+            dragHandle = {
+                androidx.compose.material3.BottomSheetDefaults.DragHandle(
+                    color = ButtonBorderColor
+                )
+            }
         ) {
             val activeScaleName = if (scaleState.activeScaleId == scale2.id) "Báscula 2" else "Báscula 1"
             val activeWeight = scaleState.currentWeight
@@ -391,7 +396,10 @@ fun IndustrialScaleVisorScreen(
 
                     ExposedDropdownMenu(
                         expanded = searchExpanded && suggestions.isNotEmpty(),
-                        onDismissRequest = { searchExpanded = false }
+                        onDismissRequest = { searchExpanded = false },
+                        modifier = Modifier
+                            .background(CardBgColor)
+                            .border(1.dp, ButtonBorderColor, RoundedCornerShape(12.dp))
                     ) {
                         suggestions.forEach { prod ->
                             DropdownMenuItem(
@@ -404,19 +412,24 @@ fun IndustrialScaleVisorScreen(
                                         Text(
                                             text = "[#${prod.localCode}] ${prod.name}",
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp
+                                            fontSize = 13.sp,
+                                            color = PrimaryTextColor
                                         )
                                         Text(
                                             text = "$${String.format(Locale.US, "%.2f", prod.price)}/kg",
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 12.sp
+                                            fontSize = 12.sp,
+                                            color = StatusStableGreen
                                         )
                                     }
                                 },
                                 onClick = {
                                     viewModel.onCodeInputChanged(prod.localCode.toString())
                                     searchExpanded = false
-                                }
+                                },
+                                colors = androidx.compose.material3.MenuDefaults.itemColors(
+                                    textColor = PrimaryTextColor
+                                )
                             )
                         }
                     }

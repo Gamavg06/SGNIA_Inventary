@@ -56,7 +56,8 @@ import androidx.compose.material.icons.filled.NetworkCheck
 fun SettingsScreen(
     viewModel: InventoryViewModel,
     modifier: Modifier = Modifier,
-    onOpenAbout: () -> Unit = {}
+    onOpenAbout: () -> Unit = {},
+    onOpenLicensing: () -> Unit = {}
 ) {
     val scalesList by viewModel.scalesList.collectAsState()
     val scaleState by viewModel.scaleState.collectAsState()
@@ -243,6 +244,50 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Catálogo Qendra", fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
+                }
+            }
+        }
+
+        // ==========================================================
+        // TARJETA: LICENCIA INDUSTRIAL & ACTIVACIÓN
+        // ==========================================================
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cardBg)
+                    .border(1.dp, cardBorder, RoundedCornerShape(18.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("LICENCIA INDUSTRIAL", fontSize = 16.sp, fontWeight = FontWeight.Black, color = creamPrimary)
+                        Text("Contratos de uso, demos y compras", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = creamWarm)
+                    }
+                }
+
+                Text(
+                    text = "Control criptográfico offline para licencias de 10 min (demo), 7 días (prueba), 1 mes/año (renta) o definitiva de por vida.",
+                    fontSize = 11.sp,
+                    color = textMuted
+                )
+
+                Button(
+                    onClick = onOpenLicensing,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF23201D), contentColor = creamWarm),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, cardBorder),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text("GESTIONAR LICENCIA Y CLAVES", fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
                 }
             }
         }

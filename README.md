@@ -100,13 +100,49 @@ El núcleo de comunicación (`TcpScaleManager.kt`) se comunica con módulos Lant
 9. **`AdminSecurityScreen.kt`**: Bóveda protegida para actualización del PIN maestro del Dueño.
 
 ### 🏪 Operación de Tienda (Encargado)
-10. **`IndustrialScaleVisorScreen.kt`**: Visor industrial de **Báscula 1** y **Báscula 2**, tara automática, selector de corte, panel BottomSheet para ajustes rápidos de precio (`-$10`, `-$5`, `+$5`, `+$10`) e importe en tiempo real.
+10. **`IndustrialScaleVisorScreen.kt`**: Visor industrial de **Báscula 1** y **Báscula 2**, tara automática, selector de corte, panel BottomSheet Bento Noir & Crema para ajustes rápidos de precio (`-$10`, `-$5`, `+$5`, `+$10`) e importe en tiempo real.
 11. **`AdminCatalogScreen.kt`**: Catálogo local de cortes con buscador instantáneo, chips de categorías y productos derivados.
 12. **`StockReceptionScreen.kt`**: Recepción con pesaje directo de báscula, escáner de códigos de barras por cámara (`CameraX` + `ML Kit`) y alta al vuelo de cortes nuevos.
 13. **`OrdersScreen.kt`**: Cálculo de faltantes comparando existencias vs. stock máximo con redondeo automático hacia arriba en cajas cerradas (`ceil(shortage / pesoCaja)`).
 14. **`ManagerInvestmentScreen.kt`**: Módulo independiente de inversión local (bolsitas, botanas, chicharrón, manteca) con vista conmutable de tabla o tarjetas.
-15. **`SettingsScreen.kt`**: Configuración de IPs locales, puertos TCP de básculas y mantenimiento del sistema.
-16. **`AboutSgniaScreen.kt`**: Identidad corporativa de **SGNIA COMPANY**, fundador Gamaliel Velazquez Galicia (`GV`), soporte técnico por WhatsApp directo, correo, Google Maps y enlace a `sgnia.xyz`.
+15. **`SettingsScreen.kt`**: Configuración de IPs locales, puertos TCP de básculas, acceso a licencias y mantenimiento del sistema.
+16. **`LicenseActivationScreen.kt`**: Activación y renovación de licencias industriales mediante firma criptográfica HMAC-SHA256, detección de manipulación de reloj y enlace de solicitud directo a WhatsApp.
+17. **`AboutSgniaScreen.kt`**: Identidad corporativa de **SGNIA COMPANY**, fundador Gamaliel Velazquez Galicia (`GV`), soporte técnico por WhatsApp directo, correo, Google Maps y enlace a `sgnia.xyz`.
+
+---
+
+## 🔑 Sistema de Licenciamiento Criptográfico Offline & Keygen Admin
+
+El software implementa un **motor de licenciamiento comercial 100% offline**, diseñado para carnicerías y frigoríficos que operan sin conexión a internet ni Wi-Fi externo:
+
+### 🛡️ Niveles de Licencia y Modalidades Comerciales:
+1. ⏱️ **Demo en Vivo (10 Minutos - `10M`)**: Diseñado para que Gamaliel demuestre el software directamente en el mostrador del cliente antes de cerrar el trato.
+2. 📅 **Prueba Comercial (7 Días - `07D`)**: Periodo de evaluación gratuito para que el carnicero compruebe el valor operativo con sus cortes y básculas reales.
+3. 📆 **Renta Mensual (30 Días - `01M`)**: Modalidad de suscripción recurrente para clientes que prefieren pago mensual (Clientes B, C, D).
+4. 🗓️ **Renta Anual (365 Días - `01Y`)**: Contrato anual con descuento para fidelización de clientes de largo plazo.
+5. ♾️ **Compra Definitiva / Perpetua (`LIFE`)**: Licencia vitalicia para clientes que compran el software completo (Cliente A).
+
+### ⚙️ Protocolo Criptográfico:
+* **Firma HMAC-SHA256**: La clave se genera a partir del `Hardware ID` único de la tablet (`SGN-XXXX-XXXX`), el código de duración y un token aleatorio, firmados con la clave maestra privada de SGNIA COMPANY.
+* **Anti-Rollback de Reloj**: El sistema registra en almacenamiento seguro el timestamp más alto observado. Si el usuario intenta atrasar la fecha en Android para extender su licencia, el sistema bloquea la app de inmediato (`CLOCK_TAMPERED`).
+* **Consumo Único de Claves**: Cada clave contiene un token de consumo único; una clave expirada no puede reutilizarse en el mismo equipo.
+
+### 📱 Aplicación Compañera para el Celular: `SGNIA Keygen Admin`
+Incluida en el módulo `:keygen` del repositorio:
+* Instalable directamente en el teléfono personal de Gamaliel Velazquez.
+* Permite pegar el `Hardware ID` del cliente con un solo toque.
+* Selector visual de duraciones (10 min, 7 días, 1 mes, 1 año, de por vida).
+* Botón **"Enviar por WhatsApp"** con mensaje pre-redactado listo para enviar al cliente.
+* Historial local de claves generadas para control de cobranza y renovaciones.
+
+---
+
+## 📦 Binarios APK Generados
+
+| Aplicación | Destino | Archivo APK | Tamaño |
+| :--- | :--- | :--- | :---: |
+| 🥩 **SGNIA Carnicería POS** | Tablet de Mostrador / Básculas | `release_apks/SGNIA_Carniceria_POS_v1.0.apk` | ~56.3 MB |
+| 🔑 **SGNIA Keygen Admin** | Celular de Gamaliel Velazquez | `release_apks/SGNIA_Keygen_Admin_v1.0.apk` | ~18.9 MB |
 
 ---
 
@@ -124,18 +160,20 @@ El núcleo de comunicación (`TcpScaleManager.kt`) se comunica con módulos Lant
 
 ## 🧪 Pruebas Automatizadas y Calidad
 
-El proyecto cuenta con una suite integral de **33 pruebas unitarias automatizadas** que certifican el protocolo binario de pesaje, la extracción de PLUs y el parseo de códigos de barras:
+El proyecto cuenta con una suite integral de **37 pruebas unitarias automatizadas** que certifican el protocolo binario de pesaje, la extracción de PLUs, el parseo de códigos de barras y el motor criptográfico de licencias:
 
 ```powershell
 # Ejecutar la suite completa de pruebas unitarias
 .\gradlew.bat testDebugUnitTest
 
-# Compilar y empaquetar el APK final de producción / depuración
+# Compilar y empaquetar ambos APKs (POS + Keygen Admin)
 .\gradlew.bat assembleDebug
 ```
 
-> **Resultado**: `BUILD SUCCESSFUL` (33/33 pruebas superadas al 100%, 0 fallos).  
-> **Ubicación del APK**: `app/build/outputs/apk/debug/app-debug.apk`
+> **Resultado**: `BUILD SUCCESSFUL` (37/37 pruebas superadas al 100%, 0 fallos).  
+> **Ubicación de APKs**:  
+> - POS Carnicería: `release_apks/SGNIA_Carniceria_POS_v1.0.apk`  
+> - Keygen Celular: `release_apks/SGNIA_Keygen_Admin_v1.0.apk`
 
 ---
 

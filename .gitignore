@@ -9,6 +9,7 @@ local.properties
 build/
 /build
 app/build/
+keygen/build/
 /captures
 .externalNativeBuild
 .cxx

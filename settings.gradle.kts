@@ -20,3 +20,4 @@ plugins {
 
 rootProject.name = "InventarioCarniceria"
 include(":app")
+include(":keygen")

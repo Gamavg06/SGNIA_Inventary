@@ -1,5 +1,6 @@
 package com.example.inventariocarniceria.ui.screens.scale
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,8 +68,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.inventariocarniceria.data.local.ProductEntity
-import com.example.inventariocarniceria.theme.SgniaTheme
 import com.example.inventariocarniceria.ui.components.AsyncProductImage
+import com.example.inventariocarniceria.ui.design.NoirColors
+import com.example.inventariocarniceria.ui.design.NoirLabel
+import com.example.inventariocarniceria.ui.design.NoirRadius
+import com.example.inventariocarniceria.ui.design.NoirSpace
+import com.example.inventariocarniceria.ui.design.NoirType
+import com.example.inventariocarniceria.ui.design.PillTone
+import com.example.inventariocarniceria.ui.design.StatusPill
 import com.example.inventariocarniceria.ui.screens.admin.ProductEditDialog
 import java.util.Locale
 
@@ -87,7 +94,6 @@ fun PluCatalogListDialog(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todas") }
 
-    // Estados para edición, creación y eliminación
     var editingProduct by remember { mutableStateOf<ProductEntity?>(null) }
     var isCreatingProduct by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<ProductEntity?>(null) }
@@ -119,97 +125,101 @@ fun PluCatalogListDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
-                .fillMaxHeight(0.94f),
-            shape = RoundedCornerShape(20.dp),
-            color = SgniaTheme.colors.backgroundSecondary,
-            tonalElevation = 8.dp
+                .fillMaxHeight(0.95f)
+                .border(BorderStroke(1.dp, NoirColors.HairlineStrong), RoundedCornerShape(NoirRadius.lg)),
+            shape = RoundedCornerShape(NoirRadius.lg),
+            color = NoirColors.Background
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(NoirSpace.lg)
             ) {
-                // --- 1. HEADER CON CONTADOR Y BOTÓN DE NUEVO PRODUCTO ---
+                // --- 1. HEADER NOIR & CREMA ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SgniaTheme.colors.accentPrimary.copy(alpha = 0.2f))
-                                .border(1.dp, SgniaTheme.colors.accentPrimary, RoundedCornerShape(12.dp)),
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(NoirRadius.sm))
+                                .background(NoirColors.SurfaceRaised)
+                                .border(1.dp, NoirColors.Hairline, RoundedCornerShape(NoirRadius.sm)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FormatListNumbered,
                                 contentDescription = null,
-                                tint = SgniaTheme.colors.accentPrimary,
+                                tint = NoirColors.Cream,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
+                            NoirLabel(text = "MAESTRO DE ARTÍCULOS", color = NoirColors.Cream)
                             Text(
-                                text = "CATÁLOGO DE PLUs Y DERIVADAS",
-                                fontFamily = FontFamily.SansSerif,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 14.sp,
-                                color = SgniaTheme.colors.textPrimary
+                                text = "Catálogo de PLUs y Derivadas",
+                                style = NoirType.title,
+                                color = NoirColors.TextPrimary
                             )
                             Text(
                                 text = "${products.size} productos registrados • Modificación y cortes",
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SgniaTheme.colors.accentPrimary
+                                style = NoirType.bodySmall,
+                                color = NoirColors.TextSecondary
                             )
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs)
+                    ) {
                         if (products.isNotEmpty()) {
                             OutlinedButton(
                                 onClick = { showWipeCatalogConfirm = true },
-                                shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE53935)),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE53935).copy(alpha = 0.5f)),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(NoirRadius.sm),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.Danger),
+                                border = BorderStroke(1.dp, NoirColors.Danger.copy(alpha = 0.5f)),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                 modifier = Modifier.height(38.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Vaciar",
-                                    tint = Color(0xFFE53935),
+                                    tint = NoirColors.Danger,
                                     modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "VACIAR",
-                                    fontSize = 11.sp,
+                                    style = NoirType.bodySmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFE53935)
+                                    color = NoirColors.Danger
                                 )
                             }
-                            Spacer(modifier = Modifier.width(6.dp))
                         }
 
                         if (onImportQendra != null) {
                             Button(
                                 onClick = onImportQendra,
-                                shape = RoundedCornerShape(20.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+                                shape = RoundedCornerShape(NoirRadius.sm),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = NoirColors.SurfaceRaised,
+                                    contentColor = NoirColors.Cream
+                                ),
+                                border = BorderStroke(1.dp, NoirColors.Hairline),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                 modifier = Modifier.height(38.dp)
                             ) {
-                                Icon(Icons.Default.CloudDownload, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.CloudDownload, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("IMPORTAR BÁSCULA", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("IMPORTAR BÁSCULA", style = NoirType.bodySmall, fontWeight = FontWeight.Bold, color = NoirColors.Cream)
                             }
-                            Spacer(modifier = Modifier.width(6.dp))
                         }
 
                         Button(
@@ -217,58 +227,63 @@ fun PluCatalogListDialog(
                                 editingProduct = null
                                 isCreatingProduct = true
                             },
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = SgniaTheme.colors.accentPrimary),
+                            shape = RoundedCornerShape(NoirRadius.sm),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = NoirColors.Cream,
+                                contentColor = NoirColors.OnCream
+                            ),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                             modifier = Modifier.height(38.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = null,
-                                tint = Color(0xFF141210),
+                                tint = NoirColors.OnCream,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "NUEVO PRODUCTO",
-                                fontSize = 11.sp,
+                                style = NoirType.bodySmall,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFF141210)
+                                color = NoirColors.OnCream
                             )
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
 
                         IconButton(
                             onClick = onDismiss,
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(SgniaTheme.colors.surfaceGlass)
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(NoirRadius.sm))
+                                .background(NoirColors.SurfaceRaised)
+                                .border(1.dp, NoirColors.Hairline, RoundedCornerShape(NoirRadius.sm))
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Cerrar",
-                                tint = SgniaTheme.colors.textPrimary,
+                                tint = NoirColors.TextPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = NoirSpace.sm),
+                    color = NoirColors.Hairline
+                )
 
                 // --- 2. BUSCADOR EN TIEMPO REAL ---
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Buscar por código PLU, nombre o derivada (ej. Pierna, Bistec, Menudo)...", fontSize = 12.sp) },
+                    placeholder = { Text("Buscar por código PLU, nombre o derivada (ej. Pierna, Bistec, Menudo)...", color = NoirColors.TextMuted, fontSize = 12.sp) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            tint = SgniaTheme.colors.accentPrimary
+                            tint = NoirColors.Cream
                         )
                     },
                     trailingIcon = {
@@ -277,29 +292,29 @@ fun PluCatalogListDialog(
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = "Limpiar",
-                                    tint = SgniaTheme.colors.textSecondary
+                                    tint = NoirColors.TextSecondary
                                 )
                             }
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(NoirRadius.sm),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = SgniaTheme.colors.accentPrimary,
-                        unfocusedBorderColor = SgniaTheme.colors.surfaceGlassBorder,
-                        focusedTextColor = SgniaTheme.colors.textPrimary,
-                        unfocusedTextColor = SgniaTheme.colors.textPrimary,
-                        focusedContainerColor = SgniaTheme.colors.surfaceGlass,
-                        unfocusedContainerColor = SgniaTheme.colors.surfaceGlass
+                        focusedBorderColor = NoirColors.Cream,
+                        unfocusedBorderColor = NoirColors.Hairline,
+                        focusedTextColor = NoirColors.TextPrimary,
+                        unfocusedTextColor = NoirColors.TextPrimary,
+                        focusedContainerColor = NoirColors.SurfaceSunken,
+                        unfocusedContainerColor = NoirColors.SurfaceSunken
                     )
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(NoirSpace.xs))
 
                 // --- 3. CHIPS DE FILTRO POR CATEGORÍA ---
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs),
                     contentPadding = PaddingValues(horizontal = 2.dp)
                 ) {
                     items(categories) { cat ->
@@ -311,46 +326,53 @@ fun PluCatalogListDialog(
                                 val count = if (cat == "Todas") products.size else products.count { it.category.equals(cat, ignoreCase = true) }
                                 Text(
                                     text = "$cat ($count)",
-                                    fontSize = 11.sp,
+                                    style = NoirType.label,
+                                    color = if (isSelected) NoirColors.OnCream else NoirColors.TextSecondary,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = SgniaTheme.colors.accentPrimary,
-                                selectedLabelColor = Color.Black,
-                                containerColor = SgniaTheme.colors.surfaceGlass,
-                                labelColor = SgniaTheme.colors.textSecondary
+                                selectedContainerColor = NoirColors.Cream,
+                                selectedLabelColor = NoirColors.OnCream,
+                                containerColor = NoirColors.SurfaceRaised,
+                                labelColor = NoirColors.TextSecondary
                             ),
-                            shape = RoundedCornerShape(20.dp)
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                borderColor = if (isSelected) NoirColors.Cream else NoirColors.Hairline,
+                                selectedBorderColor = NoirColors.Cream
+                            ),
+                            shape = RoundedCornerShape(NoirRadius.pill)
                         )
                     }
                 }
 
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 10.dp),
-                    color = SgniaTheme.colors.surfaceGlassBorder
-                )
+                Spacer(modifier = Modifier.height(NoirSpace.xs))
 
                 // --- 4. LISTA SCROLLABLE DE PRODUCTOS ---
                 if (filteredProducts.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(NoirRadius.sm))
+                            .background(NoirColors.SurfaceSunken)
+                            .border(1.dp, NoirColors.Hairline, RoundedCornerShape(NoirRadius.sm)),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = SgniaTheme.colors.textMuted
+                                modifier = Modifier.size(40.dp),
+                                tint = NoirColors.TextMuted
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(NoirSpace.xs))
                             Text(
                                 text = "No se encontraron productos con: \"$searchQuery\"",
-                                fontSize = 13.sp,
-                                color = SgniaTheme.colors.textMuted
+                                style = NoirType.bodySmall,
+                                color = NoirColors.TextMuted
                             )
                         }
                     }
@@ -359,7 +381,7 @@ fun PluCatalogListDialog(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(NoirSpace.xs)
                     ) {
                         items(filteredProducts, key = { it.code }) { prod ->
                             val dismissState = rememberSwipeToDismissBoxState(
@@ -379,8 +401,9 @@ fun PluCatalogListDialog(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .background(Color(0xFFD32F2F))
+                                            .clip(RoundedCornerShape(NoirRadius.sm))
+                                            .background(NoirColors.DangerMuted)
+                                            .border(1.dp, NoirColors.Danger, RoundedCornerShape(NoirRadius.sm))
                                             .clickable { productToDelete = prod }
                                             .padding(horizontal = 20.dp),
                                         contentAlignment = Alignment.CenterEnd
@@ -388,16 +411,16 @@ fun PluCatalogListDialog(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
                                                 text = "Eliminar Producto",
-                                                color = Color.White,
+                                                color = NoirColors.Danger,
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp
+                                                style = NoirType.bodySmall
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
                                                 contentDescription = "Eliminar",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(22.dp)
+                                                tint = NoirColors.Danger,
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     }
@@ -415,7 +438,7 @@ fun PluCatalogListDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(NoirSpace.xs))
 
                 // --- 5. FOOTER INFORMATIVO ---
                 Row(
@@ -425,15 +448,14 @@ fun PluCatalogListDialog(
                 ) {
                     Text(
                         text = "Mostrando ${filteredProducts.size} de ${products.size} productos",
-                        fontSize = 10.sp,
+                        style = NoirType.label,
                         fontFamily = FontFamily.Monospace,
-                        color = SgniaTheme.colors.textMuted
+                        color = NoirColors.TextMuted
                     )
                     Text(
-                        text = "💡 Desliza a la izquierda para Eliminar • Toca [Modificar] para derivadas",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SgniaTheme.colors.accentPrimary
+                        text = "💡 Desliza a la izquierda para Eliminar • Modificar para derivadas",
+                        style = NoirType.label,
+                        color = NoirColors.Cream
                     )
                 }
             }
@@ -444,17 +466,21 @@ fun PluCatalogListDialog(
     if (productToDelete != null) {
         AlertDialog(
             onDismissRequest = { productToDelete = null },
+            containerColor = NoirColors.Surface,
+            titleContentColor = NoirColors.TextPrimary,
+            textContentColor = NoirColors.TextSecondary,
             title = {
                 Text(
                     text = "Eliminar Producto",
-                    fontWeight = FontWeight.Bold,
-                    color = SgniaTheme.colors.textPrimary
+                    style = NoirType.title,
+                    color = NoirColors.TextPrimary
                 )
             },
             text = {
                 Text(
                     text = "¿Seguro que deseas eliminar '${productToDelete?.name}' [PLU #${productToDelete?.localCode}] del catálogo?",
-                    color = SgniaTheme.colors.textSecondary
+                    style = NoirType.bodySmall,
+                    color = NoirColors.TextSecondary
                 )
             },
             confirmButton = {
@@ -463,13 +489,17 @@ fun PluCatalogListDialog(
                         productToDelete?.let { onDeleteProduct(it) }
                         productToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.Danger)
                 ) {
                     Text("Eliminar", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { productToDelete = null }) {
+                OutlinedButton(
+                    onClick = { productToDelete = null },
+                    border = BorderStroke(1.dp, NoirColors.Hairline),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextSecondary)
+                ) {
                     Text("Cancelar")
                 }
             }
@@ -480,17 +510,21 @@ fun PluCatalogListDialog(
     if (showWipeCatalogConfirm) {
         AlertDialog(
             onDismissRequest = { showWipeCatalogConfirm = false },
+            containerColor = NoirColors.Surface,
+            titleContentColor = NoirColors.Danger,
+            textContentColor = NoirColors.TextSecondary,
             title = {
                 Text(
                     text = "⚠️ Vaciar Todo el Catálogo",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFD32F2F)
+                    style = NoirType.title,
+                    color = NoirColors.Danger
                 )
             },
             text = {
                 Text(
                     text = "Esta acción eliminará todos los ${products.size} productos registrados para dejar el catálogo completamente en blanco. ¿Deseas continuar?",
-                    color = SgniaTheme.colors.textSecondary
+                    style = NoirType.bodySmall,
+                    color = NoirColors.TextSecondary
                 )
             },
             confirmButton = {
@@ -499,13 +533,17 @@ fun PluCatalogListDialog(
                         onDeleteAllProducts()
                         showWipeCatalogConfirm = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.Danger)
                 ) {
                     Text("SÍ, VACIAR TODO", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showWipeCatalogConfirm = false }) {
+                OutlinedButton(
+                    onClick = { showWipeCatalogConfirm = false },
+                    border = BorderStroke(1.dp, NoirColors.Hairline),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextSecondary)
+                ) {
                     Text("Cancelar")
                 }
             }
@@ -541,14 +579,12 @@ private fun ProductPluItemCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit = {}
 ) {
-    // Verificar si es producto padre con derivados
     val childDerivatives = remember(product, allProducts) {
         if (product.parentProductCode == null) {
             allProducts.filter { it.parentProductCode == product.code }
         } else emptyList()
     }
 
-    // Verificar si es un corte derivado de algún padre
     val parentProduct = remember(product, allProducts) {
         if (product.parentProductCode != null) {
             allProducts.find { it.code == product.parentProductCode }
@@ -557,14 +593,14 @@ private fun ProductPluItemCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = SgniaTheme.colors.surfaceGlass),
-        border = androidx.compose.foundation.BorderStroke(1.dp, SgniaTheme.colors.surfaceGlassBorder)
+        shape = RoundedCornerShape(NoirRadius.sm),
+        colors = CardDefaults.cardColors(containerColor = NoirColors.Surface),
+        border = BorderStroke(1.dp, NoirColors.Hairline)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(NoirSpace.sm)
         ) {
             // FILA SUPERIOR: PLU + IMAGEN + NOMBRE + CATEGORÍA + PRECIO
             Row(
@@ -574,50 +610,48 @@ private fun ProductPluItemCard(
                 // BADGE DE CÓDIGO PLU
                 Box(
                     modifier = Modifier
-                        .size(width = 58.dp, height = 46.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SgniaTheme.colors.accentPrimary.copy(alpha = 0.22f))
-                        .border(1.5.dp, SgniaTheme.colors.accentPrimary, RoundedCornerShape(12.dp)),
+                        .size(width = 56.dp, height = 44.dp)
+                        .clip(RoundedCornerShape(NoirRadius.sm))
+                        .background(NoirColors.SurfaceRaised)
+                        .border(1.dp, NoirColors.Cream.copy(alpha = 0.5f), RoundedCornerShape(NoirRadius.sm)),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "PLU",
-                            fontFamily = FontFamily.Monospace,
+                            style = NoirType.label,
                             fontSize = 8.sp,
-                            fontWeight = FontWeight.Black,
-                            color = SgniaTheme.colors.accentPrimary
+                            color = NoirColors.Cream
                         )
                         Text(
                             text = "#${product.localCode}",
                             fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black,
-                            color = SgniaTheme.colors.accentPrimary
+                            color = NoirColors.Cream
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(NoirSpace.xs))
 
-                // MINIATURA DE IMAGEN ASÍNCRONA
                 AsyncProductImage(
                     imageUrl = product.imageUri,
                     contentDescription = product.name,
                     modifier = Modifier
-                        .size(46.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(NoirRadius.sm))
                 )
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(NoirSpace.xs))
 
                 // DETALLES DEL PRODUCTO
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = product.name,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp,
-                        color = SgniaTheme.colors.textPrimary,
+                        style = NoirType.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = NoirColors.TextPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -625,12 +659,10 @@ private fun ProductPluItemCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = product.category,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SgniaTheme.colors.accentSecondary
+                            style = NoirType.label,
+                            color = NoirColors.Cream
                         )
 
-                        // Presentación de unidad si aplica
                         val presLabel = when (product.orderUnitType) {
                             "BARRA" -> " • 🥖 Barra ~${product.weightPerBoxKg}kg"
                             "PAQUETE" -> " • 📦 Pqte ~${product.weightPerBoxKg}kg"
@@ -642,77 +674,78 @@ private fun ProductPluItemCard(
                         }
                         Text(
                             text = presLabel,
-                            fontSize = 10.sp,
-                            color = SgniaTheme.colors.textMuted
+                            style = NoirType.label,
+                            color = NoirColors.TextSecondary
                         )
                     }
 
                     if (product.synonyms.isNotBlank()) {
                         Text(
                             text = "Sinónimos: ${product.synonyms}",
-                            fontSize = 9.sp,
-                            color = SgniaTheme.colors.textMuted,
+                            style = NoirType.label,
+                            color = NoirColors.TextMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(NoirSpace.xs))
 
-                // PRECIO POR KILO
+                // PRECIO POR KILO EN VERDE ESMERALDA
                 Text(
                     text = "$${String.format(Locale.US, "%.2f", product.price)}/kg",
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Black,
                     fontSize = 13.sp,
-                    color = SgniaTheme.colors.statusStable
+                    color = NoirColors.Emerald
                 )
             }
 
             // BADGE DE RELACIÓN DE DERIVADAS
-            Spacer(modifier = Modifier.height(8.dp))
             if (product.parentProductCode != null) {
-                // Es un derivado
+                Spacer(modifier = Modifier.height(NoirSpace.xs))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFE65100).copy(alpha = 0.12f))
-                        .border(1.dp, Color(0xFFE65100).copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(NoirColors.AmberMuted)
+                        .border(1.dp, NoirColors.Amber.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "↳ Corte Derivado de: #${product.parentProductCode} ${parentProduct?.name ?: "Materia Prima Base"} (Al pesarse, descuenta kilos del padre)",
+                        text = "↳ Corte Derivado de: #${product.parentProductCode} ${parentProduct?.name ?: "Materia Prima Base"} (Al pesarse, descuenta del padre)",
+                        style = NoirType.bodySmall,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFB74D)
+                        color = NoirColors.Amber
                     )
                 }
             } else if (childDerivatives.isNotEmpty()) {
-                // Es materia prima con derivadas vinculadas
+                Spacer(modifier = Modifier.height(NoirSpace.xs))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(SgniaTheme.colors.accentPrimary.copy(alpha = 0.12f))
-                        .border(1.dp, SgniaTheme.colors.accentPrimary.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(NoirColors.SurfaceRaised)
+                        .border(1.dp, NoirColors.Hairline, RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     val namesPreview = childDerivatives.take(4).joinToString(", ") { it.name }
                     val extra = if (childDerivatives.size > 4) " (+${childDerivatives.size - 4} más)" else ""
                     Text(
-                        text = "🍗 Materia Prima Base • ${childDerivatives.size} derivadas vinculadas: $namesPreview$extra",
+                        text = "🍗 Materia Prima Base • ${childDerivatives.size} derivadas: $namesPreview$extra",
+                        style = NoirType.bodySmall,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = SgniaTheme.colors.accentPrimary
+                        color = NoirColors.Cream
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(NoirSpace.xs))
 
-            // BOTONES DE ACCIÓN: [✏️ Modificar y Derivadas] Y [⚡ Pesar]
+            // BOTONES DE ACCIÓN: [Eliminar], [Modificar], [Pesar]
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -720,73 +753,78 @@ private fun ProductPluItemCard(
             ) {
                 OutlinedButton(
                     onClick = onDelete,
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE53935)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE53935).copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(NoirRadius.sm),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.Danger),
+                    border = BorderStroke(1.dp, NoirColors.Danger.copy(alpha = 0.4f)),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = null,
-                        tint = Color(0xFFE53935),
+                        tint = NoirColors.Danger,
                         modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Eliminar",
+                        style = NoirType.bodySmall,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE53935)
+                        color = NoirColors.Danger
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(NoirSpace.xs))
 
                 OutlinedButton(
                     onClick = onEdit,
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SgniaTheme.colors.surfaceGlassBorder),
+                    shape = RoundedCornerShape(NoirRadius.sm),
+                    border = BorderStroke(1.dp, NoirColors.Hairline),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextPrimary),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = null,
-                        tint = SgniaTheme.colors.textPrimary,
+                        tint = NoirColors.TextPrimary,
                         modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Modificar",
+                        style = NoirType.bodySmall,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = SgniaTheme.colors.textPrimary
+                        color = NoirColors.TextPrimary
                     )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(NoirSpace.xs))
 
                 Button(
                     onClick = onSelectToWeigh,
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = SgniaTheme.colors.accentPrimary),
+                    shape = RoundedCornerShape(NoirRadius.sm),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = NoirColors.Cream,
+                        contentColor = NoirColors.OnCream
+                    ),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Scale,
                         contentDescription = null,
-                        tint = Color(0xFF141210),
+                        tint = NoirColors.OnCream,
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Pesar",
-                        fontFamily = FontFamily.SansSerif,
+                        style = NoirType.bodySmall,
                         fontWeight = FontWeight.Black,
-                        fontSize = 11.sp,
-                        color = Color(0xFF141210)
+                        color = NoirColors.OnCream
                     )
                 }
             }

@@ -85,12 +85,12 @@ fun DocumentReaderScreen(
             LegalSection(
                 number = "01.",
                 title = "Objeto del Software y Licencia de Uso",
-                content = "SGNIA Carnicería & Balanza Industrial POS es una solución tecnológica desarrollada por [NOMBRE DEL RESPONSABLE] (SGNIA COMPANY) para la gestión local de inventario cárnico, lectura de balanzas y unificación de pedidos. El titular de la carnicería adquiere una licencia de uso no exclusiva, intransferible y sujeta a los términos aquí descritos."
+                content = "SGNIA Carnicería & Balanza Industrial POS es una solución tecnológica desarrollada por Gamaliel Velazquez Galicia (SGNIA COMPANY) para la gestión local de inventario cárnico, lectura de balanzas y unificación de pedidos. El titular de la carnicería adquiere una licencia de uso no exclusiva, intransferible y sujeta a los términos aquí descritos."
             ),
             LegalSection(
                 number = "02.",
                 title = "Operación Offline y Hardware de Pesaje",
-                content = "La aplicación opera bajo arquitectura Offline-First. La precisión del pesaje depende de la calibración, nivelación física y mantenimiento del hardware de pesaje (Systel Cuora) y de la infraestructura de red local. [NOMBRE DEL RESPONSABLE] no asume responsabilidad por discrepancias resultantes de manipulación indebida de la tara, falta de calibración física o cortes de suministro eléctrico."
+                content = "La aplicación opera bajo arquitectura Offline-First. La precisión del pesaje depende de la calibración, nivelación física y mantenimiento del hardware de pesaje (Systel Cuora) y de la infraestructura de red local. Gamaliel Velazquez Galicia (SGNIA COMPANY) no asume responsabilidad por discrepancias resultantes de manipulación indebida de la tara, falta de calibración física o cortes de suministro eléctrico."
             ),
             LegalSection(
                 number = "03.",
@@ -105,7 +105,7 @@ fun DocumentReaderScreen(
             LegalSection(
                 number = "05.",
                 title = "Contacto y Soporte",
-                content = "Para aclaraciones sobre esta licencia de uso, diríjase a [DOMICILIO] o comuníquese a través de [CORREO PARA DERECHOS ARCO]."
+                content = "Para aclaraciones sobre esta licencia de uso, diríjase a Juan Jiménez 405, Centro, 75120 Nopalucan de la Granja, Puebla, México o comuníquese a través de gmlvega0025@gmail.com o vía WhatsApp al +52 276 109 5688."
             )
         )
     } else {
@@ -113,7 +113,7 @@ fun DocumentReaderScreen(
             LegalSection(
                 number = "01.",
                 title = "Identidad y Domicilio del Responsable",
-                content = "[NOMBRE DEL RESPONSABLE], con domicilio de operaciones en [DOMICILIO], en estricto cumplimiento de la Ley Federal de Protección de Datos Personales, hace de su conocimiento que los datos recabados en este dispositivo son tratados de manera confidencial."
+                content = "Gamaliel Velazquez Galicia (SGNIA COMPANY), con domicilio de operaciones en Juan Jiménez 405, Centro, 75120 Nopalucan de la Granja, Puebla, México, en estricto cumplimiento de la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), hace de su conocimiento que los datos recabados en este dispositivo son tratados de manera confidencial."
             ),
             LegalSection(
                 number = "02.",
@@ -128,7 +128,7 @@ fun DocumentReaderScreen(
             LegalSection(
                 number = "04.",
                 title = "Ejercicio de Derechos ARCO",
-                content = "Usted tiene derecho de Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos personales. Para ejercer estos derechos, puede limpiar la base de datos desde los ajustes del sistema o enviar una solicitud por escrito a [CORREO PARA DERECHOS ARCO]."
+                content = "Usted tiene derecho de Acceder, Rectificar, Cancelar u Oponerse al tratamiento de sus datos personales. Para ejercer estos derechos, puede limpiar la base de datos desde los ajustes del sistema o enviar una solicitud por escrito a gmlvega0025@gmail.com."
             ),
             LegalSection(
                 number = "05.",
