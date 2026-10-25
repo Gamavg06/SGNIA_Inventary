@@ -15,6 +15,11 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 - **Ofuscación de Claves Operativas**: Ofuscación por defecto de PINs de sucursales en `AdminBranchesScreen.kt` con selector visual de revelación/ocultamiento.
 - **Sanitización Pública**: Eliminación de referencias a vectores de ataque en `README.md` y creación de `docs/SEGURIDAD_INTERNA_PRIVADA.md` con propuesta formal de migración a Ed25519.
 
+### Corregido
+- **Persistencia Permanente de PIN en Disco**: Se solucionó el problema donde el PIN de Dueño y de Sucursales solo residía en memoria volátil y se reseteaba a "1234" al cerrar las aplicaciones. Se integró almacenamiento persistente síncrono en disco (`sgnia_security_prefs` mediante `.commit()`) y sincronización con SQLite en Room.
+- **Unificación de Entrada a 4 Dígitos Exactos**: Se eliminó la discrepancia donde el modal permitía de 4 a 8 dígitos mientras que el teclado táctil de la pantalla de acceso operaba con 4 círculos. Ahora la política exige exactamente 4 dígitos numéricos, garantizando acceso directo.
+- **Eliminación del Bucle de Cambio Obligatorio**: Se ajustó la validación condicional para que, al registrar el nuevo PIN seguro, el valor inicial "1234" quede anulado inmediatamente y no vuelva a solicitar el cambio de clave en cada inicio de sesión.
+
 ### Cambiado
 - **Estandarización de Campos de Texto**: Implementación unificada de `sgniaTextFieldColors()` (fondo `SurfaceSunken`, borde `Hairline`, foco `Cream`) en búsqueda de Inversión, clave de licencia y diálogo Qendra.
 - **Retiro Definitivo de Temas Legados**: Eliminación formal de `OBSIDIAN_GOLD`, `CYBER_VIOLET` y el archivo huérfano `Color.kt`. La aplicación opera exclusivamente con `Noir & Crema`.
