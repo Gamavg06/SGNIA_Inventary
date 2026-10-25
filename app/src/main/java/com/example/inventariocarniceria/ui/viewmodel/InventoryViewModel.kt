@@ -96,7 +96,11 @@ class InventoryViewModel(
     private val repository: InventoryRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(InventoryUiState())
+    private val securityPrefs = repository.scaleManager.context?.getSharedPreferences("sgnia_security_prefs", android.content.Context.MODE_PRIVATE)
+
+    private val initialAdminPin = securityPrefs?.getString("admin_pin", null)?.ifBlank { null } ?: "1234"
+
+    private val _uiState = MutableStateFlow(InventoryUiState(adminPin = initialAdminPin))
     val uiState: StateFlow<InventoryUiState> = _uiState.asStateFlow()
 
     private val themePrefs = repository.scaleManager.context?.getSharedPreferences("sgnia_theme_prefs", android.content.Context.MODE_PRIVATE)
@@ -258,10 +262,21 @@ class InventoryViewModel(
     }
 
     fun updateAdminPin(newPin: String) {
+        val sanitized = newPin.trim()
+        securityPrefs?.edit()?.putString("admin_pin", sanitized)?.commit()
         _uiState.value = _uiState.value.copy(
-            adminPin = newPin,
-            snackbarMessage = "Contraseña de Admin actualizada correctamente"
+            adminPin = sanitized,
+            snackbarMessage = "PIN de Dueño actualizado y guardado correctamente"
         )
+    }
+
+    fun getBranchPin(branchId: Long, fallback: String): String {
+        return securityPrefs?.getString("branch_pin_$branchId", null)?.ifBlank { null } ?: fallback
+    }
+
+    fun saveBranchPin(branchId: Long, newPin: String) {
+        val sanitized = newPin.trim()
+        securityPrefs?.edit()?.putString("branch_pin_$branchId", sanitized)?.commit()
     }
 
     fun onCodeInputChanged(newCode: String) {
@@ -522,13 +537,18 @@ class InventoryViewModel(
 
     fun addBranch(branchName: String, managerName: String, phone: String, password: String) {
         viewModelScope.launch {
-            val branch = BranchEntity(branchName = branchName, managerName = managerName, phone = phone, password = password)
-            repository.insertBranch(branch)
+            val pass = password.trim()
+            val branch = BranchEntity(branchName = branchName, managerName = managerName, phone = phone, password = pass)
+            val newId = repository.insertBranch(branch)
+            if (newId > 0) {
+                saveBranchPin(newId, pass)
+            }
             _uiState.value = _uiState.value.copy(snackbarMessage = "Sucursal creada: $branchName")
         }
     }
 
     fun updateBranch(branch: BranchEntity) {
+        saveBranchPin(branch.id, branch.password)
         viewModelScope.launch {
             repository.insertBranch(branch)
             _uiState.value = _uiState.value.copy(snackbarMessage = "Sucursal actualizada: ${branch.branchName}")
