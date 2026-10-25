@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import com.example.inventariocarniceria.ui.design.sgniaTextFieldColors
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -390,14 +391,7 @@ fun LicenseActivationScreen(
                     },
                     textStyle = NoirType.bodySmall.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = NoirColors.TextPrimary),
                     shape = RoundedCornerShape(NoirRadius.sm),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = NoirColors.Cream,
-                        unfocusedBorderColor = NoirColors.Hairline,
-                        focusedContainerColor = NoirColors.SurfaceSunken,
-                        unfocusedContainerColor = NoirColors.SurfaceSunken,
-                        focusedTextColor = NoirColors.TextPrimary,
-                        unfocusedTextColor = NoirColors.TextPrimary
-                    )
+                    colors = sgniaTextFieldColors()
                 )
 
                 if (!errorMessage.isNullOrBlank()) {

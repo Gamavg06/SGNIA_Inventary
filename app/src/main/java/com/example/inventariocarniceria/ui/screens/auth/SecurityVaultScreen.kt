@@ -58,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
+import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -143,27 +144,74 @@ fun SecurityVaultScreen(
         }
     }
 
+    // Estado Throttling y Bloqueo de PIN
+    var failedAttempts by remember { mutableStateOf(0) }
+    var lockoutUntil by remember { mutableStateOf(0L) }
+    var lockoutSecondsLeft by remember { mutableStateOf(0) }
+
+    LaunchedEffect(lockoutUntil) {
+        while (System.currentTimeMillis() < lockoutUntil) {
+            lockoutSecondsLeft = (((lockoutUntil - System.currentTimeMillis()) / 1000) + 1).toInt().coerceAtLeast(1)
+            delay(500L)
+        }
+        lockoutSecondsLeft = 0
+    }
+
+    // Estado Cambio Obligatorio de PIN por Defecto
+    var showForceChangePinDialog by remember { mutableStateOf(false) }
+    var pendingRole by remember { mutableStateOf("") }
+    var pendingBranchName by remember { mutableStateOf("") }
+    var pendingBranchEntity by remember { mutableStateOf<com.example.inventariocarniceria.data.local.BranchEntity?>(null) }
+    var newMandatoryPin by remember { mutableStateOf("") }
+    var confirmMandatoryPin by remember { mutableStateOf("") }
+    var mandatoryPinError by remember { mutableStateOf<String?>(null) }
+
     // ---------------------------------------------------------------
-    // Validaciones (misma lógica que la versión anterior)
+    // Validaciones con Protección contra Fuerza Bruta y Cambio Obligatorio de PIN
     // ---------------------------------------------------------------
     fun tryAdmin(input: String, fromPin: Boolean) {
+        if (lockoutSecondsLeft > 0) {
+            adminErrorMessage = "Terminal bloqueada por seguridad. Espera $lockoutSecondsLeft s."
+            return
+        }
         val validPin = uiState.adminPin.ifBlank { "1234" }
         if (input == validPin || input == "1234") {
-            viewModel.loginUser("Matriz Central", "ADMIN")
-            onLoginSuccess()
+            val isDefault = (input == "1234" || validPin == "1234")
+            if (isDefault) {
+                pendingRole = "ADMIN"
+                pendingBranchName = "Matriz Central"
+                newMandatoryPin = ""
+                confirmMandatoryPin = ""
+                mandatoryPinError = null
+                showForceChangePinDialog = true
+            } else {
+                failedAttempts = 0
+                viewModel.loginUser("Matriz Central", "ADMIN")
+                onLoginSuccess()
+            }
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.Reject)
+            failedAttempts++
+            if (failedAttempts >= 3) {
+                lockoutUntil = System.currentTimeMillis() + 30_000L
+                failedAttempts = 0
+                adminErrorMessage = "Demasiados intentos fallidos. Terminal bloqueada por 30s."
+            } else {
+                val remaining = 3 - failedAttempts
+                adminErrorMessage = "PIN incorrecto. $remaining intento(s) restante(s) antes del bloqueo temporal."
+            }
             if (fromPin) {
                 isAdminPinError = true
-                adminErrorMessage = "PIN incorrecto. Reintenta."
                 adminEnteredPin = ""
-            } else {
-                adminErrorMessage = "Contraseña incorrecta."
             }
         }
     }
 
     fun tryStore(input: String, fromPin: Boolean) {
+        if (lockoutSecondsLeft > 0) {
+            storeErrorMessage = "Terminal bloqueada por seguridad. Espera $lockoutSecondsLeft s."
+            return
+        }
         val branch = selectedBranchEntity
         if (branch == null) {
             haptic.performHapticFeedback(HapticFeedbackType.Reject)
@@ -178,16 +226,34 @@ fun SecurityVaultScreen(
         }
         val expected = branch.password.ifBlank { "1234" }
         if (input == expected || input == "1234") {
-            viewModel.loginUser(branch.branchName, "ENCARGADO")
-            onLoginSuccess()
+            val isDefault = (input == "1234" || expected == "1234")
+            if (isDefault) {
+                pendingRole = "ENCARGADO"
+                pendingBranchName = branch.branchName
+                pendingBranchEntity = branch
+                newMandatoryPin = ""
+                confirmMandatoryPin = ""
+                mandatoryPinError = null
+                showForceChangePinDialog = true
+            } else {
+                failedAttempts = 0
+                viewModel.loginUser(branch.branchName, "ENCARGADO")
+                onLoginSuccess()
+            }
         } else {
             haptic.performHapticFeedback(HapticFeedbackType.Reject)
+            failedAttempts++
+            if (failedAttempts >= 3) {
+                lockoutUntil = System.currentTimeMillis() + 30_000L
+                failedAttempts = 0
+                storeErrorMessage = "Demasiados intentos fallidos. Terminal bloqueada por 30s."
+            } else {
+                val remaining = 3 - failedAttempts
+                storeErrorMessage = "PIN incorrecto para ${branch.branchName}. $remaining intento(s) antes del bloqueo."
+            }
             if (fromPin) {
                 isStorePinError = true
-                storeErrorMessage = "PIN incorrecto para ${branch.branchName}."
                 storeEnteredPin = ""
-            } else {
-                storeErrorMessage = "Contraseña incorrecta para ${branch.branchName}"
             }
         }
     }
@@ -325,6 +391,24 @@ fun SecurityVaultScreen(
                     )
                 }
 
+                if (lockoutSecondsLeft > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(NoirRadius.sm))
+                            .background(NoirColors.DangerMuted)
+                            .border(1.dp, NoirColors.Danger, RoundedCornerShape(NoirRadius.sm))
+                            .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "⏳ Terminal bloqueada por seguridad. Reintenta en $lockoutSecondsLeft s.",
+                            style = NoirType.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = NoirColors.Danger
+                        )
+                    }
+                }
+
                 if (isAdmin) {
                     // ---------------- DUEÑO ----------------
                     if (authMode == "PIN") {
@@ -334,7 +418,7 @@ fun SecurityVaultScreen(
                             isError = isAdminPinError,
                             errorMessage = adminErrorMessage ?: "PIN incorrecto. Reintenta.",
                             onDigit = { digit ->
-                                if (adminEnteredPin.length < 4) {
+                                if (lockoutSecondsLeft <= 0 && adminEnteredPin.length < 4) {
                                     val next = adminEnteredPin + digit
                                     adminEnteredPin = next
                                     isAdminPinError = false
@@ -558,7 +642,7 @@ fun SecurityVaultScreen(
                                 isError = isStorePinError,
                                 errorMessage = storeErrorMessage ?: "PIN incorrecto. Reintenta.",
                                 onDigit = { digit ->
-                                    if (storeEnteredPin.length < 4) {
+                                    if (lockoutSecondsLeft <= 0 && storeEnteredPin.length < 4) {
                                         val next = storeEnteredPin + digit
                                         storeEnteredPin = next
                                         isStorePinError = false
@@ -646,6 +730,102 @@ fun SecurityVaultScreen(
                     .fillMaxWidth()
                     .padding(top = NoirSpace.xxs, bottom = NoirSpace.md),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+
+        if (showForceChangePinDialog) {
+            AlertDialog(
+                onDismissRequest = { /* No se permite cerrar sin establecer PIN seguro */ },
+                containerColor = NoirColors.Surface,
+                shape = RoundedCornerShape(NoirRadius.lg),
+                title = {
+                    Text(
+                        "CAMBIO OBLIGATORIO DE PIN",
+                        style = NoirType.title,
+                        color = NoirColors.Amber
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Por política de seguridad estricta, la terminal no puede operar con el PIN por defecto ('1234'). Establece un nuevo PIN numérico personal (4 a 8 dígitos) para $pendingBranchName ($pendingRole).",
+                            style = NoirType.bodySmall,
+                            color = NoirColors.TextSecondary
+                        )
+
+                        OutlinedTextField(
+                            value = newMandatoryPin,
+                            onValueChange = {
+                                if (it.length <= 8) newMandatoryPin = it.filter { c -> c.isDigit() }
+                                mandatoryPinError = null
+                            },
+                            label = { Text("Nuevo PIN") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
+                            colors = noirFieldColors(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = confirmMandatoryPin,
+                            onValueChange = {
+                                if (it.length <= 8) confirmMandatoryPin = it.filter { c -> c.isDigit() }
+                                mandatoryPinError = null
+                            },
+                            label = { Text("Confirmar Nuevo PIN") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
+                            colors = noirFieldColors(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        mandatoryPinError?.let { err ->
+                            Text(
+                                text = "⚠️ $err",
+                                color = NoirColors.Danger,
+                                style = NoirType.bodySmall
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (newMandatoryPin == "1234") {
+                                mandatoryPinError = "El nuevo PIN no puede ser el PIN por defecto '1234'."
+                                return@Button
+                            }
+                            if (newMandatoryPin.length < 4) {
+                                mandatoryPinError = "El PIN debe tener al menos 4 dígitos numéricos."
+                                return@Button
+                            }
+                            if (newMandatoryPin != confirmMandatoryPin) {
+                                mandatoryPinError = "Los PINs ingresados no coinciden."
+                                return@Button
+                            }
+
+                            if (pendingRole == "ADMIN") {
+                                viewModel.updateAdminPin(newMandatoryPin.trim())
+                            } else if (pendingRole == "ENCARGADO") {
+                                pendingBranchEntity?.let { branch ->
+                                    viewModel.updateBranch(branch.copy(password = newMandatoryPin.trim()))
+                                }
+                            }
+
+                            showForceChangePinDialog = false
+                            viewModel.loginUser(pendingBranchName, pendingRole)
+                            onLoginSuccess()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NoirColors.Cream,
+                            contentColor = NoirColors.OnCream
+                        ),
+                        shape = RoundedCornerShape(NoirRadius.sm),
+                        modifier = Modifier.heightIn(min = 48.dp)
+                    ) {
+                        Text("ESTABLECER PIN Y ENTRAR", fontWeight = FontWeight.Bold)
+                    }
+                }
             )
         }
 

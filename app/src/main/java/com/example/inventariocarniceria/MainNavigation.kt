@@ -26,6 +26,7 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberDrawerState
+import com.example.inventariocarniceria.ui.design.NoirColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -219,9 +220,9 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                         SnackbarHost(snackbarHostState) { data ->
                             Snackbar(
                                 snackbarData = data,
-                                containerColor = Color(0xFF1F1D1A),
-                                contentColor = Color(0xFFF3EFE6),
-                                actionColor = Color(0xFFEEDDC8)
+                                containerColor = NoirColors.SurfaceRaised,
+                                contentColor = NoirColors.TextPrimary,
+                                actionColor = NoirColors.Cream
                             )
                         }
                     }
@@ -317,9 +318,9 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                         SnackbarHost(snackbarHostState) { data ->
                             Snackbar(
                                 snackbarData = data,
-                                containerColor = Color(0xFF1F1D1A),
-                                contentColor = Color(0xFFF3EFE6),
-                                actionColor = Color(0xFFEEDDC8)
+                                containerColor = NoirColors.SurfaceRaised,
+                                contentColor = NoirColors.TextPrimary,
+                                actionColor = NoirColors.Cream
                             )
                         }
                     }

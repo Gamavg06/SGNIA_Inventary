@@ -48,6 +48,7 @@ import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
 import com.example.inventariocarniceria.ui.screens.inventory.QendraCatalogImportDialog
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import androidx.compose.ui.text.font.FontFamily
+import com.example.inventariocarniceria.ui.design.NoirColors
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.NetworkCheck
@@ -67,13 +68,13 @@ fun SettingsScreen(
     var showResetStep1 by remember { mutableStateOf(false) }
     var showResetStep2 by remember { mutableStateOf(false) }
 
-    val matteBg = Color(0xFF0F0E0D)
-    val cardBg = Color(0xFF181715)
-    val cardBorder = Color(0xFF282623)
-    val creamPrimary = Color(0xFFF3EFE6)
-    val creamWarm = Color(0xFFEEDDC8)
-    val textMuted = Color(0xFF8C857B)
-    val darkText = Color(0xFF141312)
+    val matteBg = NoirColors.Background
+    val cardBg = NoirColors.Surface
+    val cardBorder = NoirColors.Hairline
+    val creamPrimary = NoirColors.TextPrimary
+    val creamWarm = NoirColors.Cream
+    val textMuted = NoirColors.TextMuted
+    val darkText = NoirColors.OnCream
 
     val onlineCount = scalesList.count { it.isConnected }
 
@@ -168,9 +169,9 @@ fun SettingsScreen(
 
                 Text(
                     text = "Sincronización de Red TCP/IP: configura IP/puerto, realiza pruebas de Ping, monitorea tráfico recibido o restablece IPs oficiales (.40 y .50).",
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     color = textMuted,
-                    lineHeight = 15.sp
+                    lineHeight = 18.sp
                 )
 
                 // Telemetría de Tráfico Recibido
@@ -194,7 +195,7 @@ fun SettingsScreen(
                     Text(
                         text = scaleState.communicationMode,
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         color = creamWarm
                     )
                 }
@@ -226,11 +227,11 @@ fun SettingsScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = creamWarm),
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp)
+                            .height(48.dp)
                     ) {
                         Icon(Icons.Default.FlashOn, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Restablecer IPs (.40/.50)", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text("Restablecer IPs", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
 
                     OutlinedButton(
@@ -239,11 +240,11 @@ fun SettingsScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = creamPrimary),
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp)
+                            .height(48.dp)
                     ) {
                         Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Catálogo Qendra", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text("Catálogo Qendra", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
@@ -275,7 +276,7 @@ fun SettingsScreen(
 
                 Text(
                     text = "Control criptográfico offline para licencias de 10 min (demo), 7 días (prueba), 1 mes/año (renta) o definitiva de por vida.",
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     color = textMuted
                 )
 
@@ -288,7 +289,7 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .height(48.dp)
                 ) {
-                    Text("GESTIONAR LICENCIA Y CLAVES", fontWeight = FontWeight.Black, fontSize = 11.sp, color = creamWarm)
+                    Text("GESTIONAR LICENCIA Y CLAVES", fontWeight = FontWeight.Black, fontSize = 13.sp, color = creamWarm)
                 }
             }
         }
@@ -313,7 +314,7 @@ fun SettingsScreen(
 
                 Text(
                     text = "Soporte técnico directo vía WhatsApp (+52 276 109 5688), contacto del desarrollador y arquitectura offline.",
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     color = textMuted
                 )
 
@@ -325,7 +326,7 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .height(48.dp)
                 ) {
-                    Text("VER INFORMACIÓN DE SGNIA & SOPORTE", fontWeight = FontWeight.Black, fontSize = 11.sp)
+                    Text("VER INFORMACIÓN DE SGNIA & SOPORTE", fontWeight = FontWeight.Black, fontSize = 13.sp)
                 }
             }
         }
@@ -404,7 +405,7 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
                     .background(cardBg)
-                    .border(1.dp, Color(0xFFE07A6F).copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                    .border(1.dp, NoirColors.Danger.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -416,10 +417,10 @@ fun SettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "ZONA DE PELIGRO",
-                            fontSize = 11.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 0.8.sp,
-                            color = Color(0xFFE07A6F)
+                            color = NoirColors.Danger
                         )
                         Text(
                             text = "Reinicio Limpio del Sistema",
@@ -431,22 +432,22 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = null,
-                        tint = Color(0xFFE07A6F),
+                        tint = NoirColors.Danger,
                         modifier = Modifier.size(22.dp)
                     )
                 }
 
                 Text(
                     text = "Elimina permanentemente productos, sucursales e historial para arrancar una instalación limpia.",
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = textMuted
                 )
 
                 OutlinedButton(
                     onClick = { showResetStep1 = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE07A6F)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE07A6F).copy(alpha = 0.6f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.Danger),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, NoirColors.Danger.copy(alpha = 0.6f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
@@ -467,7 +468,7 @@ fun SettingsScreen(
                 Text(
                     text = "¿Vaciar Base de Datos?",
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFFE07A6F)
+                    color = NoirColors.Danger
                 )
             },
             text = {
@@ -483,7 +484,7 @@ fun SettingsScreen(
                         showResetStep1 = false
                         showResetStep2 = true
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE07A6F), contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.Danger, contentColor = Color.White)
                 ) {
                     Text("CONTINUAR A CONFIRMACIÓN", fontWeight = FontWeight.Black)
                 }
@@ -504,7 +505,7 @@ fun SettingsScreen(
                 Text(
                     text = "⚠️ CONFIRMACIÓN DEFINITIVA",
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFFE07A6F)
+                    color = NoirColors.Danger
                 )
             },
             text = {
@@ -520,7 +521,7 @@ fun SettingsScreen(
                         viewModel.clearAllDataForFreshStart()
                         showResetStep2 = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE07A6F), contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.Danger, contentColor = Color.White)
                 ) {
                     Text("SÍ, BORRAR TODO DEFINITIVAMENTE", fontWeight = FontWeight.Black)
                 }

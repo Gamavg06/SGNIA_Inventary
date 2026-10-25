@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -84,6 +86,7 @@ fun AdminBranchesScreen(
     var editingBranch by remember { mutableStateOf<BranchEntity?>(null) }
     var isAddOpen by remember { mutableStateOf(false) }
     var showLimitReachedDialog by remember { mutableStateOf(false) }
+    var revealedBranchPinIds by remember { mutableStateOf(setOf<Long>()) }
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
@@ -224,19 +227,39 @@ fun AdminBranchesScreen(
                                         color = NoirColors.Cream
                                     )
 
+                                    val isPinRevealed = revealedBranchPinIds.contains(branch.id)
+                                    val pinDisplay = if (isPinRevealed) branch.password else "••••"
                                     Row(
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            "PIN: ${branch.password}",
+                                            "PIN: $pinDisplay",
                                             fontFamily = FontFamily.Monospace,
-                                            fontSize = 11.sp,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
                                             color = NoirColors.Gold
                                         )
+                                        IconButton(
+                                            onClick = {
+                                                revealedBranchPinIds = if (isPinRevealed) {
+                                                    revealedBranchPinIds - branch.id
+                                                } else {
+                                                    revealedBranchPinIds + branch.id
+                                                }
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = if (isPinRevealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                                contentDescription = if (isPinRevealed) "Ocultar PIN" else "Revelar PIN",
+                                                tint = NoirColors.TextSecondary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
                                         Text(
                                             "• Tel: ${branch.phone}",
-                                            fontSize = 11.sp,
+                                            fontSize = 13.sp,
                                             color = NoirColors.TextMuted
                                         )
                                     }

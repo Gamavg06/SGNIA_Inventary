@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -73,6 +74,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.inventariocarniceria.ui.design.sgniaTextFieldColors
 import com.example.inventariocarniceria.data.local.LocalProductEntity
 import com.example.inventariocarniceria.ui.design.BentoCard
 import com.example.inventariocarniceria.ui.design.BigMetric
@@ -231,14 +233,14 @@ fun ManagerInvestmentScreen(
                             items = filteredProducts
                         )
                     },
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF3EFE6)),
-                    border = BorderStroke(1.dp, Color(0xFF282623)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextPrimary),
+                    border = BorderStroke(1.dp, NoirColors.Hairline),
                     shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Compartir Plan de Producción (WhatsApp)", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                    Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Compartir Plan de Producción (WhatsApp)", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -262,6 +264,7 @@ fun ManagerInvestmentScreen(
                             }
                         }
                     },
+                    colors = sgniaTextFieldColors(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.weight(1f)
@@ -295,11 +298,12 @@ fun ManagerInvestmentScreen(
                         FilterChip(
                             selected = selectedInvestmentFilter == invName,
                             onClick = { selectedInvestmentFilter = invName },
-                            label = { Text(invName, fontSize = 12.sp, fontWeight = FontWeight.Bold) },
+                            label = { Text(invName, fontSize = 13.sp, fontWeight = FontWeight.Bold) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = purpleSgnia,
                                 selectedLabelColor = Color.White
-                            )
+                            ),
+                            modifier = Modifier.heightIn(min = 48.dp)
                         )
                     }
                 }

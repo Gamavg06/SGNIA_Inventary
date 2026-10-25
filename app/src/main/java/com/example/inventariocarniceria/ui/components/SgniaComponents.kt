@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.inventariocarniceria.ui.design.NoirColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Backspace
@@ -93,49 +94,23 @@ fun SgniaThemeToggle(
     modifier: Modifier = Modifier,
     currentMode: SgniaThemeMode = SgniaTheme.mode
 ) {
-    val isGold = currentMode == SgniaThemeMode.OBSIDIAN_GOLD
-    val haptic = LocalHapticFeedback.current
-
-    val rotation by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (isGold) 0f else 360f,
-        animationSpec = spring(stiffness = androidx.compose.animation.core.Spring.StiffnessLow),
-        label = "themeIconRotation"
-    )
-
     Box(
         modifier = modifier
             .size(42.dp)
             .graphicsLayer {
                 shape = CircleShape
                 clip = true
-                rotationZ = rotation
             }
-            .background(SgniaTheme.colors.surfaceGlass)
-            .border(1.5.dp, SgniaTheme.colors.borderGradient, CircleShape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                onToggle()
-            },
+            .background(NoirColors.SurfaceRaised)
+            .border(1.dp, NoirColors.Hairline, CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        if (isGold) {
-            Icon(
-                imageVector = Icons.Default.WbSunny,
-                contentDescription = "Modo Sol (Obsidian Gold)",
-                tint = Color(0xFFFFB300),
-                modifier = Modifier.size(24.dp)
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.DarkMode,
-                contentDescription = "Modo Luna (Cyber Violet)",
-                tint = Color(0xFFC084FC),
-                modifier = Modifier.size(22.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.DarkMode,
+            contentDescription = "Sistema Noir & Crema",
+            tint = NoirColors.Cream,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
@@ -1491,8 +1466,8 @@ fun SgniaCerhanTopBar(
                         .weight(1f, fill = false)
                         .height(40.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFF1F1D1A))
-                        .border(1.dp, Color(0xFF38332D), RoundedCornerShape(20.dp))
+                        .background(NoirColors.SurfaceRaised)
+                        .border(1.dp, NoirColors.HairlineStrong, RoundedCornerShape(20.dp))
                         .clickable { onSearchClick() }
                         .padding(horizontal = 14.dp),
                     contentAlignment = Alignment.CenterStart
@@ -1506,7 +1481,7 @@ fun SgniaCerhanTopBar(
                         Text(
                             text = searchPlaceholder,
                             fontSize = 12.sp,
-                            color = Color(0xFFA89F91),
+                            color = NoirColors.TextSecondary,
                             maxLines = 1
                         )
                     }
@@ -1518,15 +1493,15 @@ fun SgniaCerhanTopBar(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1F1D1A))
-                        .border(1.dp, Color(0xFF38332D), CircleShape)
+                        .background(NoirColors.SurfaceRaised)
+                        .border(1.dp, NoirColors.HairlineStrong, CircleShape)
                         .clickable { onRightActionClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = rightActionIcon,
                         contentDescription = null,
-                        tint = Color(0xFFF3EFE6),
+                        tint = NoirColors.TextPrimary,
                         modifier = Modifier.size(18.dp)
                     )
                 }

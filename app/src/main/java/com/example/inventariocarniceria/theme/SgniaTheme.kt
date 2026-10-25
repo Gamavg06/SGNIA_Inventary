@@ -20,9 +20,7 @@ import androidx.compose.ui.unit.sp
  * MODOS DE TEMA EJECUTIVOS DE ÉLITE
  */
 enum class SgniaThemeMode {
-    NOIR_CREMA,    // Tema Principal: Negro Mate & Crema Marfil (Inspirado en la plantilla elegante)
-    OBSIDIAN_GOLD, // Tema A: Negro Obsidiana ultra profundo & Oro Líquido Titanio
-    CYBER_VIOLET   // Tema B: Púrpura Nocturno & Rosa Fucsia Neón / Violeta Cyberpunk
+    NOIR_CREMA    // Sistema Activo Oficial: Negro Mate & Crema Marfil (Noir & Crema)
 }
 
 /**
@@ -79,61 +77,6 @@ val NoirCremaColors = SgniaColors(
 )
 
 // --- VALORES TEMA A: OBSIDIAN & LIQUID GOLD TITANIUM ---
-val ObsidianColors = SgniaColors(
-    backgroundPrimary = Color(0xFF0A0B0E),
-    backgroundSecondary = Color(0xFF121318),
-    surfaceGlass = Color(0xDD16181F),
-    surfaceGlassBorder = Color(0x40D4AF37),
-    borderGradient = Brush.linearGradient(
-        listOf(Color(0xFFD4AF37), Color(0x33D4AF37), Color(0xFF8A7322))
-    ),
-    accentPrimary = Color(0xFFD4AF37),    // Oro Líquido Metálico
-    accentSecondary = Color(0xFFF5D77F),  // Oro Claro Titanio
-    accentGlow = Color(0x66D4AF37),
-    statusStable = Color(0xFF10B981),     // Verde Esmeralda
-    statusUnstable = Color(0xFFF59E0B),   // Ámbar Fluctuante
-    statusAlert = Color(0xFFB3001B),      // Rojo Carmesí Racing
-    textPrimary = Color(0xFFFFFFFF),
-    textSecondary = Color(0xFFC7C9D1),
-    textMuted = Color(0xFF727685),
-    oledDisplayBg = Color(0xFF000000),    // Cero emisión OLED
-    oledDigitColor = Color(0xFFF5D77F),   // Oro Neón en Display
-    oledGlow = Color(0x40D4AF37),
-    shimmerColors = listOf(
-        Color(0xFFD4AF37),
-        Color(0xFFFFF6D6),
-        Color(0xFFD4AF37)
-    )
-)
-
-// --- VALORES TEMA B: CYBER VIOLET & VELVET ROSE ---
-val CyberVioletColors = SgniaColors(
-    backgroundPrimary = Color(0xFF0D0714),
-    backgroundSecondary = Color(0xFF150C20),
-    surfaceGlass = Color(0xDD1E102A),
-    surfaceGlassBorder = Color(0x55FF2A85),
-    borderGradient = Brush.linearGradient(
-        listOf(Color(0xFFFF2A85), Color(0x339D4EDD), Color(0xFFC77DFF))
-    ),
-    accentPrimary = Color(0xFFFF2A85),    // Fucsia Neón Eléctrico
-    accentSecondary = Color(0xFF9D4EDD),  // Violeta Amatista
-    accentGlow = Color(0x66FF2A85),
-    statusStable = Color(0xFF00E676),     // Verde Lima Neón
-    statusUnstable = Color(0xFFFF9100),   // Naranja Neón
-    statusAlert = Color(0xFFFF1744),      // Rosa Neón Alerta
-    textPrimary = Color(0xFFFFFFFF),
-    textSecondary = Color(0xFFD1C4E9),
-    textMuted = Color(0xFF8E7D9E),
-    oledDisplayBg = Color(0xFF020005),
-    oledDigitColor = Color(0xFF00E676),   // Verde Lima Láser en Display
-    oledGlow = Color(0x4000E676),
-    shimmerColors = listOf(
-        Color(0xFFFF2A85),
-        Color(0xFFFFB3D9),
-        Color(0xFF9D4EDD)
-    )
-)
-
 val LocalSgniaColors = staticCompositionLocalOf { NoirCremaColors }
 val LocalSgniaThemeMode = staticCompositionLocalOf { SgniaThemeMode.NOIR_CREMA }
 
@@ -162,7 +105,7 @@ object SgniaTypography {
     val labelTactical = TextStyle(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
-        fontSize = 11.sp,
+        fontSize = 13.sp,
         letterSpacing = 1.sp
     )
     val body = TextStyle(
@@ -185,11 +128,7 @@ fun SgniaTheme(
     themeMode: SgniaThemeMode = SgniaThemeMode.NOIR_CREMA,
     content: @Composable () -> Unit
 ) {
-    val targetColors = when (themeMode) {
-        SgniaThemeMode.NOIR_CREMA -> NoirCremaColors
-        SgniaThemeMode.OBSIDIAN_GOLD -> ObsidianColors
-        SgniaThemeMode.CYBER_VIOLET -> CyberVioletColors
-    }
+    val targetColors = NoirCremaColors
 
     val animSpec = tween<Color>(durationMillis = 350)
 

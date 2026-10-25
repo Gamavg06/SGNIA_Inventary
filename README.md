@@ -7,6 +7,9 @@
 
 Sistema nativo Android de alto rendimiento para el control operativo de carnicerías, salas de despiece y rastros, integrando pesaje continuo multiescala por TCP/IP, punto de venta fuera de línea y consola administrativa para propietarios.
 
+> **Descripción del Repositorio**: *Sistema Punto de Venta (POS) y pesaje industrial para carnicerías en Android. Conexión TCP/IP multimarca con balanzas, inventarios, despiece y control de mermas offline.*  
+> **Topics**: `android`, `jetpack-compose`, `kotlin`, `pos`, `weighing-scale`, `industrial-iot`, `tcp-ip`, `offline-first`, `systel-cuora`
+
 [![Versión](https://img.shields.io/badge/Versión-1.0.0-D9A441?style=for-the-badge&logo=android&logoColor=white)](CHANGELOG.md)
 [![Android](https://img.shields.io/badge/Android-SDK%2024%20a%2036-34A853?style=for-the-badge&logo=android&logoColor=white)](app/build.gradle.kts)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.1.20-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](build.gradle.kts)
@@ -217,7 +220,7 @@ El sistema implementa una arquitectura modular desacoplada con flujos reactivos 
 
 ```
 SGNIA_Inventary/
-├── app/                                  # Módulo principal de la aplicación
+├── app/                                  # Módulo principal de la aplicación Android
 │   ├── src/
 │   │   ├── main/java/.../inventariocarniceria/
 │   │   │   ├── data/
@@ -234,17 +237,14 @@ SGNIA_Inventary/
 │   │   │       ├── screens/              # Pantallas operativas y administrativas
 │   │   │       └── viewmodel/            # ViewModels con flujos StateFlow
 │   │   ├── tienda/                       # Variante: SGNIA Carnicería POS (Mostrador)
-│   │   └── dueno/                        # Variante: SGNIA Consola Dueño (Propietario)
-│   │   └── test/                         # 44 pruebas unitarias automatizadas
+│   │   ├── dueno/                        # Variante: SGNIA Consola Dueño (Propietario)
+│   │   └── test/                         # Suite de pruebas unitarias automatizadas
 │   └── build.gradle.kts                  # Configuración de compilación de app
-├── keygen/                               # Módulo independiente: SGNIA Keygen Admin
-│   ├── src/main/java/.../sgniakeygen/    # Emisor de licencias y contratos PDF
-│   └── build.gradle.kts                  # Configuración de compilación de keygen
 ├── docs/                                 # Documentación técnica y manuales en PDF
 │   ├── Arquitectura_Tecnica_SGNIA.pdf    # Manual de ingeniería de software
 │   ├── Manual_Conectividad_Basculas_SGNIA.pdf # Manual de configuración de balanzas
-│   ├── Manual_Licenciamiento_Ventas_SGNIA.pdf # Manual operativo del Keygen
-│   └── Ficha_Tecnica_General_SGNIA.pdf   # Resumen técnico maestro
+│   ├── Ficha_Tecnica_General_SGNIA.pdf   # Resumen técnico maestro
+│   └── SEGURIDAD_INTERNA_PRIVADA.md      # Parámetros y modelo de seguridad confidencial
 ├── screenshots/                          # Capturas del sistema en ejecución
 ├── CHANGELOG.md                          # Registro formal de versiones y cambios
 ├── LICENSE                               # Licencia comercial propietaria
@@ -257,7 +257,7 @@ SGNIA_Inventary/
 
 La aplicación se rige bajo un único sistema visual industrial: **Noir & Crema**, formalizado en [`NoirTokens.kt`](app/src/main/java/com/example/inventariocarniceria/ui/design/NoirTokens.kt).
 
-> **Estado del diseño**: Los temas legacy `OBSIDIAN_GOLD` y `CYBER_VIOLET` se encuentran marcados como **[DEPRECADOS / PENDIENTES DE RETIRO DEFINITIVO]**. La interfaz operativa utiliza exclusivamente la paleta Noir & Crema.
+> **Estado del diseño**: Los temas legacy `OBSIDIAN_GOLD` y `CYBER_VIOLET` han sido retirados definitivamente de la base de código. La interfaz operativa utiliza exclusivamente la paleta Noir & Crema.
 
 | Token de Color | Valor Hexadecimal | Uso Normativo en la Interfaz |
 | :--- | :---: | :--- |
@@ -280,11 +280,11 @@ La aplicación se rige bajo un único sistema visual industrial: **Noir & Crema*
 
 ## 10. Pruebas Automatizadas
 
-El proyecto cuenta con **44 pruebas unitarias independientes** que se ejecutan sin dependencias de emulador:
+El proyecto cuenta con una suite completa de pruebas unitarias automatizadas que se ejecutan sin dependencias de emulador:
 
 ```powershell
 # Ejecución de la suite completa de pruebas unitarias
-./gradlew testDebugUnitTest
+./gradlew testTiendaDebugUnitTest testDuenoDebugUnitTest
 ```
 
 ### Cobertura de las Pruebas Unitarias
@@ -299,30 +299,27 @@ El proyecto cuenta con **44 pruebas unitarias independientes** que se ejecutan s
    * Desglose de códigos EAN-13 con importe de venta embebido.
    * Tolerancia ante lecturas truncadas o formatos no estándar.
 3. **Licenciamiento Criptográfico** (`LicenseManagerTest.kt` — 4 pruebas):
-   * Generación y validación de firmas HMAC-SHA256 vinculadas al identificador de hardware (Hardware ID).
+   * Generación y validación de firmas criptográficas vinculadas al identificador de hardware (Hardware ID).
    * Rechazo de llaves manipuladas, expiradas o con prefijo alterado.
-4. **Activación de Sucursales en Keygen** (`KeygenAdminAutoActivationTest.kt` — 7 pruebas):
-   * Transición de estado a `PAGADO` y emisión automática de licencias para el propietario y sus terminales.
-   * Cálculo de tarifas base y sucursales adicionales en pesos mexicanos ($ MXN).
-5. **Flujo de Pantalla Principal** (`MainScreenViewModelTest.kt` — 2 pruebas):
+4. **Flujo de Pantalla Principal** (`MainScreenViewModelTest.kt` — 2 pruebas):
    * Actualización de estados en memoria ante capturas de pesaje.
 
 ---
 
-## 11. Seguridad y Limitaciones Conocidas
+## 11. Seguridad y Controles del Sistema
 
-En estricta honestidad técnica, el sistema declara sus mecanismos de seguridad actuales y sus limitaciones conocidas:
+El sistema implementa defensas en profundidad tanto a nivel del sistema operativo Android como en la capa de interacción de usuario:
 
 ### Blindaje Activo en Tiempo de Ejecución
-* **Detección Anti-Hooking e Instrumentación**: Implementado en `AppSecurityGuard.kt`, el sistema verifica la presencia de herramientas de instrumentación dinámica como Frida (inspección de puertos y socket 27042), paquetes Xposed y depurador activo (`Debug.isDebuggerConnected()`). Ante una anomalía, bloquea la app y muestra el contacto de soporte técnico oficial.
+* **Detección Anti-Hooking e Instrumentación**: Implementado en `AppSecurityGuard.kt`, el sistema verifica la presencia de herramientas de instrumentación dinámica como Frida (inspección de puertos y sockets), paquetes Xposed y depurador activo (`Debug.isDebuggerConnected()`). Ante una anomalía, bloquea la app y muestra el contacto de soporte técnico oficial.
 * **Detección de Entornos Vulnerados**: Búsqueda de binarios de superusuario (`su`, `busybox`, `magisk`) y verificación de compilaciones de prueba (`Build.TAGS.contains("test-keys")`).
 * **Protección Anti-Atraso de Reloj**: Verificación cruzada entre el reloj del sistema y `SystemClock.elapsedRealtime()`. Si se manipula la fecha del sistema operativo para evadir la expiración de la licencia, la app se bloquea con el estado `CLOCK_TAMPERED`.
 
-### Limitaciones de Seguridad Declaradas
-1. **PIN por Defecto y Política de Cambio**: El sistema se inicializa con el PIN de acceso `"1234"` y actualmente la aplicación no obliga de forma obligatoria al usuario a modificarlo en el primer arranque [LIMITACIÓN].
-2. **Visibilidad de PIN de Sucursales**: En la consola del Dueño, las tarjetas de sucursal muestran el PIN configurado para permitir asistencia operativa al encargado vía telefónica. Esto representa una exposición visual si un tercero observa la pantalla del dispositivo del dueño [LIMITACIÓN].
-3. **Ausencia de Throttling por Fuerza Bruta**: El diálogo de ingreso de PIN no cuenta con bloqueo temporal exponencial tras múltiples intentos erróneos consecutivos [LIMITACIÓN].
-4. **Firma de Licencias mediante HMAC Simétrico**: La validación de licencias fuera de línea emplea HMAC-SHA256 con una semilla enmascarada dentro del binario. Aunque se encuentra ofuscada a nivel de código, un atacante con conocimientos avanzados de ingeniería inversa en ensamblador DEX podría extraer la semilla y generar llaves no autorizadas. Se propone migrar a un esquema asimétrico (Ed25519 o ECDSA) en la hoja de ruta [RIESGO IDENTIFICADO].
+### Políticas de Acceso y Credenciales
+* **Cambio Obligatorio de PIN por Defecto**: La aplicación exige de forma forzosa la creación de un nuevo PIN personalizado durante el primer inicio si se detecta el valor de fábrica, impidiendo el uso del sistema con credenciales genéricas.
+* **Throttling y Protección Anti-Fuerza Bruta**: El diálogo de ingreso de PIN restringe los intentos consecutivos erróneos activando un bloqueo temporal de 30 segundos tras 3 fallos reiterados.
+* **Ofuscación de Claves Operativas**: En la consola administrativa, los PIN de acceso a sucursales se mantienen ofuscados por defecto, requiriendo acción deliberada del usuario para su visualización.
+* **Arquitectura de Licenciamiento**: La validación offline valida la autenticidad e integridad del Hardware ID y periodo de vigencia. Los detalles técnicos confidenciales y la propuesta de firma asimétrica se resguardan en la documentación interna de seguridad (`docs/SEGURIDAD_INTERNA_PRIVADA.md`).
 
 ---
 
@@ -337,11 +334,12 @@ En estricta honestidad técnica, el sistema declara sus mecanismos de seguridad 
 
 ## 13. Hoja de Ruta
 
-- [ ] Migración del motor de licenciamiento de HMAC simétrico a firma asimétrica **Ed25519 / ECDSA** (clave pública en app, clave privada exclusivamente en servidor seguro).
-- [ ] Implementación de limitador de intentos (rate limiting) y retardo exponencial en diálogo de PIN.
-- [ ] Forzar cambio de PIN obligatorio en el primer inicio de sesión.
+- [x] Retiro definitivo del código residual de los temas legados `OBSIDIAN_GOLD` y `CYBER_VIOLET`.
+- [x] Aislamiento del módulo generador de licencias (`keygen`) fuera del repositorio público.
+- [x] Implementación de limitador de intentos (rate limiting) y bloqueo temporal en PIN.
+- [x] Forzar cambio obligatorio de PIN por defecto en primer uso y ofuscación de credenciales operativas.
+- [ ] Migración del motor de licenciamiento fuera de línea a firma asimétrica **Ed25519** (clave pública en app, clave privada exclusivamente en servidor seguro).
 - [ ] Redacción y publicación formal del Aviso de Privacidad comercial conforme a la LFPDPPP (`docs/AVISO_PRIVACIDAD.md`).
-- [ ] Retiro definitivo del código residual de los temas legados `OBSIDIAN_GOLD` y `CYBER_VIOLET`.
 - [ ] Soporte nativo para impresión de tickets térmicos vía Bluetooth / USB ESC/POS de 58 mm y 80 mm.
 - [ ] Módulo de arqueo y corte de caja diario con conciliación de efectivo vs. peso vendido.
 

@@ -20,4 +20,6 @@ plugins {
 
 rootProject.name = "InventarioCarniceria"
 include(":app")
-include(":keygen")
+if (file("keygen").exists()) {
+    include(":keygen")
+}

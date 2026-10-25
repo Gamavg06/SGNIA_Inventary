@@ -26,7 +26,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -439,3 +441,23 @@ private fun NoirComponentsPreview() {
         NoirPrimaryButton(text = "Continuar", onClick = {})
     }
 }
+
+/**
+ * Colores estándar unificados para campos de texto (OutlinedTextField) en el sistema Noir & Crema.
+ */
+@Composable
+fun sgniaTextFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = NoirColors.SurfaceSunken,
+    unfocusedContainerColor = NoirColors.SurfaceSunken,
+    focusedBorderColor = NoirColors.Cream,
+    unfocusedBorderColor = NoirColors.Hairline,
+    focusedTextColor = NoirColors.TextPrimary,
+    unfocusedTextColor = NoirColors.TextPrimary,
+    cursorColor = NoirColors.Cream,
+    focusedLabelColor = NoirColors.Cream,
+    unfocusedLabelColor = NoirColors.TextSecondary,
+    focusedLeadingIconColor = NoirColors.Cream,
+    unfocusedLeadingIconColor = NoirColors.TextSecondary,
+    focusedTrailingIconColor = NoirColors.Cream,
+    unfocusedTrailingIconColor = NoirColors.TextSecondary
+)

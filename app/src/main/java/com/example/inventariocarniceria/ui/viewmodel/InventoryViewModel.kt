@@ -118,13 +118,9 @@ class InventoryViewModel(
     val themeMode: StateFlow<com.example.inventariocarniceria.theme.SgniaThemeMode> = _themeMode.asStateFlow()
 
     fun toggleTheme() {
-        val nextMode = if (_themeMode.value == com.example.inventariocarniceria.theme.SgniaThemeMode.NOIR_CREMA) {
-            com.example.inventariocarniceria.theme.SgniaThemeMode.OBSIDIAN_GOLD
-        } else {
-            com.example.inventariocarniceria.theme.SgniaThemeMode.NOIR_CREMA
-        }
-        _themeMode.value = nextMode
-        themePrefs?.edit()?.putString("theme_mode", nextMode.name)?.apply()
+        // Modo activo exclusivo: NOIR & CREMA
+        _themeMode.value = com.example.inventariocarniceria.theme.SgniaThemeMode.NOIR_CREMA
+        themePrefs?.edit()?.putString("theme_mode", com.example.inventariocarniceria.theme.SgniaThemeMode.NOIR_CREMA.name)?.apply()
     }
 
     private val _despieceState = MutableStateFlow(DespieceUiState())

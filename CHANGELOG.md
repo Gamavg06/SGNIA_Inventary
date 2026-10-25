@@ -6,6 +6,22 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [1.0.1] - 2026-10-25
+
+### Seguridad
+- **Aislamiento del Generador de Licencias**: Módulo `keygen/` extraído del repositorio público e incorporado a `.gitignore` y configuración condicional en `settings.gradle.kts`.
+- **Throttling y Bloqueo Anti-Fuerza Bruta en PIN**: Bloqueo temporal restrictivo de 30 segundos tras 3 intentos erróneos consecutivos con contador regresivo en `SecurityVaultScreen.kt`.
+- **Política de PIN Obligatorio**: Forzado de cambio obligatorio de PIN inicial al detectar credenciales de fábrica.
+- **Ofuscación de Claves Operativas**: Ofuscación por defecto de PINs de sucursales en `AdminBranchesScreen.kt` con selector visual de revelación/ocultamiento.
+- **Sanitización Pública**: Eliminación de referencias a vectores de ataque en `README.md` y creación de `docs/SEGURIDAD_INTERNA_PRIVADA.md` con propuesta formal de migración a Ed25519.
+
+### Cambiado
+- **Estandarización de Campos de Texto**: Implementación unificada de `sgniaTextFieldColors()` (fondo `SurfaceSunken`, borde `Hairline`, foco `Cream`) en búsqueda de Inversión, clave de licencia y diálogo Qendra.
+- **Retiro Definitivo de Temas Legados**: Eliminación formal de `OBSIDIAN_GOLD`, `CYBER_VIOLET` y el archivo huérfano `Color.kt`. La aplicación opera exclusivamente con `Noir & Crema`.
+- **Ergonomía Táctil y Tipografía**: Botones secundarios (compartir, limpiar, cargar ejemplo, chips de báscula) elevados a una altura táctil mínima de 48 dp. Subtítulos y descripciones de 11 sp elevados a 13 sp mínimo según norma de legibilidad industrial.
+
+---
+
 ## [1.0.0] - 2026-10-24
 
 ### Añadido

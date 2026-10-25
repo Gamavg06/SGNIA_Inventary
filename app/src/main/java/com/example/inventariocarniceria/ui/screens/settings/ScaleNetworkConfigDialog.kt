@@ -70,22 +70,23 @@ import com.example.inventariocarniceria.data.scale.ScaleBrandCatalog
 import com.example.inventariocarniceria.data.scale.ScaleBrandModel
 import com.example.inventariocarniceria.data.scale.TcpScaleDevice
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
+import com.example.inventariocarniceria.ui.design.NoirColors
 import java.util.Locale
 
 // Paleta Oficial Bento Grid Noir & Crema
-private val NoirBg = Color(0xFF100F0E)
-private val NoirSurface = Color(0xFF181715)
-private val NoirSurfaceRaised = Color(0xFF22201D)
-private val NoirSurfaceSunken = Color(0xFF141312)
-private val NoirHairline = Color(0xFF2C2824)
-private val NoirHairlineStrong = Color(0xFF3D3832)
-private val NoirCream = Color(0xFFEEDDC8)
-private val NoirOnCream = Color(0xFF141312)
-private val NoirTextPrimary = Color(0xFFF3EFE6)
-private val NoirTextSecondary = Color(0xFFA8A196)
-private val NoirEmerald = Color(0xFF4ADE80)
-private val NoirAmber = Color(0xFFD9A441)
-private val NoirDanger = Color(0xFFE07A6F)
+private val NoirBg = NoirColors.Background
+private val NoirSurface = NoirColors.Surface
+private val NoirSurfaceRaised = NoirColors.SurfaceRaised
+private val NoirSurfaceSunken = NoirColors.SurfaceSunken
+private val NoirHairline = NoirColors.Hairline
+private val NoirHairlineStrong = NoirColors.HairlineStrong
+private val NoirCream = NoirColors.Cream
+private val NoirOnCream = NoirColors.OnCream
+private val NoirTextPrimary = NoirColors.TextPrimary
+private val NoirTextSecondary = NoirColors.TextSecondary
+private val NoirEmerald = NoirColors.Emerald
+private val NoirAmber = NoirColors.Amber
+private val NoirDanger = NoirColors.Danger
 
 /**
  * SUBVENTANA FLOTANTE: CONFIGURACIÓN DE BÁSCULAS EN RED
@@ -155,7 +156,7 @@ fun ScaleNetworkConfigDialog(
                             Text(
                                 text = "RED INDUSTRIAL DE BÁSCULAS",
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = NoirCream
                             )
@@ -214,7 +215,7 @@ fun ScaleNetworkConfigDialog(
 
                         Text(
                             text = "Escucha Concurrente",
-                            fontSize = 11.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = NoirTextSecondary
                         )
@@ -252,12 +253,12 @@ fun ScaleNetworkConfigDialog(
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, NoirAmber.copy(alpha = 0.5f)),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirAmber),
-                        modifier = Modifier.height(42.dp)
+                        modifier = Modifier.height(48.dp)
                     ) {
                         Text(
                             text = "⚡ Reset Predeterminado (.40/.50)",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp
+                            fontSize = 13.sp
                         )
                     }
                 }
@@ -288,7 +289,7 @@ fun ScaleNetworkConfigDialog(
                             )
                             Text(
                                 text = "Pulsa '+ Agregar Báscula Extra' para conectar tu báscula Torrey, Systel, Rhino o genérica.",
-                                fontSize = 11.sp,
+                                fontSize = 13.sp,
                                 color = NoirTextSecondary
                             )
                         }
@@ -733,11 +734,13 @@ fun AddEditScaleDialog(
                                         .background(if (isSelected) NoirCream else NoirSurfaceRaised)
                                         .border(1.dp, if (isSelected) NoirCream else NoirHairline, RoundedCornerShape(8.dp))
                                         .clickable { selectedBrandFilter = brandName }
-                                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                                        .heightIn(min = 48.dp)
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = brandName,
-                                        fontSize = 11.sp,
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isSelected) NoirOnCream else NoirTextPrimary
                                     )

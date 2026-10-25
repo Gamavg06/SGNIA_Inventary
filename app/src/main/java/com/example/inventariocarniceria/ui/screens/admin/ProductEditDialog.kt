@@ -56,18 +56,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inventariocarniceria.data.local.ProductCategories
 import com.example.inventariocarniceria.data.local.ProductEntity
+import com.example.inventariocarniceria.ui.design.NoirColors
 
-private val NoirSurface = Color(0xFF181715)
-private val NoirSurfaceRaised = Color(0xFF22201D)
-private val NoirSurfaceSunken = Color(0xFF121110)
-private val NoirHairline = Color(0xFF2C2824)
-private val NoirCream = Color(0xFFEEDDC8)
-private val NoirOnCream = Color(0xFF141312)
-private val NoirTextPrimary = Color(0xFFF3EFE6)
-private val NoirTextSecondary = Color(0xFFA8A196)
-private val NoirEmerald = Color(0xFF4ADE80)
-private val NoirAmber = Color(0xFFD9A441)
-private val NoirDanger = Color(0xFFE07A6F)
+private val NoirSurface = NoirColors.Surface
+private val NoirSurfaceRaised = NoirColors.SurfaceRaised
+private val NoirSurfaceSunken = NoirColors.SurfaceSunken
+private val NoirHairline = NoirColors.Hairline
+private val NoirCream = NoirColors.Cream
+private val NoirOnCream = NoirColors.OnCream
+private val NoirTextPrimary = NoirColors.TextPrimary
+private val NoirTextSecondary = NoirColors.TextSecondary
+private val NoirEmerald = NoirColors.Emerald
+private val NoirAmber = NoirColors.Amber
+private val NoirDanger = NoirColors.Danger
 
 @Composable
 private fun sgniaTextFieldColors() = OutlinedTextFieldDefaults.colors(

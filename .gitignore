@@ -17,6 +17,9 @@ local.properties
 keystore.jks
 *.keystore
 *.jks
+keygen/
+# Módulo privado de licenciamiento movido fuera del repositorio público
+/keygen/
 
 # Binarios y APKs compilados
 *.apk

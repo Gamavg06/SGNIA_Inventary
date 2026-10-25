@@ -38,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.example.inventariocarniceria.ui.design.sgniaTextFieldColors
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -300,7 +301,7 @@ fun QendraCatalogImportDialog(
                         shape = RoundedCornerShape(NoirRadius.sm),
                         border = BorderStroke(1.dp, NoirColors.Hairline),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextSecondary),
-                        modifier = Modifier.height(38.dp)
+                        modifier = Modifier.height(48.dp)
                     ) {
                         Text("Limpiar", style = NoirType.bodySmall, color = NoirColors.TextSecondary)
                     }
@@ -324,7 +325,7 @@ fun QendraCatalogImportDialog(
                         shape = RoundedCornerShape(NoirRadius.sm),
                         border = BorderStroke(1.dp, NoirColors.Hairline),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextSecondary),
-                        modifier = Modifier.height(38.dp)
+                        modifier = Modifier.height(48.dp)
                     ) {
                         Text("Cargar Ejemplo", style = NoirType.bodySmall, color = NoirColors.TextSecondary)
                     }
@@ -424,14 +425,7 @@ fun QendraCatalogImportDialog(
                     placeholder = { Text("Pega aquí el archivo o extrae de la báscula", color = NoirColors.TextMuted) },
                     textStyle = NoirType.bodySmall.copy(fontFamily = FontFamily.Monospace, color = NoirColors.TextPrimary),
                     shape = RoundedCornerShape(NoirRadius.sm),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = NoirColors.SurfaceSunken,
-                        unfocusedContainerColor = NoirColors.SurfaceSunken,
-                        focusedBorderColor = NoirColors.Cream,
-                        unfocusedBorderColor = NoirColors.Hairline,
-                        focusedTextColor = NoirColors.TextPrimary,
-                        unfocusedTextColor = NoirColors.TextPrimary
-                    )
+                    colors = sgniaTextFieldColors()
                 )
 
                 Spacer(modifier = Modifier.height(NoirSpace.xs))
