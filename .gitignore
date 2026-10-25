@@ -1,0 +1,33 @@
+# Gradle y compilación Android
+.gradle/
+build/
+app/build/
+keygen/build/
+*.iml
+.idea/
+*.ipr
+*.iws
+out/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Claves, propiedades y secretos locales
+local.properties
+keystore.jks
+*.keystore
+*.jks
+
+# Binarios y APKs compilados
+*.apk
+*.aab
+release_apks/
+
+# Archivos del sistema y temporales
+.DS_Store
+Thumbs.db
+*.log
+*_temp.html
+
+# IDEs secundarios
+.vscode/
