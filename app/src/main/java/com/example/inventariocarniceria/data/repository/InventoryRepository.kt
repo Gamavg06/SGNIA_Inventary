@@ -384,14 +384,7 @@ class InventoryRepository(
         val productsToInsert = mutableListOf<ProductEntity>()
         for (plu in plus) {
             val existing = productDao.getProductByCode(plu.code)
-            val category = when (plu.section.lowercase()) {
-                "1", "res" -> "Res"
-                "2", "cerdo" -> "Cerdo"
-                "3", "pollo" -> "Pollo"
-                "4", "quesos", "lacteos" -> "Quesos"
-                "5", "embutidos", "jamones", "salchichas" -> "Embutidos"
-                else -> "Carnicería"
-            }
+            val category = autoClassifyCategory(plu.name, plu.section)
             val product = if (existing != null) {
                 existing.copy(
                     name = plu.name.ifEmpty { existing.name },
@@ -415,6 +408,73 @@ class InventoryRepository(
             productDao.insertProducts(productsToInsert)
         }
         count
+    }
+
+    fun autoClassifyCategory(name: String, section: String = ""): String {
+        val n = name.uppercase(java.util.Locale.ROOT)
+        val s = section.uppercase(java.util.Locale.ROOT)
+        return when {
+            // 1. Quesos y Lácteos
+            n.contains("QUESO") || n.contains("QESO") || n.contains("CREMA") ||
+            n.contains("LECHE") || n.contains("MANTEQUILLA") || n.contains("YOGUR") ||
+            n.contains("PANELA") || n.contains("OAXACA") || n.contains("ASADERO") ||
+            s == "4" || s.contains("QUESO") || s.contains("LACTEO") -> "Quesos / Lácteos"
+
+            // 2. Embutidos
+            n.contains("JAMON") || n.contains("JAMÓN") || n.contains("SALCHICHA") ||
+            n.contains("MORTADELA") || n.contains("PASTEL") || n.contains("TOCINO") ||
+            s == "5" || s.contains("EMBUTIDO") -> "Embutidos"
+
+            // 3. Pollo y Aves
+            n.contains("POLLO") || n.contains("PECHUGA") || n.contains("ALITA") ||
+            n.contains("ALIATA") || n.contains("MUSLO") || n.contains("MOLLEJA") ||
+            n.contains("PATO") || n.contains("PAVO") || n.contains("GALLINA") ||
+            s == "3" || s.contains("POLLO") -> "Pollo"
+
+            // 4. Cerdo / Puerco
+            n.contains("PUERCO") || n.contains("CERDO") || n.contains("CHAMORRO") ||
+            n.contains("PASTOR") || n.contains("CHULETA") || n.contains("MANITA") ||
+            n.contains("PIERNA") || n.contains("LOMO") || n.contains("LONGANIZA") ||
+            n.contains("CHORIZO") || n.contains("CABEZA") || n.contains("MANTECA") ||
+            n.contains("CHICHARRON") || n.contains("CHICHARRÓN") || n.contains("CARNITAS") ||
+            s == "2" || s.contains("CERDO") || s.contains("PUERCO") -> "Cerdo"
+
+            // 5. Res / Vacuno
+            n.contains("RES") || n.contains("MENUDO") || n.contains("ESPINAZO") ||
+            n.contains("COSTILLA") || n.contains("ARRACHERA") || n.contains("SUADERO") ||
+            n.contains("LENGUA") || n.contains("BISTEC") || n.contains("BISTEK") ||
+            n.contains("NEW YORK") || n.contains("RIB EYE") || n.contains("T-BONE") ||
+            n.contains("PANZA") || n.contains("TRIPA") || n.contains("HIGADO") ||
+            n.contains("HÍGADO") || n.startsWith("R.") || n.contains("R. ") ||
+            n.contains("MILANESA") || n.contains("CHAMBERETE") || n.contains("DIEZMILLO") ||
+            s == "1" || s.contains("RES") -> "Res"
+
+            // 6. Otros (Pescados, Mariscos, Especias, Abarrotes)
+            else -> "Otros"
+        }
+    }
+
+    suspend fun fixUncategorizedProducts(): Int = withContext(Dispatchers.IO) {
+        val all = productDao.getAllProductsList()
+        val toUpdate = mutableListOf<ProductEntity>()
+        for (p in all) {
+            val cat = p.category.trim()
+            if (cat.isBlank() || cat.equals("Carnicería", ignoreCase = true) || cat.equals("General", ignoreCase = true) ||
+                (cat.equals("Res", ignoreCase = true) && (p.name.contains("PUERCO", ignoreCase = true) || p.name.contains("POLLO", ignoreCase = true) || p.name.contains("JAMON", ignoreCase = true) || p.name.contains("QESO", ignoreCase = true)))) {
+                val correctCategory = autoClassifyCategory(p.name, p.category)
+                if (correctCategory != p.category) {
+                    toUpdate.add(p.copy(category = correctCategory))
+                }
+            }
+        }
+        if (toUpdate.isNotEmpty()) {
+            productDao.insertProducts(toUpdate)
+        }
+        toUpdate.size
+    }
+
+    suspend fun getAllBranchesList(): List<BranchEntity> = withContext(Dispatchers.IO) {
+        branchDao.getAllBranchesList()
     }
 
     // --- 3. MÓDULO DE DESPIECE / RENDIMIENTO DE PIERNA SIN HUESO ---

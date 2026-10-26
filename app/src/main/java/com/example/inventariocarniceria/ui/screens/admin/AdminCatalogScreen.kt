@@ -1,5 +1,6 @@
 package com.example.inventariocarniceria.ui.screens.admin
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,9 +22,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoFixHigh
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -77,7 +82,16 @@ fun AdminCatalogScreen(
                     product.code.toString().contains(searchQuery, ignoreCase = true) ||
                     product.name.contains(searchQuery, ignoreCase = true)
 
-            val matchesCategory = selectedCategoryFilter == "Todas" || product.category.equals(selectedCategoryFilter, ignoreCase = true)
+            val matchesCategory = when (selectedCategoryFilter) {
+                "Todas" -> true
+                "Otros" -> product.category.equals("Otros", ignoreCase = true) ||
+                        product.category.equals("Carnicería", ignoreCase = true) ||
+                        product.category.equals("General", ignoreCase = true)
+                "Quesos / Lácteos" -> product.category.equals("Quesos / Lácteos", ignoreCase = true) ||
+                        product.category.equals("Quesos", ignoreCase = true) ||
+                        product.category.equals("Lácteos", ignoreCase = true)
+                else -> product.category.equals(selectedCategoryFilter, ignoreCase = true)
+            }
 
             matchesSearch && matchesCategory
         }
@@ -149,7 +163,7 @@ fun AdminCatalogScreen(
                         style = NoirType.metricL,
                         valueColor = NoirColors.Cream
                     )
-                    StatusPill("EN MEMORIA LOCAL", tone = PillTone.Positive)
+                    StatusPill("LOCAL + NUBE", tone = PillTone.Positive)
                 }
 
                 BentoCard(
@@ -164,6 +178,40 @@ fun AdminCatalogScreen(
                         valueColor = NoirColors.TextPrimary
                     )
                     StatusPill("FILTRO ACTIVO", tone = PillTone.Neutral)
+                }
+            }
+
+            // BOTONES DE SINCRONIZACIÓN Y RECLASIFICACIÓN
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+            ) {
+                Button(
+                    onClick = { viewModel.syncAllCatalogToSupabase() },
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.SurfaceRaised, contentColor = NoirColors.Gold),
+                    border = BorderStroke(1.dp, NoirColors.Gold.copy(alpha = 0.6f)),
+                    shape = RoundedCornerShape(NoirRadius.sm),
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .height(48.dp)
+                ) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null, tint = NoirColors.Gold, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("SUBIR A SUPABASE", style = NoirType.label, color = NoirColors.Gold)
+                }
+
+                Button(
+                    onClick = { viewModel.fixCategoriesManually() },
+                    colors = ButtonDefaults.buttonColors(containerColor = NoirColors.SurfaceRaised, contentColor = NoirColors.Cream),
+                    border = BorderStroke(1.dp, NoirColors.HairlineStrong),
+                    shape = RoundedCornerShape(NoirRadius.sm),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Icon(Icons.Default.AutoFixHigh, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("AUTO-CLASIFICAR", style = NoirType.label, color = NoirColors.Cream)
                 }
             }
 

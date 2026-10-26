@@ -43,6 +43,9 @@ interface BranchDao {
     @Query("SELECT * FROM branches ORDER BY id ASC")
     fun getAllBranches(): Flow<List<BranchEntity>>
 
+    @Query("SELECT * FROM branches ORDER BY id ASC")
+    suspend fun getAllBranchesList(): List<BranchEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertBranch(branch: BranchEntity): Long
 

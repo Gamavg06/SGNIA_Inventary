@@ -38,8 +38,11 @@ object SupabaseSyncManager {
     }
 
     fun getLinkedOwner(context: Context): String {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val stored = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(KEY_LINKED_OWNER, "") ?: ""
+        if (stored.isNotBlank()) return stored
+        // Respaldo transparente: si no hay un dueño central vinculado, la terminal usa su propio hardware ID
+        return com.example.inventariocarniceria.data.licensing.LicenseManager.getHardwareId(context)
     }
 
     // --- 1. SUCURSALES (CREACIÓN Y CONSULTA) ---

@@ -22,6 +22,7 @@ import com.example.inventariocarniceria.data.sync.SupabaseSyncManager
 import com.example.inventariocarniceria.utils.MeatBarcodeParser
 import com.example.inventariocarniceria.utils.MeatBarcodeResult
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -221,6 +222,10 @@ class InventoryViewModel(
 
     init {
         onCodeInputChanged("24")
+        viewModelScope.launch(Dispatchers.IO) {
+            // Auto-reparar categorías huérfanas ('Carnicería', 'General') al estándar de secciones
+            repository.fixUncategorizedProducts()
+        }
         viewModelScope.launch {
             scaleState.collectLatest { state ->
                 val plu = state.lastPluCode
@@ -619,7 +624,12 @@ class InventoryViewModel(
             if (newId > 0) {
                 saveBranchPin(newId, pass)
             }
-            _uiState.value = _uiState.value.copy(snackbarMessage = "Sucursal creada: $branchName")
+            // Respaldo inmediato en la base de datos de Supabase
+            repository.scaleManager.context?.let { ctx ->
+                val ownerHwId = SupabaseSyncManager.getLinkedOwner(ctx)
+                SupabaseSyncManager.pushBranch(ownerHwId, branch)
+            }
+            _uiState.value = _uiState.value.copy(snackbarMessage = "Sucursal creada y respaldada en la nube: $branchName")
         }
     }
 
@@ -627,7 +637,11 @@ class InventoryViewModel(
         saveBranchPin(branch.id, branch.password)
         viewModelScope.launch {
             repository.insertBranch(branch)
-            _uiState.value = _uiState.value.copy(snackbarMessage = "Sucursal actualizada: ${branch.branchName}")
+            repository.scaleManager.context?.let { ctx ->
+                val ownerHwId = SupabaseSyncManager.getLinkedOwner(ctx)
+                SupabaseSyncManager.pushBranch(ownerHwId, branch)
+            }
+            _uiState.value = _uiState.value.copy(snackbarMessage = "Sucursal actualizada y sincronizada: ${branch.branchName}")
         }
     }
 
@@ -674,8 +688,60 @@ class InventoryViewModel(
             if (_uiState.value.codeInput.toIntOrNull() == product.code) {
                 onCodeInputChanged(product.code.toString())
             }
+            // Sincronizar corte con Supabase
+            repository.scaleManager.context?.let { ctx ->
+                val ownerHwId = SupabaseSyncManager.getLinkedOwner(ctx)
+                SupabaseSyncManager.pushProducts(ownerHwId, listOf(product))
+            }
             _uiState.value = _uiState.value.copy(
-                snackbarMessage = "Producto guardado: [${product.code}] ${product.name}"
+                snackbarMessage = "Producto guardado y respaldado en la nube: [${product.code}] ${product.name}"
+            )
+        }
+    }
+
+    fun syncAllCatalogToSupabase() {
+        viewModelScope.launch {
+            val currentProducts = allProducts.value
+            if (currentProducts.isEmpty()) {
+                _uiState.value = _uiState.value.copy(snackbarMessage = "No hay productos en el catálogo local para sincronizar")
+                return@launch
+            }
+            val ctx = repository.scaleManager.context
+            if (ctx == null) {
+                _uiState.value = _uiState.value.copy(snackbarMessage = "No se pudo obtener el contexto del dispositivo")
+                return@launch
+            }
+            val ownerHwId = SupabaseSyncManager.getLinkedOwner(ctx)
+            _uiState.value = _uiState.value.copy(snackbarMessage = "☁️ Subiendo ${currentProducts.size} cortes a Supabase...")
+            val success = SupabaseSyncManager.pushProducts(ownerHwId, currentProducts)
+            if (success) {
+                _uiState.value = _uiState.value.copy(snackbarMessage = "✅ ¡${currentProducts.size} cortes sincronizados con Supabase con éxito!")
+            } else {
+                _uiState.value = _uiState.value.copy(snackbarMessage = "⚠️ Error al sincronizar con Supabase. Revisa tu conexión a internet.")
+            }
+        }
+    }
+
+    fun fixCategoriesManually() {
+        viewModelScope.launch {
+            val fixed = repository.fixUncategorizedProducts()
+            _uiState.value = _uiState.value.copy(
+                snackbarMessage = if (fixed > 0) "✅ $fixed cortes reclasificados en sus secciones oficiales" else "✅ Todos los cortes ya están en sus secciones correctas"
+            )
+        }
+    }
+
+    fun syncBranchesToSupabase() {
+        viewModelScope.launch {
+            val branches = repository.getAllBranchesList()
+            val ctx = repository.scaleManager.context ?: return@launch
+            val ownerHwId = SupabaseSyncManager.getLinkedOwner(ctx)
+            var count = 0
+            for (b in branches) {
+                if (SupabaseSyncManager.pushBranch(ownerHwId, b)) count++
+            }
+            _uiState.value = _uiState.value.copy(
+                snackbarMessage = "☁️ $count sucursales sincronizadas con la nube de Supabase"
             )
         }
     }

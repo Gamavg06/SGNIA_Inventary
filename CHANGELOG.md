@@ -6,6 +6,23 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [1.0.4] - 2026-10-25
+
+### Corregido
+- **Clasificación Inteligente de Cortes y Secciones (`InventoryRepository.kt` & `AdminCatalogScreen.kt`)**:
+  - Solucionado el problema donde los 100 cortes extraídos de la báscula Systel Cuora tenían asignada la categoría genérica `"Carnicería"`, provocando que todas las tarjetas mostraran el mismo tag y las pestañas de categoría (`RES`, `CERDO`, `POLLO`, `EMBUTIDOS`, `QUESOS / LÁCTEOS`) se vieran vacías o idénticas.
+  - Creado clasificador semántico automático (`autoClassifyCategory`) que analiza el nombre del corte (ej. *MENUDO DE RES* -> Res, *CHAMORRO* -> Cerdo, *ALIATA NATURAL* -> Pollo, *BARRA JAMON VIVA* -> Embutidos, *QESO REDONDO* -> Quesos / Lácteos, *MOJARRA / HUEVITO* -> Otros).
+  - Auto-reparación en segundo plano al iniciar la app (`fixUncategorizedProducts`) y botón dedicado **"AUTO-CLASIFICAR"** en catálogo.
+
+### Añadido
+- **Sincronización en la Nube con Supabase (`SupabaseSyncManager.kt`, `AdminCatalogScreen.kt`, `AdminBranchesScreen.kt`)**:
+  - Configurado enlace automático por defecto mediante el `hardwareId` del dispositivo en caso de no haber vinculado una cadena externa, asegurando que las terminales suban sus datos inmediatamente.
+  - Botón **"☁️ SUBIR A SUPABASE"** en la cabecera del Catálogo de Cortes para subir en 1 toque los 100 cortes a la tabla `products` de Supabase.
+  - Botón **"☁️ SINCRONIZAR SUCURSALES EN SUPABASE"** en la pantalla de sucursales para respaldar y reflejar los encargados/usuarios de mostrador en la tabla `branches`.
+  - Las nuevas sucursales y cortes editados se respaldan de manera transparente en Supabase en tiempo real.
+
+---
+
 ## [1.0.3] - 2026-10-25
 
 ### Añadido

@@ -3,6 +3,7 @@ package com.example.inventariocarniceria.ui.screens.admin
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
@@ -183,6 +185,21 @@ fun AdminBranchesScreen(
                     )
                     StatusPill("SEGURIDAD ACTIVA", tone = PillTone.Gold)
                 }
+            }
+
+            // BOTÓN SINCRONIZACIÓN SUPABASE
+            Button(
+                onClick = { viewModel.syncBranchesToSupabase() },
+                colors = ButtonDefaults.buttonColors(containerColor = NoirColors.SurfaceRaised, contentColor = NoirColors.Gold),
+                border = BorderStroke(1.dp, NoirColors.Gold.copy(alpha = 0.5f)),
+                shape = RoundedCornerShape(NoirRadius.sm),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Icon(Icons.Default.CloudUpload, contentDescription = null, tint = NoirColors.Gold, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("SINCRONIZAR SUCURSALES EN SUPABASE", style = NoirType.label, color = NoirColors.Gold)
             }
 
             // LISTA DE SUCURSALES
