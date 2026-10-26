@@ -279,6 +279,24 @@ fun LicenseActivationScreen(
                                 )
                             }
                         }
+
+                        HorizontalDivider(color = NoirColors.Hairline, modifier = Modifier.padding(vertical = NoirSpace.xs))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Cupo de Sucursales:",
+                                style = NoirType.bodySmall,
+                                color = NoirColors.TextSecondary
+                            )
+                            StatusPill(
+                                text = "${licenseInfo.maxBranches} ${if (licenseInfo.maxBranches == 1) "SUCURSAL AUTORIZADA" else "SUCURSALES AUTORIZADAS"}",
+                                tone = PillTone.Gold
+                            )
+                        }
                     }
 
                     LicenseManager.LicenseStatus.EXPIRED -> {

@@ -56,15 +56,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Solicitar permiso de notificaciones en Android 13+ para servicio en segundo plano
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+        // Iniciar servicio en segundo plano ÚNICAMENTE en la app de Tienda / POS (no en Consola de Dueño)
+        val isPosApp = packageName.endsWith(".pos")
+        if (isPosApp) {
+            // Solicitar permiso de notificaciones en Android 13+ para servicio en segundo plano
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+                }
             }
+            ScaleBackgroundService.startService(applicationContext)
         }
-
-        // Iniciar servicio en segundo plano para mantener la conexión TCP activa con pantalla apagada
-        ScaleBackgroundService.startService(applicationContext)
         setContent {
             val themeMode by viewModel.themeMode.collectAsState()
             SgniaTheme(themeMode = themeMode) {

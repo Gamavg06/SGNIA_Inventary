@@ -2,9 +2,11 @@ package com.example.inventariocarniceria.ui.screens.inventory
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,16 +16,23 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Scale
@@ -37,8 +46,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import com.example.inventariocarniceria.ui.design.sgniaTextFieldColors
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,16 +68,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.inventariocarniceria.data.scale.ParsedPluPreview
 import com.example.inventariocarniceria.data.scale.ScaleCatalogParser
-import com.example.inventariocarniceria.ui.design.BentoCard
 import com.example.inventariocarniceria.ui.design.NoirColors
 import com.example.inventariocarniceria.ui.design.NoirLabel
 import com.example.inventariocarniceria.ui.design.NoirPrimaryButton
 import com.example.inventariocarniceria.ui.design.NoirRadius
-import com.example.inventariocarniceria.ui.design.NoirSecondaryButton
 import com.example.inventariocarniceria.ui.design.NoirSpace
 import com.example.inventariocarniceria.ui.design.NoirType
 import com.example.inventariocarniceria.ui.design.PillTone
 import com.example.inventariocarniceria.ui.design.StatusPill
+import com.example.inventariocarniceria.ui.design.sgniaTextFieldColors
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import java.util.Locale
 
@@ -80,6 +86,7 @@ fun QendraCatalogImportDialog(
     onDismiss: () -> Unit
 ) {
     val allProducts by viewModel.allProducts.collectAsState()
+    val scalesList by viewModel.scalesList.collectAsState()
     val scale1Config by viewModel.scale1Config.collectAsState()
     val scale2Config by viewModel.scale2Config.collectAsState()
     val clipboardManager = LocalClipboardManager.current
@@ -87,6 +94,7 @@ fun QendraCatalogImportDialog(
     var rawInputText by remember { mutableStateOf("") }
     var isExtracting by remember { mutableStateOf(false) }
     var extractionMessage by remember { mutableStateOf<String?>(null) }
+    var isRawEditorExpanded by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -98,7 +106,7 @@ fun QendraCatalogImportDialog(
                     val content = stream.bufferedReader(Charsets.UTF_8).readText()
                     rawInputText = content
                     val count = content.lines().count { it.isNotBlank() }
-                    extractionMessage = "Archivo cargado exitosamente ($count líneas detectadas). Revisa la vista previa y pulsa 'Guardar Catálogo'."
+                    extractionMessage = "Archivo cargado exitosamente ($count líneas)."
                 }
             } catch (e: Exception) {
                 extractionMessage = "Error al abrir archivo: ${e.localizedMessage}"
@@ -117,7 +125,8 @@ fun QendraCatalogImportDialog(
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
-                .fillMaxHeight(0.95f)
+                .fillMaxHeight(0.92f)
+                .navigationBarsPadding()
                 .border(BorderStroke(1.dp, NoirColors.HairlineStrong), RoundedCornerShape(NoirRadius.lg)),
             shape = RoundedCornerShape(NoirRadius.lg),
             color = NoirColors.Background
@@ -125,7 +134,7 @@ fun QendraCatalogImportDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(NoirSpace.lg)
+                    .padding(horizontal = NoirSpace.md, vertical = NoirSpace.sm)
             ) {
                 // CABECERA ESTILO NOIR & CREMA
                 Row(
@@ -135,11 +144,11 @@ fun QendraCatalogImportDialog(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(NoirSpace.sm)
+                        horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(40.dp)
                                 .clip(RoundedCornerShape(NoirRadius.sm))
                                 .background(NoirColors.SurfaceRaised)
                                 .border(1.dp, NoirColors.Hairline, RoundedCornerShape(NoirRadius.sm)),
@@ -149,7 +158,7 @@ fun QendraCatalogImportDialog(
                                 imageVector = Icons.Default.CloudDownload,
                                 contentDescription = null,
                                 tint = NoirColors.Cream,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                         Column {
@@ -157,153 +166,217 @@ fun QendraCatalogImportDialog(
                             Text(
                                 text = "Sincronización de Básculas & Qendra",
                                 style = NoirType.title,
+                                fontSize = 16.sp,
                                 color = NoirColors.TextPrimary
-                            )
-                            Text(
-                                text = "Extracción por socket TCP/IP y carga masiva de PLUs",
-                                style = NoirType.bodySmall,
-                                color = NoirColors.TextSecondary
                             )
                         }
                     }
                     IconButton(
                         onClick = onDismiss,
                         modifier = Modifier
+                            .size(36.dp)
                             .clip(RoundedCornerShape(NoirRadius.sm))
                             .background(NoirColors.SurfaceRaised)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Cerrar",
-                            tint = NoirColors.TextPrimary
+                            tint = NoirColors.TextPrimary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
                 HorizontalDivider(
-                    modifier = Modifier.padding(vertical = NoirSpace.sm),
+                    modifier = Modifier.padding(vertical = 6.dp),
                     color = NoirColors.Hairline
                 )
 
-                // TARJETA AVISO TÉCNICO LANTRONIX (MONO-CONEXIÓN)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(NoirRadius.sm))
-                        .background(NoirColors.AmberMuted)
-                        .border(1.dp, NoirColors.Amber.copy(alpha = 0.4f), RoundedCornerShape(NoirRadius.sm))
-                        .padding(horizontal = NoirSpace.md, vertical = NoirSpace.xs),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = NoirColors.Amber,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "Aviso Lantronix: Las básculas Cuora Max admiten 1 conexión TCP a la vez. Mantén cerrado Qendra en la PC mientras sincronices.",
-                        style = NoirType.bodySmall,
-                        color = NoirColors.Amber,
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(NoirSpace.xs))
-
-                // TARJETA DE GARANTÍA DE NO BORRADO (FUSIÓN SEGURA)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(NoirRadius.sm))
-                        .background(NoirColors.EmeraldMuted)
-                        .border(1.dp, NoirColors.Emerald.copy(alpha = 0.4f), RoundedCornerShape(NoirRadius.sm))
-                        .padding(horizontal = NoirSpace.md, vertical = NoirSpace.xs),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = NoirColors.Emerald,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "Fusión Segura: Catálogo actual de ${allProducts.size} cortes protegido. Los PLUs se añadirán o actualizarán sin borrar existencias.",
-                        style = NoirType.bodySmall,
-                        color = NoirColors.Emerald,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        lineHeight = 15.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(NoirSpace.sm))
-
-                // BOTÓN PRINCIPAL: SUBIR ARCHIVO EXPORTADO DESDE QENDRA
-                Button(
-                    onClick = { filePickerLauncher.launch("*/*") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = NoirColors.SurfaceRaised,
-                        contentColor = NoirColors.Cream
-                    ),
-                    shape = RoundedCornerShape(NoirRadius.sm),
-                    border = BorderStroke(1.dp, NoirColors.HairlineStrong),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp)
-                ) {
-                    Icon(Icons.Default.UploadFile, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(NoirSpace.xs))
-                    Text(
-                        text = "SUBIR ARCHIVO DE QENDRA (.TXT / .CSV)",
-                        style = NoirType.button,
-                        fontSize = 12.sp,
-                        color = NoirColors.Cream
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(NoirSpace.xs))
-
-                // ACCIONES SECUNDARIAS: PEGAR TEXTO, LIMPIAR, CARGAR EJEMPLO
+                // TARJETA COMPACTA DE ESTADO Y SEGURIDAD
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs)
+                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(NoirColors.EmeraldMuted)
+                            .border(1.dp, NoirColors.Emerald.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.Shield, contentDescription = null, tint = NoirColors.Emerald, modifier = Modifier.size(14.dp))
+                        Text(
+                            text = "${allProducts.size} cortes protegidos (fusión segura)",
+                            style = NoirType.bodySmall,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = NoirColors.Emerald
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(NoirColors.AmberMuted)
+                            .border(1.dp, NoirColors.Amber.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = NoirColors.Amber, modifier = Modifier.size(14.dp))
+                        Text(
+                            text = "1 TCP x báscula",
+                            style = NoirType.bodySmall,
+                            fontSize = 11.sp,
+                            color = NoirColors.Amber
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // BÁSCULAS CONECTADAS EN RED (DINÁMICO PARA 1, 2, 5, 10 O MÁS BÁSCULAS)
+                val displayScales = if (scalesList.isNotEmpty()) scalesList else listOf(scale1Config, scale2Config)
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "BÁSCULAS EN RED (${displayScales.size} DETECTADAS)",
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            color = NoirColors.Cream
+                        )
+                        Text(
+                            text = "Toca para extraer PLUs",
+                            style = NoirType.label,
+                            color = NoirColors.TextMuted,
+                            fontSize = 10.sp
+                        )
+                    }
+
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(displayScales) { scale ->
+                            Button(
+                                onClick = {
+                                    isExtracting = true
+                                    extractionMessage = "Consultando ${scale.name} (${scale.ip})..."
+                                    viewModel.extractPlusFromScale(scale.id) { plus, msg ->
+                                        isExtracting = false
+                                        extractionMessage = msg
+                                        if (plus.isNotEmpty()) {
+                                            val sb = StringBuilder()
+                                            plus.forEach { p -> sb.append("${p.code};${p.name};${p.price};${p.section}\n") }
+                                            rawInputText = sb.toString()
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = NoirColors.SurfaceRaised,
+                                    contentColor = NoirColors.Cream
+                                ),
+                                shape = RoundedCornerShape(NoirRadius.sm),
+                                border = BorderStroke(1.dp, if (scale.isConnected) NoirColors.Emerald.copy(alpha = 0.6f) else NoirColors.Hairline),
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(if (scale.isConnected) NoirColors.Emerald else NoirColors.Gold)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Icon(Icons.Default.Scale, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "${scale.name} (${scale.ip.ifBlank { "TCP" }})",
+                                    style = NoirType.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    color = NoirColors.Cream
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (isExtracting) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), color = NoirColors.Cream, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = extractionMessage ?: "Conectando con la báscula...", style = NoirType.bodySmall, fontSize = 11.sp, color = NoirColors.Cream)
+                    }
+                } else if (!extractionMessage.isNullOrEmpty()) {
+                    Text(
+                        text = extractionMessage!!,
+                        style = NoirType.bodySmall,
+                        fontSize = 11.sp,
+                        color = NoirColors.TextSecondary,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // ACCIONES DE CARGA Y ARCHIVO
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Button(
+                        onClick = { filePickerLauncher.launch("*/*") },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NoirColors.SurfaceRaised,
+                            contentColor = NoirColors.Cream
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, NoirColors.HairlineStrong),
+                        modifier = Modifier.weight(1.3f).height(36.dp)
+                    ) {
+                        Icon(Icons.Default.UploadFile, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Subir TXT/CSV", style = NoirType.bodySmall, fontWeight = FontWeight.Bold, fontSize = 11.sp, color = NoirColors.Cream)
+                    }
+
                     OutlinedButton(
                         onClick = {
                             val clip = clipboardManager.getText()?.text
                             if (!clip.isNullOrBlank()) {
                                 rawInputText = clip
                                 val count = clip.lines().count { it.isNotBlank() }
-                                extractionMessage = "Texto pegado ($count líneas). Revisa la vista previa abajo."
+                                extractionMessage = "Texto pegado ($count líneas)."
                             } else {
-                                extractionMessage = "El portapapeles está vacío."
+                                extractionMessage = "Portapapeles vacío."
                             }
                         },
-                        shape = RoundedCornerShape(NoirRadius.sm),
+                        shape = RoundedCornerShape(8.dp),
                         border = BorderStroke(1.dp, NoirColors.Hairline),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextPrimary),
-                        modifier = Modifier.weight(1f).height(38.dp)
+                        modifier = Modifier.weight(1f).height(36.dp)
                     ) {
-                        Icon(Icons.Default.ContentPaste, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Default.ContentPaste, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Pegar", style = NoirType.bodySmall, fontWeight = FontWeight.Bold, color = NoirColors.TextPrimary)
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            rawInputText = ""
-                            extractionMessage = null
-                        },
-                        shape = RoundedCornerShape(NoirRadius.sm),
-                        border = BorderStroke(1.dp, NoirColors.Hairline),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextSecondary),
-                        modifier = Modifier.height(48.dp)
-                    ) {
-                        Text("Limpiar", style = NoirType.bodySmall, color = NoirColors.TextSecondary)
+                        Text("Pegar", style = NoirType.bodySmall, fontSize = 11.sp, color = NoirColors.TextPrimary)
                     }
 
                     OutlinedButton(
@@ -321,117 +394,86 @@ fun QendraCatalogImportDialog(
 70;MAYONESA BOTE 3.8KG;65.00;ABARROTES
 85;BOTANAS SGNIA;25.00;MI INVERSION
                             """.trimIndent()
-                            extractionMessage = "Plantilla de ejemplo cargada. Puedes editar los textos antes de guardar."
+                            extractionMessage = "Plantilla de ejemplo cargada."
                         },
-                        shape = RoundedCornerShape(NoirRadius.sm),
+                        shape = RoundedCornerShape(8.dp),
                         border = BorderStroke(1.dp, NoirColors.Hairline),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.TextSecondary),
-                        modifier = Modifier.height(48.dp)
+                        modifier = Modifier.weight(1f).height(36.dp)
                     ) {
-                        Text("Cargar Ejemplo", style = NoirType.bodySmall, color = NoirColors.TextSecondary)
+                        Text("Ejemplo", style = NoirType.bodySmall, fontSize = 11.sp, color = NoirColors.TextSecondary)
+                    }
+
+                    if (rawInputText.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                rawInputText = ""
+                                extractionMessage = null
+                            },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(NoirColors.SurfaceRaised)
+                                .border(1.dp, NoirColors.Hairline, RoundedCornerShape(8.dp))
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Limpiar", tint = NoirColors.TextMuted, modifier = Modifier.size(16.dp))
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(NoirSpace.xs))
+                Spacer(modifier = Modifier.height(4.dp))
 
-                // BOTONES DE CONEXIÓN A BÁSCULAS TCP
+                // BARRA COLAPSABLE PARA EDITOR DE TEXTO EN BRUTO
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(NoirColors.SurfaceRaised)
+                        .clickable { isRawEditorExpanded = !isRawEditorExpanded }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(
-                        onClick = {
-                            isExtracting = true
-                            extractionMessage = "Consultando Báscula 1 (${scale1Config.ip})..."
-                            viewModel.extractPlusFromScale(1) { plus, msg ->
-                                isExtracting = false
-                                extractionMessage = msg
-                                if (plus.isNotEmpty()) {
-                                    val sb = StringBuilder()
-                                    plus.forEach { p -> sb.append("${p.code};${p.name};${p.price};${p.section}\n") }
-                                    rawInputText = sb.toString()
-                                }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = NoirColors.SurfaceRaised,
-                            contentColor = NoirColors.Cream
-                        ),
-                        shape = RoundedCornerShape(NoirRadius.sm),
-                        border = BorderStroke(1.dp, NoirColors.Hairline),
-                        modifier = Modifier.weight(1f).height(38.dp)
-                    ) {
-                        Icon(Icons.Default.Scale, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Báscula 1 (${scale1Config.ip.ifBlank { "TCP" }})", style = NoirType.bodySmall, fontWeight = FontWeight.Bold, color = NoirColors.Cream)
-                    }
-
-                    Button(
-                        onClick = {
-                            isExtracting = true
-                            extractionMessage = "Consultando Báscula 2 (${scale2Config.ip})..."
-                            viewModel.extractPlusFromScale(2) { plus, msg ->
-                                isExtracting = false
-                                extractionMessage = msg
-                                if (plus.isNotEmpty()) {
-                                    val sb = StringBuilder()
-                                    plus.forEach { p -> sb.append("${p.code};${p.name};${p.price};${p.section}\n") }
-                                    rawInputText = sb.toString()
-                                }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = NoirColors.SurfaceRaised,
-                            contentColor = NoirColors.Cream
-                        ),
-                        shape = RoundedCornerShape(NoirRadius.sm),
-                        border = BorderStroke(1.dp, NoirColors.Hairline),
-                        modifier = Modifier.weight(1f).height(38.dp)
-                    ) {
-                        Icon(Icons.Default.Scale, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(15.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Báscula 2 (${scale2Config.ip.ifBlank { "TCP" }})", style = NoirType.bodySmall, fontWeight = FontWeight.Bold, color = NoirColors.Cream)
-                    }
-                }
-
-                if (isExtracting) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = NoirSpace.xs),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = NoirColors.Cream, strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(NoirSpace.xs))
-                        Text(text = extractionMessage ?: "Conectando con la báscula...", style = NoirType.bodySmall, color = NoirColors.Cream)
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = NoirColors.Cream, modifier = Modifier.size(13.dp))
+                        Text(
+                            text = if (rawInputText.isBlank()) "Editor Manual de PLUs (Opcional)" else "Editar Texto PLUs (${rawInputText.lines().count { it.isNotBlank() }} líneas)",
+                            style = NoirType.bodySmall,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = NoirColors.TextPrimary
+                        )
                     }
-                } else if (!extractionMessage.isNullOrEmpty()) {
-                    Text(
-                        text = extractionMessage!!,
-                        style = NoirType.bodySmall,
-                        color = NoirColors.TextSecondary,
-                        modifier = Modifier.padding(top = 4.dp)
+                    Icon(
+                        if (isRawEditorExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = NoirColors.Cream,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(NoirSpace.xs))
+                AnimatedVisibility(visible = isRawEditorExpanded) {
+                    OutlinedTextField(
+                        value = rawInputText,
+                        onValueChange = { rawInputText = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(95.dp)
+                            .padding(top = 4.dp),
+                        label = { Text("Formato: PLU;Nombre;Precio;Sección", color = NoirColors.TextSecondary, fontSize = 11.sp) },
+                        placeholder = { Text("Pega aquí el archivo o extrae de la báscula", color = NoirColors.TextMuted, fontSize = 11.sp) },
+                        textStyle = NoirType.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = NoirColors.TextPrimary),
+                        shape = RoundedCornerShape(NoirRadius.sm),
+                        colors = sgniaTextFieldColors()
+                    )
+                }
 
-                // CAMPO DE TEXTO EDITABLE
-                OutlinedTextField(
-                    value = rawInputText,
-                    onValueChange = { rawInputText = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp),
-                    label = { Text("Códigos PLU (PLU;Nombre;Precio;Sección)", color = NoirColors.TextSecondary) },
-                    placeholder = { Text("Pega aquí el archivo o extrae de la báscula", color = NoirColors.TextMuted) },
-                    textStyle = NoirType.bodySmall.copy(fontFamily = FontFamily.Monospace, color = NoirColors.TextPrimary),
-                    shape = RoundedCornerShape(NoirRadius.sm),
-                    colors = sgniaTextFieldColors()
-                )
+                Spacer(modifier = Modifier.height(6.dp))
 
-                Spacer(modifier = Modifier.height(NoirSpace.xs))
-
-                // VISTA PREVIA DETECTADA
+                // ENCABEZADO DE VISTA PREVIA
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -445,12 +487,13 @@ fun QendraCatalogImportDialog(
                             Icons.Default.FormatListNumbered,
                             contentDescription = null,
                             tint = NoirColors.Emerald,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                         Text(
                             text = "Vista Previa (${previewList.size} detectados)",
                             style = NoirType.bodySmall,
                             fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
                             color = NoirColors.Emerald
                         )
                     }
@@ -463,9 +506,9 @@ fun QendraCatalogImportDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(NoirSpace.xxs))
+                Spacer(modifier = Modifier.height(4.dp))
 
-                // LISTA DE VISTA PREVIA EN BENTO SUNKEN
+                // LISTA DE VISTA PREVIA EN BENTO SUNKEN (CON PESO FLEXIBLE)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -476,13 +519,14 @@ fun QendraCatalogImportDialog(
                 ) {
                     if (previewList.isEmpty()) {
                         Box(
-                            modifier = Modifier.fillMaxSize().padding(NoirSpace.md),
+                            modifier = Modifier.fillMaxSize().padding(NoirSpace.sm),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Sin productos cargados. Oprime 'Báscula 1 (TCP)' o pega datos de Qendra.",
+                                text = "Sin productos cargados.\nOprime una 'Báscula' arriba o pega datos de Qendra.",
                                 style = NoirType.bodySmall,
                                 color = NoirColors.TextMuted,
+                                fontSize = 11.sp,
                                 fontFamily = FontFamily.Monospace
                             )
                         }
@@ -496,24 +540,25 @@ fun QendraCatalogImportDialog(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = NoirSpace.xs, vertical = 6.dp),
+                                        .padding(horizontal = 6.dp, vertical = 4.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(NoirSpace.xs)
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(6.dp))
+                                                .clip(RoundedCornerShape(4.dp))
                                                 .background(NoirColors.SurfaceRaised)
-                                                .border(1.dp, NoirColors.Hairline, RoundedCornerShape(6.dp))
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                .border(1.dp, NoirColors.Hairline, RoundedCornerShape(4.dp))
+                                                .padding(horizontal = 5.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = "#${item.code}",
                                                 style = NoirType.label,
+                                                fontSize = 10.sp,
                                                 color = NoirColors.Cream,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -522,6 +567,7 @@ fun QendraCatalogImportDialog(
                                             Text(
                                                 text = item.name,
                                                 style = NoirType.bodySmall,
+                                                fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = NoirColors.TextPrimary
                                             )
@@ -529,7 +575,7 @@ fun QendraCatalogImportDialog(
                                                 text = item.section,
                                                 style = NoirType.label,
                                                 color = NoirColors.TextSecondary,
-                                                fontSize = 10.sp
+                                                fontSize = 9.sp
                                             )
                                         }
                                     }
@@ -537,12 +583,12 @@ fun QendraCatalogImportDialog(
                                         text = "$${String.format(Locale.US, "%.2f", item.price)}/kg",
                                         fontFamily = FontFamily.Monospace,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         color = NoirColors.Emerald
                                     )
                                 }
                                 HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = NoirSpace.xs),
+                                    modifier = Modifier.padding(horizontal = 4.dp),
                                     color = NoirColors.Hairline
                                 )
                             }
@@ -550,11 +596,11 @@ fun QendraCatalogImportDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(NoirSpace.sm))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // BOTÓN DE ACCIÓN FINAL EN CREMA
+                // BOTÓN DE ACCIÓN FINAL EN CREMA (NUNCA CORTADO GRACIAS A NAVIGATION BAR INSETS)
                 NoirPrimaryButton(
-                    text = if (previewList.isEmpty()) "CARGA UN ARCHIVO O EXTRAE DE LA BÁSCULA" else "FUSIONAR ${previewList.size} PRODUCTOS (CONSERVA EXISTENTES)",
+                    text = if (previewList.isEmpty()) "EXTRAE DE UNA BÁSCULA O SUBE ARCHIVO" else "FUSIONAR ${previewList.size} PRODUCTOS (CONSERVA EXISTENTES)",
                     onClick = {
                         if (previewList.isNotEmpty()) {
                             viewModel.importParsedPlus(previewList)
@@ -562,7 +608,9 @@ fun QendraCatalogImportDialog(
                     },
                     enabled = previewList.isNotEmpty(),
                     icon = Icons.Default.CloudDownload,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
                 )
             }
         }

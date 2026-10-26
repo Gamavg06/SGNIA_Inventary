@@ -68,7 +68,8 @@ object LicenseManager {
         val activatedAt: Long,
         val expiresAt: Long,
         val remainingMillis: Long,
-        val rawKey: String
+        val rawKey: String,
+        val maxBranches: Int = 1
     )
 
     private fun getPrefs(context: Context): SharedPreferences {
@@ -98,15 +99,23 @@ object LicenseManager {
 
     /**
      * Generador de clave de activación criptográfica (utilizado por el Keygen)
+     * Soporta codificación de número de sucursales autorizadas (ej. 3B, 5B, 10B).
      */
-    fun generateActivationKey(targetHardwareId: String, tier: LicenseTier, tokenHex: String = generateRandomToken()): String {
+    fun generateActivationKey(
+        targetHardwareId: String,
+        tier: LicenseTier,
+        tokenHex: String = generateRandomToken(),
+        maxBranches: Int = 1
+    ): String {
         val cleanHw = normalizeId(targetHardwareId)
         val cleanToken = tokenHex.trim().uppercase(Locale.US).take(4).padStart(4, '0')
-        val payload = "$cleanHw:${tier.code}:$cleanToken"
+        val branchTag = if (maxBranches > 1) "%02dB".format(maxBranches) else ""
+        val payload = if (maxBranches > 1) "$cleanHw:${tier.code}:$branchTag:$cleanToken" else "$cleanHw:${tier.code}:$cleanToken"
         val hmac = calculateHmacSha256(payload, getSecretSeed()).take(8).uppercase(Locale.US)
         val hmacPart1 = hmac.substring(0, 4)
         val hmacPart2 = hmac.substring(4, 8)
-        return "SGN-${tier.code}-$cleanToken-$hmacPart1-$hmacPart2"
+        return if (maxBranches > 1) "SGN-${tier.code}-$branchTag-$cleanToken-$hmacPart1-$hmacPart2"
+               else "SGN-${tier.code}-$cleanToken-$hmacPart1-$hmacPart2"
     }
 
     /**
@@ -149,7 +158,7 @@ object LicenseManager {
         // Extrae componentes:
         // Si el código es 'LIFE' (4 caracteres), o '10M'/'07D'/'01M'/'01Y' (3 caracteres)
         val tierCode: String
-        val rest: String
+        var rest: String
         if (withoutPrefix.startsWith("LIFE")) {
             tierCode = "LIFE"
             rest = withoutPrefix.removePrefix("LIFE")
@@ -160,6 +169,14 @@ object LicenseManager {
 
         val tier = LicenseTier.fromCode(tierCode)
             ?: return Result.failure(IllegalArgumentException("Tipo de licencia desconocido ($tierCode)."))
+
+        // Detección de etiqueta de sucursales (ej. 03B, 05B, 10B)
+        var maxBranches = 1
+        val branchMatch = Regex("^([0-9]{1,3})B(.*)$").find(rest)
+        if (branchMatch != null) {
+            maxBranches = branchMatch.groupValues[1].toIntOrNull() ?: 1
+            rest = branchMatch.groupValues[2]
+        }
 
         if (rest.length < 12) {
             return Result.failure(IllegalArgumentException("La clave no tiene la longitud requerida."))
@@ -175,8 +192,9 @@ object LicenseManager {
             return Result.failure(IllegalStateException("Esta clave ya fue utilizada anteriormente en este equipo."))
         }
 
-        // Calcular firma esperada
-        val payload = "$cleanHw:${tier.code}:$token"
+        // Calcular firma esperada (con o sin tag de sucursales)
+        val branchTag = if (maxBranches > 1) "%02dB".format(maxBranches) else ""
+        val payload = if (maxBranches > 1) "$cleanHw:${tier.code}:$branchTag:$token" else "$cleanHw:${tier.code}:$token"
         val expectedSignature = calculateHmacSha256(payload, getSecretSeed()).take(8).uppercase(Locale.US)
 
         if (!signatureProvided.equals(expectedSignature, ignoreCase = true)) {
@@ -192,6 +210,11 @@ object LicenseManager {
         }
 
         val updatedConsumed = consumedTokens.toMutableSet().apply { add(token) }
+
+        // Si la clave autoriza N sucursales, actualizar el cupo en el dispositivo
+        if (maxBranches > 1) {
+            setMaxBranchesAllowed(context, maxBranches)
+        }
 
         prefs.edit()
             .putString(KEY_STATE, LicenseStatus.ACTIVE.name)
@@ -210,7 +233,8 @@ object LicenseManager {
             activatedAt = now,
             expiresAt = expiresAt,
             remainingMillis = if (expiresAt == -1L) Long.MAX_VALUE else (expiresAt - now),
-            rawKey = keyInput.trim()
+            rawKey = keyInput.trim(),
+            maxBranches = getMaxBranchesAllowed(context)
         )
 
         return Result.success(info)
@@ -232,6 +256,8 @@ object LicenseManager {
 
         val tier = tierCode?.let { LicenseTier.fromCode(it) }
 
+        val allowedBranches = getMaxBranchesAllowed(context)
+
         if (stateStr == null || tier == null) {
             return LicenseInfo(
                 status = LicenseStatus.UNLICENSED,
@@ -240,7 +266,8 @@ object LicenseManager {
                 activatedAt = 0L,
                 expiresAt = 0L,
                 remainingMillis = 0L,
-                rawKey = ""
+                rawKey = "",
+                maxBranches = allowedBranches
             )
         }
 
@@ -255,7 +282,8 @@ object LicenseManager {
                 activatedAt = activatedAt,
                 expiresAt = expiresAt,
                 remainingMillis = 0L,
-                rawKey = activeKey
+                rawKey = activeKey,
+                maxBranches = allowedBranches
             )
         }
 
@@ -273,7 +301,8 @@ object LicenseManager {
                 activatedAt = activatedAt,
                 expiresAt = -1L,
                 remainingMillis = Long.MAX_VALUE,
-                rawKey = activeKey
+                rawKey = activeKey,
+                maxBranches = allowedBranches
             )
         }
 
@@ -288,7 +317,8 @@ object LicenseManager {
                 activatedAt = activatedAt,
                 expiresAt = expiresAt,
                 remainingMillis = 0L,
-                rawKey = activeKey
+                rawKey = activeKey,
+                maxBranches = allowedBranches
             )
         } else {
             LicenseInfo(
@@ -298,7 +328,8 @@ object LicenseManager {
                 activatedAt = activatedAt,
                 expiresAt = expiresAt,
                 remainingMillis = remaining,
-                rawKey = activeKey
+                rawKey = activeKey,
+                maxBranches = allowedBranches
             )
         }
     }
