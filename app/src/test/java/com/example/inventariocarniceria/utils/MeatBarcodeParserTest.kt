@@ -123,4 +123,24 @@ class MeatBarcodeParserTest {
         assertTrue(result.isWeightExtractedFromBarcode)
         assertEquals(22.30, result.weightKg, 0.001)
     }
+
+    @Test
+    fun parse_kekenIndustrialPipeBarcode_extractsWeightFolioAndLote() {
+        val cabezaProd = ProductEntity(
+            code = 23,
+            localCode = 23,
+            name = "Cabeza Congelado",
+            synonyms = "cabeza, 124154A1"
+        )
+        val productsWithCabeza = testProducts + cabezaProd
+        val barcode = "01H1180201658|P124154A1|L0027567916|D04/10/2026|Q  22.30 |W0R00"
+        val result = MeatBarcodeParser.parse(barcode, productsWithCabeza)
+
+        assertTrue(result.isWeightExtractedFromBarcode)
+        assertEquals(22.30, result.weightKg, 0.001)
+        assertEquals("1180201658", result.boxFolio)
+        assertEquals("0027567916", result.lotNumber)
+        assertNotNull(result.product)
+        assertEquals(23, result.product?.localCode)
+    }
 }

@@ -830,8 +830,9 @@ class InventoryViewModel(
                 setManualWeight(result.weightKg)
             }
             val formattedWeight = String.format(Locale.US, "%.3f", result.weightKg)
+            val folioMsg = if (result.boxFolio.isNotBlank()) " (Folio: ${result.boxFolio})" else ""
             val msg = if (result.weightKg > 0.0) {
-                "📦 Escaneado: [${result.product.localCode}] ${result.product.name} • ${formattedWeight} kg"
+                "📦 Caja escaneada: [${result.product.localCode}] ${result.product.name} • ${formattedWeight} kg$folioMsg"
             } else {
                 "📦 Escaneado: [${result.product.localCode}] ${result.product.name} (Colocar en báscula)"
             }
@@ -840,8 +841,9 @@ class InventoryViewModel(
             setManualWeight(result.weightKg)
             val formattedWeight = String.format(Locale.US, "%.3f", result.weightKg)
             val prodMsg = _uiState.value.selectedProduct?.let { " para '${it.name}'" } ?: ""
+            val folioMsg = if (result.boxFolio.isNotBlank()) " • Folio: ${result.boxFolio}" else ""
             _uiState.value = _uiState.value.copy(
-                snackbarMessage = "⚖️ Peso de caja detectado: ${formattedWeight} kg$prodMsg"
+                snackbarMessage = "⚖️ Peso de caja detectado: ${formattedWeight} kg$prodMsg$folioMsg"
             )
         } else {
             _uiState.value = _uiState.value.copy(

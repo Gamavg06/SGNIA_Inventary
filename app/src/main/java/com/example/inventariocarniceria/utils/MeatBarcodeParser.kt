@@ -13,7 +13,9 @@ data class MeatBarcodeResult(
     val units: Int = 1,
     val unitType: String = "CAJA",
     val isWeightExtractedFromBarcode: Boolean = false,
-    val explanation: String = ""
+    val explanation: String = "",
+    val lotNumber: String = "",
+    val boxFolio: String = ""
 )
 
 /**
@@ -21,11 +23,10 @@ data class MeatBarcodeResult(
  * rastro y tickets de balanza industrial.
  *
  * Soporta:
- * 1. Cajas con peso en los últimos 4 dígitos (ej: ...2000 -> 20.00 kg).
- * 2. Cajas con peso en los últimos 5 dígitos (ej: ...02000 -> 20.00 kg o gramos).
+ * 1. Códigos industriales de empacadora delimitados por '|' (Kekén, SuKarne, TIF) con peso, lote y folio.
+ * 2. Cajas con peso neto directo (ej: 22.30, 22.30 kg) o 4 dígitos (2230 -> 22.30 kg).
  * 3. Tickets de balanza Systel / EAN-13 de mostrador (prefijos 20, 21, 28, 29).
- * 4. Códigos fijos de producto (si la caja no trae peso en el código, utiliza weightPerBoxKg del catálogo).
- * 5. Códigos QR con formato texto o clave-valor (ej: "PLU:45;PESO:20.0").
+ * 4. Códigos QR con formato texto o clave-valor (ej: "PLU:45;PESO:20.0").
  */
 object MeatBarcodeParser {
 
@@ -33,6 +34,81 @@ object MeatBarcodeParser {
         val cleaned = rawCode.trim()
         if (cleaned.isEmpty()) {
             return MeatBarcodeResult(rawCode, null, 0.0, explanation = "Código vacío")
+        }
+
+        // -------------------------------------------------------------
+        // FORMATO INDUSTRIAL KEKÉN / GRUPO PORCÍCOLA / SUKARNE DELIMITADO POR PIPE (|)
+        // Ejemplo real escaneado: 01H1180201658|P124154A1|L0027567916|D04/10/2026|Q  22.30 |W0R00
+        // Donde:
+        // - 01H1180201658 -> Folio de Caja 1180201658
+        // - P124154A1 -> Código de Producto de Proveedor 124154A1 (Cabeza Congelado)
+        // - L0027567916 -> Lote 0027567916
+        // - D04/10/2026 -> Fecha de Empaque
+        // - Q  22.30   -> Peso Neto Exacto de la Caja (22.30 kg)
+        // -------------------------------------------------------------
+        if (cleaned.contains("|")) {
+            val tokens = cleaned.split("|").map { it.trim() }
+            var extractedWeight = 0.0
+            var boxFolio = ""
+            var lotNumber = ""
+            var providerProdCode = ""
+
+            for (token in tokens) {
+                // 1. Extraer peso neto (token que inicia con Q, W, K o decimal)
+                if (token.startsWith("Q", ignoreCase = true) || token.startsWith("W", ignoreCase = true) || token.startsWith("K", ignoreCase = true)) {
+                    val rawNum = token.drop(1).trim().replace(",", ".")
+                    val w = rawNum.toDoubleOrNull()
+                    if (w != null && w in 0.10..400.0) {
+                        extractedWeight = w
+                    }
+                } else {
+                    val directNum = token.replace(",", ".").toDoubleOrNull()
+                    if (directNum != null && directNum in 0.10..400.0) {
+                        extractedWeight = directNum
+                    }
+                }
+
+                // 2. Extraer folio de caja (token 01H... o H...)
+                if (token.startsWith("01H", ignoreCase = true)) {
+                    boxFolio = token.removePrefix("01H").removePrefix("01h")
+                } else if (token.startsWith("H", ignoreCase = true) && token.drop(1).all { it.isDigit() }) {
+                    boxFolio = token.drop(1)
+                }
+
+                // 3. Extraer código de producto del proveedor (P...)
+                if (token.startsWith("P", ignoreCase = true) && token.length >= 3) {
+                    providerProdCode = token.drop(1)
+                }
+
+                // 4. Extraer lote (L...)
+                if (token.startsWith("L", ignoreCase = true) && token.length >= 3) {
+                    lotNumber = token.drop(1)
+                }
+            }
+
+            // Buscar coincidencia en catálogo de cortes
+            var matchedProduct: ProductEntity? = null
+            if (providerProdCode.isNotBlank()) {
+                matchedProduct = findProductMatch(providerProdCode, allProducts)
+                if (matchedProduct == null && providerProdCode.contains("124154", ignoreCase = true)) {
+                    matchedProduct = allProducts.find { it.name.contains("cabeza", ignoreCase = true) }
+                }
+            }
+
+            if (extractedWeight > 0.0 || matchedProduct != null) {
+                return MeatBarcodeResult(
+                    rawCode = cleaned,
+                    product = matchedProduct,
+                    weightKg = extractedWeight,
+                    units = 1,
+                    unitType = "KG",
+                    isWeightExtractedFromBarcode = (extractedWeight > 0.0),
+                    explanation = "📦 Caja Kekén / TIF: ${String.format(Locale.US, "%.3f", extractedWeight)} kg" +
+                            if (boxFolio.isNotBlank()) " • Folio: $boxFolio" else "",
+                    lotNumber = lotNumber,
+                    boxFolio = boxFolio
+                )
+            }
         }
 
         // -------------------------------------------------------------

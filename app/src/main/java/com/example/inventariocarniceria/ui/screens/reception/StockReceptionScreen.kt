@@ -84,6 +84,15 @@ fun StockReceptionScreen(
             if (res.weightKg > 0.0) {
                 manualKilosInput = String.format(Locale.US, "%.3f", res.weightKg)
             }
+            if (res.product != null) {
+                viewModel.onCodeInputChanged(res.product.localCode.toString())
+            }
+            val notesParts = mutableListOf<String>()
+            if (res.boxFolio.isNotBlank()) notesParts.add("Folio: ${res.boxFolio}")
+            if (res.lotNumber.isNotBlank()) notesParts.add("Lote: ${res.lotNumber}")
+            if (notesParts.isNotEmpty()) {
+                supplierNotesInput = notesParts.joinToString(" | ")
+            }
         }
     }
 

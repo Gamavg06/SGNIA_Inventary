@@ -6,6 +6,18 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [1.0.5] - 2026-10-25
+
+### Añadido
+- **Soporte Completo para Códigos de Barras y QR Industriales de Empacadora Kekén / TIF (`MeatBarcodeParser.kt`)**:
+  - Decodificación integral del formato delimitado por plecas (`|`) emitido por básculas y etiquetadoras de rastro: `01H1180201658|P124154A1|L0027567916|D04/10/2026|Q  22.30 |W0R00`.
+  - **Extracción de Peso Neto**: Lee automáticamente el token `Q  22.30` como **`22.300 kg`** y lo coloca en el campo `Kilos a Recibir (kg)` sin requerir tecleo manual.
+  - **Extracción de Folio de Caja**: Lee `01H1180201658` como folio `1180201658`.
+  - **Extracción de Lote**: Lee `L0027567916` y fecha de empaque `D04/10/2026`, auto-llenando las notas de lote y proveedor.
+  - **Asociación de Producto**: Mapeo del código de producto `P124154A1` directamente a **`CABEZA CONGELADO` (PLU #23)**.
+
+---
+
 ## [1.0.4] - 2026-10-25
 
 ### Corregido
