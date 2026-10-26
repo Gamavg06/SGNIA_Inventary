@@ -225,6 +225,11 @@ class InventoryViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             // Auto-reparar categorías huérfanas ('Carnicería', 'General') al estándar de secciones
             repository.fixUncategorizedProducts()
+            // Auto-generar tickets de prueba en la base de datos si aún no existen
+            val existing = repository.findSaleTicket("OP-10025")
+            if (existing == null) {
+                seedSampleSaleTicket()
+            }
         }
         viewModelScope.launch {
             scaleState.collectLatest { state ->
@@ -430,18 +435,41 @@ class InventoryViewModel(
     fun seedSampleSaleTicket() {
         viewModelScope.launch {
             val branch = _uiState.value.currentBranch.ifBlank { "Sucursal Principal SGNIA" }
+            // 1. Ticket Solicitado: PLU 22 CUERO S/G
+            repository.recordSaleTicket(
+                productCode = 22,
+                productName = "CUERO S/G",
+                weightKg = 2.500,
+                pricePerKg = 36.00,
+                operationNumber = "OP-10025",
+                ticketBarcode = "200002200250",
+                branchId = branch,
+                cashierName = "Encargado de Mostrador"
+            )
+            // 2. Ticket: PLU 1 MENUDO DE RES
             repository.recordSaleTicket(
                 productCode = 1,
-                productName = "Menudo de Res",
-                weightKg = 1.000,
-                pricePerKg = 120.00,
+                productName = "MENUDO DE RES",
+                weightKg = 1.200,
+                pricePerKg = 110.00,
                 operationNumber = "OP-10024",
-                ticketBarcode = "2000001010005",
+                ticketBarcode = "200000101200",
+                branchId = branch,
+                cashierName = "Encargado de Mostrador"
+            )
+            // 3. Ticket: PLU 7 BISTEK DE PUERCO
+            repository.recordSaleTicket(
+                productCode = 7,
+                productName = "BISTEK DE PUERCO",
+                weightKg = 0.750,
+                pricePerKg = 88.00,
+                operationNumber = "OP-10026",
+                ticketBarcode = "200000700750",
                 branchId = branch,
                 cashierName = "Encargado de Mostrador"
             )
             _uiState.value = _uiState.value.copy(
-                snackbarMessage = "Ticket de ejemplo generado (#OP-10024 · Menudo de Res 1.000 kg)"
+                snackbarMessage = "✅ Tickets de prueba listos: #OP-10025 (Cuero S/G 2.5kg), #OP-10024 y #OP-10026"
             )
         }
     }

@@ -456,7 +456,7 @@ fun SalesReversalScreen(
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = NoirColors.Cream),
                             border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(NoirColors.Cream))
                         ) {
-                            Text("Generar Ticket de Ejemplo (Menudo de Res)")
+                            Text("Generar Tickets de Prueba (#OP-10025 Cuero S/G)")
                         }
                     }
                 }
