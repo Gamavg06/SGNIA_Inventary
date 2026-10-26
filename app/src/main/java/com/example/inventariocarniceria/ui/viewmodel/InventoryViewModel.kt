@@ -735,13 +735,20 @@ class InventoryViewModel(
             if (result.weightKg > 0.0) {
                 setManualWeight(result.weightKg)
             }
-            val formattedWeight = String.format(Locale.US, "%.2f", result.weightKg)
+            val formattedWeight = String.format(Locale.US, "%.3f", result.weightKg)
             val msg = if (result.weightKg > 0.0) {
                 "📦 Escaneado: [${result.product.localCode}] ${result.product.name} • ${formattedWeight} kg"
             } else {
                 "📦 Escaneado: [${result.product.localCode}] ${result.product.name} (Colocar en báscula)"
             }
             _uiState.value = _uiState.value.copy(snackbarMessage = msg)
+        } else if (result.weightKg > 0.0) {
+            setManualWeight(result.weightKg)
+            val formattedWeight = String.format(Locale.US, "%.3f", result.weightKg)
+            val prodMsg = _uiState.value.selectedProduct?.let { " para '${it.name}'" } ?: ""
+            _uiState.value = _uiState.value.copy(
+                snackbarMessage = "⚖️ Peso de caja detectado: ${formattedWeight} kg$prodMsg"
+            )
         } else {
             _uiState.value = _uiState.value.copy(
                 snackbarMessage = "⚠️ Código no reconocido en catálogo: $rawBarcode"

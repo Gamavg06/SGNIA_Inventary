@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.example.inventariocarniceria.utils.MeatBarcodeParser
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,10 +72,20 @@ fun StockReceptionScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scaleState by viewModel.scaleState.collectAsState()
     val recentEntries by viewModel.recentStockEntries.collectAsState()
+    val scannedBarcodeResult by viewModel.scannedBarcodeResult.collectAsState()
 
     var manualKilosInput by remember { mutableStateOf("") }
     var supplierNotesInput by remember { mutableStateOf("") }
     var isBarcodeScannerOpen by remember { mutableStateOf(false) }
+
+    // Relleno automático inmediato del peso al escanear código de barras de caja (ej. 22.30 kg)
+    androidx.compose.runtime.LaunchedEffect(scannedBarcodeResult) {
+        scannedBarcodeResult?.let { res ->
+            if (res.weightKg > 0.0) {
+                manualKilosInput = String.format(Locale.US, "%.3f", res.weightKg)
+            }
+        }
+    }
 
     val totalReceivedKilos = recentEntries.sumOf { it.kilosReceived }
 
@@ -252,13 +263,24 @@ fun StockReceptionScreen(
                             placeholder = { Text("Báscula: $formattedWeight kg", color = NoirColors.TextMuted) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
+                            trailingIcon = {
+                                androidx.compose.material3.IconButton(onClick = { isBarcodeScannerOpen = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCodeScanner,
+                                        contentDescription = "Escanear peso de caja",
+                                        tint = NoirColors.Cream
+                                    )
+                                }
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(NoirRadius.sm),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = NoirColors.Cream,
                                 unfocusedBorderColor = NoirColors.Hairline,
                                 focusedTextColor = NoirColors.TextPrimary,
-                                unfocusedTextColor = NoirColors.TextPrimary
+                                unfocusedTextColor = NoirColors.TextPrimary,
+                                focusedContainerColor = NoirColors.SurfaceSunken,
+                                unfocusedContainerColor = NoirColors.SurfaceSunken
                             )
                         )
 
@@ -355,6 +377,24 @@ fun StockReceptionScreen(
             onDismiss = { isBarcodeScannerOpen = false },
             onBarcodeScanned = { barcode ->
                 isBarcodeScannerOpen = false
+                val products = viewModel.allProducts.value
+                val result = MeatBarcodeParser.parse(barcode, products)
+
+                // 1. Relleno automático inmediato del pesaje si el código contiene peso (ej. "22.30" de la caja)
+                if (result.weightKg > 0.0) {
+                    manualKilosInput = String.format(Locale.US, "%.3f", result.weightKg)
+                }
+
+                // 2. Si identificó producto y no está seleccionado, seleccionarlo
+                if (result.product != null) {
+                    viewModel.onCodeInputChanged(result.product.localCode.toString())
+                }
+
+                // 3. Si el código corresponde a un folio/lote de caja (ej. 1180201658 de Kekén)
+                if (barcode.length in 8..15 && barcode.all { it.isDigit() }) {
+                    supplierNotesInput = "Folio Caja: $barcode"
+                }
+
                 viewModel.processScannedBarcode(barcode)
             }
         )

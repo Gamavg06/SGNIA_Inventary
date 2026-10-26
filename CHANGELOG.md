@@ -6,6 +6,19 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [1.0.3] - 2026-10-25
+
+### Añadido
+- **Auto-Llenado de Peso de Caja por Código de Barras (`StockReceptionScreen.kt` & `MeatBarcodeParser.kt`)**:
+  - Detección automática de peso neto directo en etiquetas de cajas empaquetadas (ejemplo: cajas de Kekén / Grupo Porcícola Mexicano con código `22.30` o `22,30`).
+  - Al escanear el código de barras con la pistola o con la cámara del dispositivo, el campo **Kilos a Recibir (kg)** se auto-completa instantáneamente con el peso exacto (`22.300 kg`).
+  - Soporte inteligente para códigos de barras de 4 dígitos (ej. `2230` -> `22.30 kg`) y formatos con sufijo de unidad (`22.30kg`).
+  - Botón de acceso directo a escaneo de cámara integrado en el campo de texto de kilos.
+  - El campo de peso permanece **100% manual y editable** en cualquier momento si el carnicero necesita ajustarlo o corregirlo.
+  - Se mantiene activa la opción de capturar el peso en vivo desde la **Báscula** física mediante el botón dedicado.
+
+---
+
 ## [1.0.2] - 2026-10-25
 
 ### Añadido

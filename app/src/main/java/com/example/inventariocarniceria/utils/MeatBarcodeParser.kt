@@ -36,6 +36,46 @@ object MeatBarcodeParser {
         }
 
         // -------------------------------------------------------------
+        // FORMATO 0: Código de barras con peso neto directo (ej. "22.30", "22,30", "22.30 kg", "22.3")
+        // Frecuente en cajas de empacadora y rastro (Kekén, Porcícola Mexicano, SuKarne) donde un código es el peso neto
+        // -------------------------------------------------------------
+        val cleanWeightCandidate = cleaned.replace(" ", "")
+            .replace("kg", "", ignoreCase = true)
+            .replace("KG", "")
+            .replace(",", ".")
+        val directWeightNum = cleanWeightCandidate.toDoubleOrNull()
+        if (directWeightNum != null && (cleaned.contains(".") || cleaned.contains(",") || cleaned.contains("kg", ignoreCase = true)) && directWeightNum in 0.10..400.0) {
+            return MeatBarcodeResult(
+                rawCode = cleaned,
+                product = null,
+                weightKg = directWeightNum,
+                units = 1,
+                unitType = "KG",
+                isWeightExtractedFromBarcode = true,
+                explanation = "⚖️ Peso neto extraído de caja: ${String.format(Locale.US, "%.3f", directWeightNum)} kg"
+            )
+        }
+
+        // Si son 4 dígitos exactos y no existe un producto con ese código (ej. código "2230" -> 22.30 kg)
+        if (cleaned.length == 4 && findProductMatch(cleaned, allProducts) == null) {
+            val num4 = cleaned.toIntOrNull()
+            if (num4 != null && num4 in 500..9999) {
+                val weightCandidate = num4 / 100.0
+                if (weightCandidate in 5.0..100.0) {
+                    return MeatBarcodeResult(
+                        rawCode = cleaned,
+                        product = null,
+                        weightKg = weightCandidate,
+                        units = 1,
+                        unitType = "KG",
+                        isWeightExtractedFromBarcode = true,
+                        explanation = "⚖️ Peso de caja (4 dígitos): ${String.format(Locale.US, "%.2f", weightCandidate)} kg"
+                    )
+                }
+            }
+        }
+
+        // -------------------------------------------------------------
         // FORMATO 1: Códigos QR con texto estructurado (PLU:45;PESO:20.0)
         // -------------------------------------------------------------
         if (cleaned.contains(";") || cleaned.contains("=") || cleaned.contains(":")) {
@@ -167,6 +207,16 @@ object MeatBarcodeParser {
             list.contains(query)
         }
         if (bySynonyms != null) return bySynonyms
+
+        // 4. Coincidencia por corte o nombre en etiquetas de empacadora (ej. "CABEZA CONGELADO" -> "CABEZA DE PUERCO")
+        val byPartialName = allProducts.find { prod ->
+            val pName = prod.name.lowercase()
+            pName.contains(query) || query.contains(pName) ||
+            (query.contains("cabeza") && pName.contains("cabeza")) ||
+            (query.contains("pierna") && pName.contains("pierna")) ||
+            (query.contains("menudo") && pName.contains("menudo"))
+        }
+        if (byPartialName != null) return byPartialName
 
         return null
     }

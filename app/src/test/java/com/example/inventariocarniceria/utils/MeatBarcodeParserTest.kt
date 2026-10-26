@@ -93,4 +93,34 @@ class MeatBarcodeParserTest {
         assertEquals("Manitas de Puerco", result.product?.name)
         assertEquals(20.0, result.weightKg, 0.001)
     }
+
+    @Test
+    fun parse_directBoxWeightBarcode_extractsExactDecimalWeight() {
+        // Caso real de caja de empacadora (Kekén / Porcícola Mexicano): código de barras "22.30"
+        val barcode = "22.30"
+        val result = MeatBarcodeParser.parse(barcode, testProducts)
+
+        assertTrue(result.isWeightExtractedFromBarcode)
+        assertEquals(22.30, result.weightKg, 0.001)
+
+        // Caso con coma decimal "22,30"
+        val commaResult = MeatBarcodeParser.parse("22,30", testProducts)
+        assertTrue(commaResult.isWeightExtractedFromBarcode)
+        assertEquals(22.30, commaResult.weightKg, 0.001)
+
+        // Caso con unidad "22.30 kg"
+        val kgResult = MeatBarcodeParser.parse("22.30 kg", testProducts)
+        assertTrue(kgResult.isWeightExtractedFromBarcode)
+        assertEquals(22.30, kgResult.weightKg, 0.001)
+    }
+
+    @Test
+    fun parse_fourDigitWeightBoxBarcode_extractsCalculatedWeight() {
+        // Código de barras de 4 dígitos "2230" cuando no coincide con un producto
+        val barcode = "2230"
+        val result = MeatBarcodeParser.parse(barcode, testProducts)
+
+        assertTrue(result.isWeightExtractedFromBarcode)
+        assertEquals(22.30, result.weightKg, 0.001)
+    }
 }
