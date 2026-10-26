@@ -225,11 +225,6 @@ class InventoryViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             // Auto-reparar categorías huérfanas ('Carnicería', 'General') al estándar de secciones
             repository.fixUncategorizedProducts()
-            // Auto-generar tickets de prueba en la base de datos si aún no existen
-            val existing = repository.findSaleTicket("OP-10025")
-            if (existing == null) {
-                seedSampleSaleTicket()
-            }
         }
         viewModelScope.launch {
             scaleState.collectLatest { state ->
