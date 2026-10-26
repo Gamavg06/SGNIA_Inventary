@@ -1183,7 +1183,7 @@ fun SgniaArtisanalProductCard(
 }
 
 // =========================================================================
-// 13. PLANTILLA EJECUTIVA CERHAN (NEGRO MATE & CREMA MARFIL)
+// 13. COMPONENTES PRINCIPALES SGNIA (NEGRO MATE & CREMA MARFIL)
 // =========================================================================
 
 data class SgniaSidebarItem(
@@ -1200,10 +1200,10 @@ data class SgniaQuickActionItem(
 )
 
 /**
- * Menú Lateral Izquierdo (Sidebar) idéntico a la plantilla CERHAN en Negro Mate y Crema.
+ * Menú Lateral Izquierdo (Sidebar) de SGNIA en Negro Mate y Crema.
  */
 @Composable
-fun SgniaCerhanSidebar(
+fun SgniaSidebar(
     brandTitle: String = "SGNIA",
     subtitle: String = "POS & INVENTARIO",
     items: List<SgniaSidebarItem>,
@@ -1322,7 +1322,7 @@ fun SgniaCerhanSidebar(
                         }
                     }
 
-                    // Indicador crema en el borde derecho (idéntico a la imagen 1 de CERHAN)
+                    // Indicador crema en el borde derecho
                     if (isSelected) {
                         Box(
                             modifier = Modifier
@@ -1396,10 +1396,10 @@ fun SgniaCerhanSidebar(
 }
 
 /**
- * Barra superior estilo CERHAN con botón de Menú Lateral (al costado), barra de búsqueda y controles.
+ * Barra superior estilo SGNIA con botón de Menú Lateral (al costado), barra de búsqueda y controles.
  */
 @Composable
-fun SgniaCerhanTopBar(
+fun SgniaTopBar(
     onOpenDrawer: () -> Unit,
     searchPlaceholder: String = "Buscar corte, código o caja...",
     onSearchClick: (() -> Unit)? = null,
@@ -1518,10 +1518,10 @@ fun SgniaCerhanTopBar(
 }
 
 /**
- * Encabezado de saludo estilo CERHAN ("Buenas tardes, Administrador Principal")
+ * Encabezado de saludo estilo SGNIA ("Buenas tardes, Administrador Principal")
  */
 @Composable
-fun SgniaCerhanGreetingHeader(
+fun SgniaGreetingHeader(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier
@@ -1550,13 +1550,13 @@ fun SgniaCerhanGreetingHeader(
 }
 
 @Composable
-fun SgniaCerhanGreetingHeader(
+fun SgniaGreetingHeader(
     userName: String,
     subtitle: String,
     modifier: Modifier = Modifier,
     greetingPrefix: String = "Buenas tardes,"
 ) {
-    SgniaCerhanGreetingHeader(
+    SgniaGreetingHeader(
         title = "$greetingPrefix $userName",
         subtitle = subtitle,
         modifier = modifier
@@ -1564,10 +1564,10 @@ fun SgniaCerhanGreetingHeader(
 }
 
 /**
- * Tarjeta Numerada Horizontal (01., 02., 03., 04.) con iconos y gráfica integrada estilo CERHAN.
+ * Tarjeta Numerada Horizontal (01., 02., 03., 04.) con iconos y gráfica integrada estilo SGNIA.
  */
 @Composable
-fun SgniaCerhanNumberedCard(
+fun SgniaNumberedCard(
     numberPrefix: String,
     title: String,
     description: String,
@@ -1708,7 +1708,7 @@ fun SgniaCerhanNumberedCard(
 }
 
 @Composable
-fun SgniaCerhanNumberedCard(
+fun SgniaNumberedCard(
     number: String,
     title: String,
     subtitle: String,
@@ -1717,7 +1717,7 @@ fun SgniaCerhanNumberedCard(
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    SgniaCerhanNumberedCard(
+    SgniaNumberedCard(
         numberPrefix = number,
         title = title,
         description = subtitle,
@@ -1730,10 +1730,10 @@ fun SgniaCerhanNumberedCard(
 }
 
 /**
- * Tarjeta Especial de Báscula en Vivo (01. Báscula 1 / 02. Báscula 2) con el estilo exacto de la plantilla CERHAN.
+ * Tarjeta Especial de Báscula en Vivo (01. Báscula 1 / 02. Báscula 2) con el estilo de SGNIA.
  */
 @Composable
-fun SgniaCerhanDualScaleCard(
+fun SgniaDualScaleCard(
     numberPrefix: String,
     scaleDevice: TcpScaleDevice,
     liveWeightKg: Double,
@@ -1899,10 +1899,10 @@ fun SgniaCerhanDualScaleCard(
 }
 
 /**
- * Tarjeta "Acceso Rápido" con cuadrícula 2x2 de botones Crema con texto Negro (Idéntica a la plantilla CERHAN).
+ * Tarjeta "Acceso Rápido" con cuadrícula 2x2 de botones Crema con texto Negro (SGNIA).
  */
 @Composable
-fun SgniaCerhanQuickAccessCard(
+fun SgniaQuickAccessCard(
     title: String = "Acceso Rápido",
     actions: List<SgniaQuickActionItem>,
     modifier: Modifier = Modifier
@@ -1979,10 +1979,10 @@ fun SgniaCerhanQuickAccessCard(
 }
 
 /**
- * Tarjeta "Resumen Global" con números grandes y gráficas vectoriales de líneas y barras (Idéntica a la plantilla CERHAN).
+ * Tarjeta "Resumen Global" con números grandes y gráficas vectoriales de líneas y barras (SGNIA).
  */
 @Composable
-fun SgniaCerhanGlobalSummaryCard(
+fun SgniaGlobalSummaryCard(
     title: String = "Resumen Global",
     firstLabel: String,
     firstValue: String,
@@ -2099,7 +2099,7 @@ fun SgniaCerhanGlobalSummaryCard(
 }
 
 @Composable
-fun SgniaCerhanGlobalSummaryCard(
+fun SgniaGlobalSummaryCard(
     metric1Label: String,
     metric1Value: String,
     metric1Sub: String = "",
@@ -2109,7 +2109,7 @@ fun SgniaCerhanGlobalSummaryCard(
     barValues: List<Float> = emptyList(),
     modifier: Modifier = Modifier
 ) {
-    SgniaCerhanGlobalSummaryCard(
+    SgniaGlobalSummaryCard(
         title = "Resumen Global",
         firstLabel = if (metric1Sub.isNotBlank()) "$metric1Label ($metric1Sub)" else metric1Label,
         firstValue = metric1Value,

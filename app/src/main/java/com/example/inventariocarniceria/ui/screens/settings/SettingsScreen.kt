@@ -42,9 +42,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGlobalSummaryCard
-import com.example.inventariocarniceria.ui.components.SgniaCerhanGreetingHeader
-import com.example.inventariocarniceria.ui.components.SgniaCerhanNumberedCard
+import com.example.inventariocarniceria.ui.components.SgniaGlobalSummaryCard
+import com.example.inventariocarniceria.ui.components.SgniaGreetingHeader
+import com.example.inventariocarniceria.ui.components.SgniaNumberedCard
 import com.example.inventariocarniceria.ui.screens.inventory.QendraCatalogImportDialog
 import com.example.inventariocarniceria.ui.viewmodel.InventoryViewModel
 import androidx.compose.ui.text.font.FontFamily
@@ -86,10 +86,10 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // ==========================================================
-        // SALUDO EJECUTIVO ESTILO CERHAN
+        // ENCABEZADO SGNIA
         // ==========================================================
         item {
-            SgniaCerhanGreetingHeader(
+            SgniaGreetingHeader(
                 title = "Ajustes del Sistema",
                 subtitle = "Configuración TCP/IP de Básculas y Red Local • ${uiState.currentBranch.ifBlank { "Sucursal" }}"
             )
@@ -103,7 +103,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                SgniaCerhanNumberedCard(
+                SgniaNumberedCard(
                     modifier = Modifier.weight(1f),
                     number = "01.",
                     title = "Básculas en Red",
@@ -111,7 +111,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Scale,
                     showWaveChart = true
                 )
-                SgniaCerhanNumberedCard(
+                SgniaNumberedCard(
                     modifier = Modifier.weight(1f),
                     number = "02.",
                     title = "Socket TCP/IP",
@@ -386,7 +386,7 @@ fun SettingsScreen(
         // RESUMEN GLOBAL DE RED
         // ==========================================================
         item {
-            SgniaCerhanGlobalSummaryCard(
+            SgniaGlobalSummaryCard(
                 metric1Label = "Básculas Configuradas",
                 metric1Value = "${scalesList.size} Equipos",
                 metric1Sub = "Puertos TCP/IP listos",

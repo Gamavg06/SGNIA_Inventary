@@ -45,7 +45,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
   - Cancelación e inversión de ventas con diálogo de confirmación y selección de motivo de reembolso/baja (*equivocación en cobro, reembolso solicitado por cliente, producto devuelto*).
   - **Reingreso automático de mercancía**: Al invertir la venta, los kilogramos exactos se reincorporan automáticamente al inventario físico mediante un registro de `StockEntryEntity`.
   - Nueva tabla en base de datos Room (`SaleTicketEntity` y `SaleTicketDao`) con migración automática `MIGRATION_11_12`.
-  - Acceso directo desde el menú lateral Cerhan de la app Tienda (`Invertir Venta / Bajas`).
+  - Acceso directo desde el menú lateral de la app Tienda (`Invertir Venta / Bajas`).
 - **Visualización en Vivo de Producto y Precio por PLU en Báscula (`IndustrialScaleVisorScreen.kt`)**:
   - Reconocimiento y despliegue prominente del corte en venta (ej. **Menudo de Res**, PLU #1) directamente sobre la tarjeta de báscula al recibir el pesaje o código PLU.
   - Cálculo e indicador en tiempo real de **Importe de Venta** (`peso × precio/kg`) junto al indicador digital de peso y estabilidad.

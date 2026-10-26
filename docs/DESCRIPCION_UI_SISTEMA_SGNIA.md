@@ -154,9 +154,9 @@ En el estado actual del repositorio coexisten **dos capas de diseño superpuesta
 * **Medidas**: Botones del teclado de **64 dp** de altura mínima con radio **18 dp**.
 * **Dónde se usa**: `SecurityVaultScreen` (login), `AdminSecurityScreen` (cambio de PIN) y modal de peso manual.
 
-#### 7. Componentes de la Capa Legada / Cerhan ([`SgniaComponents.kt`](file:///c:/Users/gmlve/Downloads/Inventario/app/src/main/java/com/example/inventariocarniceria/ui/components/SgniaComponents.kt))
-* `SgniaCerhanSidebar`: Barra lateral de navegación con drawer para tabletas y teléfonos. Fondo `#171614`, ítems con padding horizontal de 16 dp, iconos de 24 dp y badges numéricas en píldora.
-* `SgniaCerhanTopBar`: Barra superior con botón hamburguesa para desplegar el drawer, caja de búsqueda redondeada (fondo `#211E1B`) y selector de tema.
+#### 7. Componentes de Navegación SGNIA ([`SgniaComponents.kt`](file:///c:/Users/gmlve/Downloads/Inventario/app/src/main/java/com/example/inventariocarniceria/ui/components/SgniaComponents.kt))
+* `SgniaSidebar`: Barra lateral de navegación con drawer para tabletas y teléfonos. Fondo `#171614`, ítems con padding horizontal de 16 dp, iconos de 24 dp y badges numéricas en píldora.
+* `SgniaTopBar`: Barra superior con botón hamburguesa para desplegar el drawer, caja de búsqueda redondeada (fondo `#211E1B`) y selector de tema.
 * `SgniaArtisanalProductCard`: Tarjeta de producto de catálogo con imagen cuadrada de 70x70 dp, nombre en negrita, código PLU e insignia de precio por kilo.
 * `OptimizedScaleOledDisplay`: Caja negra pura `#0A0908` con borde degradado y cifras en amarillo ámbar `#FFE082` simulando display fluorescente de balanza.
 
@@ -392,12 +392,12 @@ A continuación se detalla la anatomía de cada pantalla encontrada en el proyec
 * **Archivo**: [`app/src/main/java/com/example/inventariocarniceria/ui/screens/settings/SettingsScreen.kt`](file:///c:/Users/gmlve/Downloads/Inventario/app/src/main/java/com/example/inventariocarniceria/ui/screens/settings/SettingsScreen.kt)
 * **Acceso**: Menú lateral $\rightarrow$ "Ajustes de Sistema".
 * **Estructura Visual**:
-  1. **Encabezado Cerhan**: Componente `SgniaCerhanGreetingHeader` con nombre de la tienda y versión.
+  1. **Encabezado SGNIA**: Componente `SgniaGreetingHeader` con nombre de la tienda y versión.
   2. **Bloque de Configuración de Básculas**: Muestra la IP y puerto activos, estado del Foreground Service y botón `"CONFIGURAR RED DE BÁSCULAS"`.
   3. **Bloque de Apariencia y Tema**: Selector de tema visual (`NOIR_CREMA`, `OBSIDIAN_GOLD`, `CYBER_VIOLET`).
   4. **Bloque de Base de Datos y Catálogos**: Botón para importación masiva de catálogo vía JSON (`QendraCatalogImportDialog`) y reinicio controlado de tablas.
   5. **Enlaces Informativos**: Botones hacia "Licencia de Software" y "Acerca de SGNIA".
-* **Debilidad visual**: Es una de las pantallas híbridas que mezcla componentes Cerhan (`SgniaCerhanNumberedCard`) con botones Material 3 estándar.
+* **Debilidad visual**: Es una de las pantallas híbridas que mezcla componentes SGNIA (`SgniaNumberedCard`) con botones Material 3 estándar.
 
 ---
 
@@ -551,7 +551,7 @@ A continuación se detalla la anatomía de cada pantalla encontrada en el proyec
 2. **`DespiecePiernaScreen.kt` (Calculadora de Rendimiento)**:
    * **Problema**: Diseñada como un modal de Material 2/3 estándar. Tiene tipografía genérica, la barra de progreso de merma no utiliza los tokens de `NoirTokens.kt` y los campos de entrada de kilos tienen paddings inconsistentes.
 3. **`SettingsScreen.kt` (Ajustes de Sistema)**:
-   * **Problema**: Es un híbrido que combina componentes de la plantilla Cerhan (`SgniaCerhanNumberedCard`) con botones outlined comunes de Android, rompiendo la coherencia con el visor de básculas.
+   * **Problema**: Es un híbrido que combina componentes antiguos (`SgniaNumberedCard`) con botones outlined comunes de Android, rompiendo la coherencia con el visor de básculas.
 4. **`AboutSgniaScreen.kt` (Acerca de SGNIA)**:
    * **Problema**: Lista vertical simple de tarjetas clicables. No aprovecha la cuadrícula Bento ni la riqueza estética del logotipo institucional.
 5. **`LicenseActivationScreen.kt`**:

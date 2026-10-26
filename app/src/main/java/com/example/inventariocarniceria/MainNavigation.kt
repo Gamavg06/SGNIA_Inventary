@@ -48,8 +48,8 @@ import kotlinx.coroutines.delay
 import com.example.inventariocarniceria.data.licensing.LicenseManager
 import com.example.inventariocarniceria.data.preferences.LegalPreferences
 import com.example.inventariocarniceria.theme.SgniaTheme
-import com.example.inventariocarniceria.ui.components.SgniaCerhanSidebar
-import com.example.inventariocarniceria.ui.components.SgniaCerhanTopBar
+import com.example.inventariocarniceria.ui.components.SgniaSidebar
+import com.example.inventariocarniceria.ui.components.SgniaTopBar
 import com.example.inventariocarniceria.ui.components.SgniaSidebarItem
 import com.example.inventariocarniceria.ui.screens.about.AboutSgniaScreen
 import com.example.inventariocarniceria.ui.screens.admin.AdminBranchesScreen
@@ -161,7 +161,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 }
             )
         } else if (!uiState.isLoggedIn) {
-            // LOGIN EJECUTIVO ADAPTADO A LA PLANTILLA CERHAN (NEGRO MATE Y CREMA)
+            // LOGIN EJECUTIVO ADAPTADO A SGNIA NOIR (NEGRO MATE Y CREMA)
             SecurityVaultScreen(
                 viewModel = viewModel,
                 themeMode = themeMode,
@@ -199,7 +199,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    SgniaCerhanSidebar(
+                    SgniaSidebar(
                         brandTitle = "SGNIA",
                         subtitle = "CONSOLA DEL DUEÑO",
                         items = ownerSidebarItems,
@@ -236,7 +236,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                             .padding(innerPadding)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        SgniaCerhanTopBar(
+                        SgniaTopBar(
                             onOpenDrawer = { scope.launch { drawerState.open() } },
                             searchPlaceholder = "Buscar pedidos o sucursal...",
                             onSearchClick = { selectedOwnerSection = "unificacion" },
@@ -299,7 +299,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {
-                    SgniaCerhanSidebar(
+                    SgniaSidebar(
                         brandTitle = "SGNIA",
                         subtitle = uiState.currentBranch.uppercase(),
                         items = storeSidebarItems,
@@ -337,7 +337,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         if (selectedStoreSection != "basculas") {
-                            SgniaCerhanTopBar(
+                            SgniaTopBar(
                                 onOpenDrawer = { scope.launch { drawerState.open() } },
                                 searchPlaceholder = "Buscar...",
                                 onSearchClick = if (selectedStoreSection in listOf("catalogo", "recepcion", "devoluciones")) null else { { selectedStoreSection = "catalogo" } },
