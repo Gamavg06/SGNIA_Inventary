@@ -751,7 +751,18 @@ object ScaleCatalogParser {
         var startIdx = 0
         if (hasHeader) {
             val map = mutableMapOf<String, Int>()
+            // 1. Coincidencia exacta prioritaria (ej. 'code' sobre 'id')
             firstTokens.forEachIndexed { idx, h ->
+                when {
+                    (h == "code" || h == "codigo" || h == "código" || h == "plu") && !map.containsKey("code") -> map["code"] = idx
+                    (h == "name" || h == "nombre" || h == "descripcion" || h == "descripción" || h == "producto") && !map.containsKey("name") -> map["name"] = idx
+                    (h == "price" || h == "precio" || h == "costo" || h == "pvp") && !map.containsKey("price") -> map["price"] = idx
+                    (h == "category" || h == "categoria" || h == "categoría" || h == "seccion" || h == "sección") && !map.containsKey("sec") -> map["sec"] = idx
+                }
+            }
+            // 2. Coincidencia flexible de fallback ignorando identificadores de hardware o dueños
+            firstTokens.forEachIndexed { idx, h ->
+                if (h.contains("hw") || h.contains("hardware") || h.contains("owner") || h.contains("mac")) return@forEachIndexed
                 when {
                     (h.contains("plu") || h.contains("cod") || h == "id" || h == "num" || h == "numero") && !map.containsKey("code") -> map["code"] = idx
                     (h.contains("nom") || h.contains("desc") || h.contains("art") || h.contains("prod") || h.contains("detalle")) && !map.containsKey("name") -> map["name"] = idx
@@ -803,6 +814,7 @@ object ScaleCatalogParser {
                 if (codeIndex != -1) {
                     code = tokens[codeIndex].toIntOrNull()
                     val otherTokens = tokens.filterIndexed { index, _ -> index != codeIndex }
+                        .filter { !it.startsWith("SGN-") && !it.contains("+00") && !it.contains("-00") }
 
                     // 2. Encontrar el precio (número con punto/coma o signo $)
                     val priceIndex = otherTokens.indexOfFirst { t ->

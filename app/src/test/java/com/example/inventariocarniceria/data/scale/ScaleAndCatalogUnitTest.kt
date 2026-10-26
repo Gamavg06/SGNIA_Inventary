@@ -317,6 +317,27 @@ class ScaleAndCatalogUnitTest {
         assertEquals(50.00, list[0].price, 0.001)
     }
 
+    @Test
+    fun testParseSupabaseCsvExportWithHardwareIdAndDbIdColumns() {
+        val input = """
+            id,owner_hw_id,code,name,price,category,created_at
+            4,SGN-4F18-75FA,1,MENUDO DE RES,110.00,Res,2026-10-26 01:06:43.805859+00
+            5,SGN-4F18-75FA,2,R. ESPINAZO,30.00,Res,2026-10-26 01:06:43.805859+00
+            6,SGN-4F18-75FA,22,CUERO S/G,36.00,Otros,2026-10-26 01:06:43.805859+00
+        """.trimIndent()
+
+        val list = ScaleCatalogParser.parse(input)
+        assertEquals(3, list.size)
+        assertEquals(1, list[0].code)
+        assertEquals("MENUDO DE RES", list[0].name)
+        assertEquals(110.00, list[0].price, 0.001)
+        assertEquals("Res", list[0].section)
+
+        assertEquals(22, list[2].code)
+        assertEquals("CUERO S/G", list[2].name)
+        assertEquals(36.00, list[2].price, 0.001)
+    }
+
     // ==========================================
     // 3. PRUEBAS DE CÁLCULO DE PEDIDOS Y CAJAS
     // ==========================================
