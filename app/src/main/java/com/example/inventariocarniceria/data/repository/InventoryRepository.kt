@@ -21,10 +21,13 @@ import com.example.inventariocarniceria.data.local.ProductDao
 import com.example.inventariocarniceria.data.local.ProductEntity
 import com.example.inventariocarniceria.data.local.StockEntryDao
 import com.example.inventariocarniceria.data.local.StockEntryEntity
+import com.example.inventariocarniceria.data.local.SaleTicketDao
+import com.example.inventariocarniceria.data.local.SaleTicketEntity
 import com.example.inventariocarniceria.data.local.SupplierDao
 import com.example.inventariocarniceria.data.local.SupplierEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 
@@ -38,7 +41,8 @@ class InventoryRepository(
     private val branchDao: BranchDao,
     private val priceAuditDao: PriceAuditDao,
     private val despieceDao: DespieceDao,
-    val scaleManager: TcpScaleManager
+    val scaleManager: TcpScaleManager,
+    private val saleTicketDao: SaleTicketDao? = null
 ) {
     val scaleState: StateFlow<ScaleState> = scaleManager.scaleState
     val scale1Config: StateFlow<TcpScaleDevice> = scaleManager.scale1Config
@@ -73,6 +77,7 @@ class InventoryRepository(
     val allBranches: Flow<List<BranchEntity>> = branchDao.getAllBranches()
     val recentPriceAudits: Flow<List<PriceAuditEntity>> = priceAuditDao.getRecentAudits()
     val allTransformaciones: Flow<List<DespieceTransformacionEntity>> = despieceDao.getAllTransformaciones()
+    val allSaleTickets: Flow<List<SaleTicketEntity>> = saleTicketDao?.getAllTickets() ?: flowOf(emptyList())
 
     fun getLocalProductsByBranch(branchId: String): Flow<List<LocalProductEntity>> {
         return localProductDao.getLocalProductsByBranch(branchId)
@@ -451,6 +456,73 @@ class InventoryRepository(
         despieceDao.getDetallesForDespiece(despieceId)
     }
 
+    // --- 4. GESTIÓN DE VENTAS, TICKETS Y DEVOLUCIONES / INVERSIÓN DE VENTA ---
+    suspend fun recordSaleTicket(
+        productCode: Int,
+        productName: String,
+        weightKg: Double,
+        pricePerKg: Double,
+        operationNumber: String? = null,
+        ticketBarcode: String? = null,
+        branchId: String = "Sucursal Principal SGNIA",
+        cashierName: String = "Encargado de Turno"
+    ): SaleTicketEntity = withContext(Dispatchers.IO) {
+        val opNum = operationNumber?.ifBlank { null } ?: "OP-${System.currentTimeMillis() % 1000000}"
+        val barcode = ticketBarcode?.ifBlank { null } ?: ("20" + String.format(java.util.Locale.US, "%04d", productCode % 10000) + String.format(java.util.Locale.US, "%05d", (weightKg * 1000).toInt().coerceAtLeast(0)) + "0")
+        val total = Math.round(weightKg * pricePerKg * 100.0) / 100.0
+
+        val ticket = SaleTicketEntity(
+            operationNumber = opNum,
+            ticketBarcode = barcode,
+            branchId = branchId,
+            productCode = productCode,
+            productName = productName,
+            weightKg = weightKg,
+            pricePerKg = pricePerKg,
+            totalAmount = total,
+            timestamp = System.currentTimeMillis(),
+            status = "COMPLETADA",
+            cashierName = cashierName
+        )
+        val insertedId = saleTicketDao?.insertTicket(ticket) ?: 0L
+        ticket.copy(id = insertedId)
+    }
+
+    suspend fun reverseSaleTicket(
+        ticketId: Long,
+        reason: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val dao = saleTicketDao ?: return@withContext false
+        val ticket = dao.getTicketById(ticketId) ?: return@withContext false
+        if (ticket.status == "INVERTIDA") return@withContext true // ya estaba invertida
+
+        val updated = ticket.copy(
+            status = "INVERTIDA",
+            reversalReason = reason,
+            reversalTimestamp = System.currentTimeMillis()
+        )
+        dao.updateTicket(updated)
+
+        // Reingresar la mercancía al inventario físico mediante StockEntry
+        val returnStock = StockEntryEntity(
+            branchId = ticket.branchId,
+            productCode = ticket.productCode,
+            productName = ticket.productName,
+            kilosReceived = ticket.weightKg,
+            costPerKg = ticket.pricePerKg,
+            supplierNotes = "Reingreso por Devolución / Venta Invertida #${ticket.operationNumber} ($reason)",
+            timestamp = System.currentTimeMillis()
+        )
+        stockEntryDao.insertStockEntry(returnStock)
+        true
+    }
+
+    suspend fun findSaleTicket(query: String): SaleTicketEntity? = withContext(Dispatchers.IO) {
+        val q = query.trim()
+        if (q.isEmpty()) return@withContext null
+        saleTicketDao?.findExactTicket(q)
+    }
+
     // --- REINICIO TOTAL EN BLANCO PARA DUEÑO OFICIAL ---
     suspend fun clearAllDataForFreshStart() = withContext(Dispatchers.IO) {
         productDao.deleteAllProducts()
@@ -459,6 +531,7 @@ class InventoryRepository(
         branchOrderDao.clearAllBranchOrders()
         captureDao.clearAllCaptures()
         stockEntryDao.clearAllStockEntries()
+        saleTicketDao?.clearAllTickets()
     }
 
     suspend fun deleteAllProducts() = withContext(Dispatchers.IO) {

@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
             branchDao = database.branchDao(),
             priceAuditDao = database.priceAuditDao(),
             despieceDao = database.despieceDao(),
+            saleTicketDao = database.saleTicketDao(),
             scaleManager = scaleManager
         )
         InventoryViewModelFactory(repository)

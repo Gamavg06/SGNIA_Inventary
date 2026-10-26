@@ -14,6 +14,7 @@ import com.example.inventariocarniceria.data.local.InventoryCaptureEntity
 import com.example.inventariocarniceria.data.local.LocalProductEntity
 import com.example.inventariocarniceria.data.local.PriceAuditEntity
 import com.example.inventariocarniceria.data.local.ProductEntity
+import com.example.inventariocarniceria.data.local.SaleTicketEntity
 import com.example.inventariocarniceria.data.local.StockEntryEntity
 import com.example.inventariocarniceria.data.local.SupplierEntity
 import com.example.inventariocarniceria.data.repository.InventoryRepository
@@ -187,6 +188,13 @@ class InventoryViewModel(
             initialValue = emptyList()
         )
 
+    val allSaleTickets: StateFlow<List<SaleTicketEntity>> = repository.allSaleTickets
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     // Local Products for Manager's private investment
     private val _selectedBranchFlow = MutableStateFlow("Sucursal Matriz Centro")
     val localProducts: StateFlow<List<LocalProductEntity>> = _selectedBranchFlow
@@ -234,6 +242,24 @@ class InventoryViewModel(
                     isProductNotFound = false,
                     detectedScalePlu = pluCode,
                     snackbarMessage = "🥩 Báscula: PLU #$pluCode detectado (${found.name})"
+                )
+            } else if (pluCode == 1) {
+                val menudo = ProductEntity(
+                    code = 1,
+                    localCode = 1,
+                    name = "Menudo de Res",
+                    price = 120.00,
+                    category = "Res",
+                    maxStock = 30.00,
+                    orderUnitType = "KG"
+                )
+                repository.saveProduct(menudo)
+                _uiState.value = _uiState.value.copy(
+                    codeInput = "1",
+                    selectedProduct = menudo,
+                    isProductNotFound = false,
+                    detectedScalePlu = 1,
+                    snackbarMessage = "🥩 Báscula: PLU #1 detectado (Menudo de Res)"
                 )
             } else {
                 _uiState.value = _uiState.value.copy(
@@ -341,6 +367,22 @@ class InventoryViewModel(
                 parentMsg = " (Descontado de Base #${product.parentProductCode})"
             }
 
+            // Registrar automáticamente el ticket de venta para control y posibles devoluciones / inversión
+            val opNumber = "OP-" + String.format(Locale.US, "%05d", (System.currentTimeMillis() % 100000))
+            val barcode = "20" + String.format(Locale.US, "%04d", product.localCode % 10000) + String.format(Locale.US, "%05d", (currentWeight * 1000).toInt().coerceAtLeast(0)) + "0"
+            val branch = _uiState.value.currentBranch.ifBlank { "Sucursal Principal SGNIA" }
+            val cashier = _uiState.value.currentUserRole.ifBlank { "Encargado de Turno" }
+            val ticket = repository.recordSaleTicket(
+                productCode = product.localCode,
+                productName = product.name,
+                weightKg = currentWeight,
+                pricePerKg = product.price,
+                operationNumber = opNumber,
+                ticketBarcode = barcode,
+                branchId = branch,
+                cashierName = cashier
+            )
+
             // Sincronización transparente con Supabase si la terminal está vinculada
             repository.scaleManager.context?.let { ctx ->
                 val linkedOwner = SupabaseSyncManager.getLinkedOwner(ctx)
@@ -360,7 +402,41 @@ class InventoryViewModel(
 
             val formattedWeight = String.format(java.util.Locale.US, "%.3f", currentWeight)
             _uiState.value = _uiState.value.copy(
-                snackbarMessage = "Capturado: [${product.localCode}] ${product.name} - ${formattedWeight} kg$parentMsg"
+                snackbarMessage = "Ticket #${ticket.operationNumber}: [${product.localCode}] ${product.name} - ${formattedWeight} kg ($${String.format(Locale.US, "%.2f", ticket.totalAmount)})$parentMsg"
+            )
+        }
+    }
+
+    fun reverseSaleTicket(ticketId: Long, reason: String) {
+        viewModelScope.launch {
+            val success = repository.reverseSaleTicket(ticketId, reason)
+            if (success) {
+                _uiState.value = _uiState.value.copy(
+                    snackbarMessage = "✅ Venta invertida con éxito. Mercancía reingresada a inventario."
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    snackbarMessage = "❌ Error: No se pudo localizar el ticket para inversión."
+                )
+            }
+        }
+    }
+
+    fun seedSampleSaleTicket() {
+        viewModelScope.launch {
+            val branch = _uiState.value.currentBranch.ifBlank { "Sucursal Principal SGNIA" }
+            repository.recordSaleTicket(
+                productCode = 1,
+                productName = "Menudo de Res",
+                weightKg = 1.000,
+                pricePerKg = 120.00,
+                operationNumber = "OP-10024",
+                ticketBarcode = "2000001010005",
+                branchId = branch,
+                cashierName = "Encargado de Mostrador"
+            )
+            _uiState.value = _uiState.value.copy(
+                snackbarMessage = "Ticket de ejemplo generado (#OP-10024 · Menudo de Res 1.000 kg)"
             )
         }
     }

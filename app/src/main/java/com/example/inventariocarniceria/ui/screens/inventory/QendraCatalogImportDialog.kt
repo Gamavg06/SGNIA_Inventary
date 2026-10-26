@@ -309,6 +309,7 @@ fun QendraCatalogImportDialog(
                     OutlinedButton(
                         onClick = {
                             rawInputText = """
+1;MENUDO DE RES;120.00;RES
 10;PIERNA CON HUESO;98.50;CERDO
 20;PIERNA SIN HUESO;115.00;CERDO
 21;BISTEC DE CERDO;125.00;CERDO

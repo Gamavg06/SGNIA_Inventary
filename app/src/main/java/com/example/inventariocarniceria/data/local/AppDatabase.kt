@@ -20,9 +20,10 @@ import kotlinx.coroutines.launch
         BranchEntity::class,
         PriceAuditEntity::class,
         DespieceTransformacionEntity::class,
-        DespieceDetalleEntity::class
+        DespieceDetalleEntity::class,
+        SaleTicketEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun branchDao(): BranchDao
     abstract fun priceAuditDao(): PriceAuditDao
     abstract fun despieceDao(): DespieceDao
+    abstract fun saleTicketDao(): SaleTicketDao
 
     companion object {
         @Volatile
@@ -62,6 +64,31 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_11_12 = object : androidx.room.migration.Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS sale_tickets (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        operationNumber TEXT NOT NULL,
+                        ticketBarcode TEXT NOT NULL,
+                        branchId TEXT NOT NULL DEFAULT 'Sucursal Principal SGNIA',
+                        productCode INTEGER NOT NULL,
+                        productName TEXT NOT NULL,
+                        weightKg REAL NOT NULL,
+                        pricePerKg REAL NOT NULL,
+                        totalAmount REAL NOT NULL,
+                        timestamp INTEGER NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'COMPLETADA',
+                        reversalReason TEXT,
+                        reversalTimestamp INTEGER,
+                        cashierName TEXT NOT NULL DEFAULT 'Encargado de Turno'
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_sale_tickets_operationNumber ON sale_tickets(operationNumber)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_sale_tickets_ticketBarcode ON sale_tickets(ticketBarcode)")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -69,7 +96,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "inventario_carniceria.db"
                 )
-                .addMigrations(MIGRATION_9_10, MIGRATION_10_11)
+                .addMigrations(MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                 .fallbackToDestructiveMigration()
                 .addCallback(DatabaseCallback(scope))
                 .build()

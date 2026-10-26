@@ -6,6 +6,24 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ---
 
+## [1.0.2] - 2026-10-25
+
+### Añadido
+- **Módulo de Inversión de Venta / Bajas de Tickets (`SalesReversalScreen.kt`)**:
+  - Búsqueda y filtrado instantáneo por **Número de Operación** (ej. `#OP-10024`) o **Código de Barras** (etiqueta EAN-13 o ticket de báscula).
+  - Escáner de cámara integrado (`CameraBarcodeScannerDialog`) para lectura directa del código de barras de tickets impresos o cajas.
+  - Cancelación e inversión de ventas con diálogo de confirmación y selección de motivo de reembolso/baja (*equivocación en cobro, reembolso solicitado por cliente, producto devuelto*).
+  - **Reingreso automático de mercancía**: Al invertir la venta, los kilogramos exactos se reincorporan automáticamente al inventario físico mediante un registro de `StockEntryEntity`.
+  - Nueva tabla en base de datos Room (`SaleTicketEntity` y `SaleTicketDao`) con migración automática `MIGRATION_11_12`.
+  - Acceso directo desde el menú lateral Cerhan de la app Tienda (`Invertir Venta / Bajas`).
+- **Visualización en Vivo de Producto y Precio por PLU en Báscula (`IndustrialScaleVisorScreen.kt`)**:
+  - Reconocimiento y despliegue prominente del corte en venta (ej. **Menudo de Res**, PLU #1) directamente sobre la tarjeta de báscula al recibir el pesaje o código PLU.
+  - Cálculo e indicador en tiempo real de **Importe de Venta** (`peso × precio/kg`) junto al indicador digital de peso y estabilidad.
+  - Resolución automática de cortes en catálogo para Báscula 1 y Báscula 2 simultáneamente.
+  - Auto-registro de Menudo de Res (PLU #1) para pruebas operativas inmediatas en mostrador.
+
+---
+
 ## [1.0.1] - 2026-10-25
 
 ### Seguridad

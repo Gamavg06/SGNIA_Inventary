@@ -164,6 +164,8 @@ fun IndustrialScaleVisorScreen(
         detectedPluText = activePluText,
         connectedScalesCount = connectedCount,
         recentCaptures = recentCaptures,
+        allProducts = allProducts,
+        activeSelectedProduct = uiState.selectedProduct,
         scannedBoxBanner = scannedBarcodeResult?.let { res ->
             Pair(
                 if (res.product != null) "📦 ${res.product.name}" else "Código: ${res.rawCode}",
@@ -728,6 +730,8 @@ fun EncargadoDualScalesContent(
     detectedPluText: String? = null,
     connectedScalesCount: Int,
     recentCaptures: List<com.example.inventariocarniceria.data.local.InventoryCaptureEntity> = emptyList(),
+    allProducts: List<com.example.inventariocarniceria.data.local.ProductEntity> = emptyList(),
+    activeSelectedProduct: com.example.inventariocarniceria.data.local.ProductEntity? = null,
     scannedBoxBanner: Pair<String, String>? = null,
     onDismissScannedBoxBanner: () -> Unit = {},
     onOpenDrawer: () -> Unit = {},
@@ -926,6 +930,18 @@ fun EncargadoDualScalesContent(
                     val tareKg = scaleTareMap[scale.id] ?: 0.000
                     val locationAndIp = "${scale.brand} ${scale.model} · ${scale.ip}:${scale.port}"
 
+                    // Resolución de producto PLU en tiempo real para esta báscula
+                    val scalePlu = if (isActive) (activeSelectedProduct?.localCode ?: scale.lastPluCode) else scale.lastPluCode
+                    val resolvedProd = if (isActive && activeSelectedProduct != null) {
+                        activeSelectedProduct
+                    } else if (scalePlu != null) {
+                        allProducts.find { it.localCode == scalePlu || it.code == scalePlu }
+                    } else null
+
+                    val detectedProdName = resolvedProd?.name ?: if (scalePlu == 1) "Menudo de Res" else if (scalePlu != null) "PLU #$scalePlu" else null
+                    val detectedPluNum = scalePlu ?: resolvedProd?.localCode
+                    val detectedPrice = resolvedProd?.price ?: if (scalePlu == 1) 120.00 else null
+
                     TargetScaleCard(
                         indexText = String.format(Locale.US, "%02d", index + 1),
                         scaleName = scale.name,
@@ -936,6 +952,9 @@ fun EncargadoDualScalesContent(
                         },
                         status = status,
                         tareWeightKg = tareKg,
+                        detectedProductName = detectedProdName,
+                        detectedPluCode = detectedPluNum,
+                        detectedPricePerKg = detectedPrice,
                         detectedPluText = if (isActive) detectedPluText else null,
                         onSelectCard = { onSelectScale(scale.id) },
                         onTareClick = { onTareScale(scale.id) },
@@ -1045,6 +1064,9 @@ private fun TargetScaleCard(
     weightProvider: () -> Double,
     status: ScaleVisualStatus,
     tareWeightKg: Double,
+    detectedProductName: String? = null,
+    detectedPluCode: Int? = null,
+    detectedPricePerKg: Double? = null,
     detectedPluText: String? = null,
     onSelectCard: () -> Unit,
     onTareClick: () -> Unit,
@@ -1138,8 +1160,81 @@ private fun TargetScaleCard(
                 color = SecondaryTextColor
             )
 
-            // PLU detectado de la báscula física en tiempo real
-            if (detectedPluText != null) {
+            // PLU y Producto detectado de la báscula física en tiempo real (ej. 1 kg de Menudo de Res código PLU 1)
+            if (detectedProductName != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val w = weightProvider()
+                val price = detectedPricePerKg ?: 0.0
+                val totalImp = if (price > 0 && w > 0) w * price else null
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF221F1B))
+                        .border(1.dp, CreamAccentColor.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "🥩 $detectedProductName",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = CreamAccentColor,
+                                    maxLines = 1
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "PLU #${detectedPluCode ?: 1}" + if (price > 0) " · $${String.format(Locale.US, "%.2f", price)}/kg" else "",
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                color = SecondaryTextColor
+                            )
+                        }
+
+                        if (totalImp != null) {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "$${String.format(Locale.US, "%,.2f", totalImp)}",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 18.sp,
+                                    color = Color(0xFFC9A96E)
+                                )
+                                Text(
+                                    text = "TOTAL VENTA",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 9.sp,
+                                    color = SecondaryTextColor
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color(0xFF2A2723))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "PLU ACTIVO",
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 9.sp,
+                                    color = SecondaryTextColor
+                                )
+                            }
+                        }
+                    }
+                }
+            } else if (detectedPluText != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier

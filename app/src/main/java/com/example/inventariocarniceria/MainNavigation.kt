@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.AddBusiness
+import androidx.compose.material.icons.filled.AssignmentReturn
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Home
@@ -63,6 +64,7 @@ import com.example.inventariocarniceria.ui.screens.licensing.LicenseActivationSc
 import com.example.inventariocarniceria.ui.screens.manager.ManagerInvestmentScreen
 import com.example.inventariocarniceria.ui.screens.orders.OrdersScreen
 import com.example.inventariocarniceria.ui.screens.reception.StockReceptionScreen
+import com.example.inventariocarniceria.ui.screens.sales.SalesReversalScreen
 import com.example.inventariocarniceria.ui.screens.scale.IndustrialScaleVisorScreen
 import com.example.inventariocarniceria.ui.screens.settings.SettingsScreen
 import com.example.inventariocarniceria.ui.screens.splash.SplashScreen
@@ -279,11 +281,13 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                 }
             }
 
-            val storeSidebarItems = remember(allProducts.size, pendingOrders.size) {
+            val allSaleTickets by viewModel.allSaleTickets.collectAsState()
+            val storeSidebarItems = remember(allProducts.size, pendingOrders.size, allSaleTickets.size) {
                 listOf(
                     SgniaSidebarItem("basculas", "Básculas (Principal)", Icons.Default.Scale),
                     SgniaSidebarItem("catalogo", "Catálogo de Cortes", Icons.Default.Inventory2, "${allProducts.size}"),
                     SgniaSidebarItem("recepcion", "Recepción Mercancía", Icons.Default.AddBusiness),
+                    SgniaSidebarItem("devoluciones", "Invertir Venta / Bajas", Icons.Default.AssignmentReturn, if (allSaleTickets.isNotEmpty()) "${allSaleTickets.size}" else null),
                     SgniaSidebarItem("pedidos", "Pedidos de Surtido", Icons.AutoMirrored.Filled.ReceiptLong, if (pendingOrders.isNotEmpty()) "${pendingOrders.size}" else null),
                     SgniaSidebarItem("inversion", "Mi Inversión Local", Icons.Default.CardGiftcard),
                     SgniaSidebarItem("ajustes", "Ajustes de Sistema", Icons.Default.Settings),
@@ -336,7 +340,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                             SgniaCerhanTopBar(
                                 onOpenDrawer = { scope.launch { drawerState.open() } },
                                 searchPlaceholder = "Buscar...",
-                                onSearchClick = if (selectedStoreSection in listOf("catalogo", "recepcion")) null else { { selectedStoreSection = "catalogo" } },
+                                onSearchClick = if (selectedStoreSection in listOf("catalogo", "recepcion", "devoluciones")) null else { { selectedStoreSection = "catalogo" } },
                                 onToggleTheme = null
                             )
                         }
@@ -349,6 +353,7 @@ fun MainNavigation(viewModel: InventoryViewModel) {
                                 )
                                 "catalogo" -> AdminCatalogScreen(viewModel = viewModel)
                                 "recepcion" -> StockReceptionScreen(viewModel = viewModel)
+                                "devoluciones" -> SalesReversalScreen(viewModel = viewModel)
                                 "pedidos" -> OrdersScreen(viewModel = viewModel)
                                 "inversion" -> ManagerInvestmentScreen(viewModel = viewModel)
                                 "ajustes" -> SettingsScreen(
