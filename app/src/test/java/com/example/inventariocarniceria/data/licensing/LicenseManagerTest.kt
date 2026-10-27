@@ -63,6 +63,32 @@ class LicenseManagerTest {
     }
 
     @Test
+    fun testMultiBranchKeyGeneration() {
+        val targetHwId = "SGN-8F2A-3C91"
+        val tier = LicenseManager.LicenseTier.RENTAL_1M
+        val token = "A1B2"
+
+        // 1 sucursal (por defecto no lleva tag)
+        val key1 = LicenseManager.generateActivationKey(targetHwId, tier, token, maxBranches = 1)
+        assertTrue(key1.startsWith("SGN-01M-A1B2-"))
+
+        // 3 sucursales (lleva tag 03B)
+        val key3 = LicenseManager.generateActivationKey(targetHwId, tier, token, maxBranches = 3)
+        assertTrue("Debe empezar con SGN-01M-03B-A1B2-", key3.startsWith("SGN-01M-03B-A1B2-"))
+
+        // 10 sucursales
+        val key10 = LicenseManager.generateActivationKey(targetHwId, LicenseManager.LicenseTier.LIFETIME, token, maxBranches = 10)
+        assertTrue("Debe empezar con SGN-LIFE-10B-A1B2-", key10.startsWith("SGN-LIFE-10B-A1B2-"))
+
+        // Extracción de sucursales desde la clave
+        val cleanKey10 = key10.removePrefix("SGN-").replace("-", "")
+        val rest = cleanKey10.removePrefix("LIFE")
+        val match = Regex("^([0-9]{1,3})B").find(rest)
+        assertNotNull("Debe encontrar la etiqueta de sucursales", match)
+        assertEquals(10, match!!.groupValues[1].toInt())
+    }
+
+    @Test
     fun testTierParsingFromCode() {
         assertEquals(LicenseManager.LicenseTier.DEMO_10M, LicenseManager.LicenseTier.fromCode("10M"))
         assertEquals(LicenseManager.LicenseTier.TRIAL_7D, LicenseManager.LicenseTier.fromCode("07D"))

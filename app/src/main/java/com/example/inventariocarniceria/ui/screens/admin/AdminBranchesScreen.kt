@@ -47,6 +47,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -92,7 +93,12 @@ fun AdminBranchesScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
-    val maxAllowedBranches = remember(branches.size) { LicenseManager.getMaxBranchesAllowed(context) }
+    var maxAllowedBranches by remember { mutableStateOf(LicenseManager.getMaxBranchesAllowed(context)) }
+
+    LaunchedEffect(Unit) {
+        LicenseManager.checkLicense(context)
+        maxAllowedBranches = LicenseManager.getMaxBranchesAllowed(context)
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -100,7 +106,10 @@ fun AdminBranchesScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    if (branches.size >= maxAllowedBranches) {
+                    LicenseManager.checkLicense(context)
+                    val currentLimit = LicenseManager.getMaxBranchesAllowed(context)
+                    maxAllowedBranches = currentLimit
+                    if (branches.size >= currentLimit) {
                         showLimitReachedDialog = true
                     } else {
                         isAddOpen = true
@@ -544,11 +553,15 @@ fun AdminBranchesScreen(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = "CUPO CONTRATADO: $maxAllowedBranches SUCURSAL",
+                                text = "CUPO CONTRATADO: $maxAllowedBranches ${if (maxAllowedBranches == 1) "SUCURSAL" else "SUCURSALES"}",
                                 style = NoirType.label.copy(fontWeight = FontWeight.Bold, color = NoirColors.Gold)
                             )
                             Text(
-                                text = "Tu licencia actual autoriza únicamente $maxAllowedBranches sucursal en línea. Ya tienes registrada: '${branches.firstOrNull()?.branchName ?: "Sucursal 1"}'.",
+                                text = if (maxAllowedBranches == 1) {
+                                    "Tu licencia actual autoriza únicamente 1 sucursal en línea. Ya tienes registrada: '${branches.firstOrNull()?.branchName ?: "Sucursal 1"}'."
+                                } else {
+                                    "Tu licencia autoriza hasta $maxAllowedBranches sucursales en línea. Tienes ocupadas ${branches.size} de $maxAllowedBranches sucursales permitidas."
+                                },
                                 style = NoirType.bodySmall,
                                 color = NoirColors.TextPrimary
                             )
@@ -617,10 +630,27 @@ fun AdminBranchesScreen(
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { showLimitReachedDialog = false }
-                ) {
-                    Text("Entendido", color = NoirColors.TextMuted)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(
+                        onClick = {
+                            LicenseManager.checkLicense(context)
+                            val refreshed = LicenseManager.getMaxBranchesAllowed(context)
+                            maxAllowedBranches = refreshed
+                            if (branches.size < refreshed) {
+                                showLimitReachedDialog = false
+                                isAddOpen = true
+                            } else {
+                                Toast.makeText(context, "Cupo verificado: $refreshed sucursal(es)", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text("🔄 Revalidar Cupo", color = NoirColors.Cream, fontWeight = FontWeight.Bold)
+                    }
+                    TextButton(
+                        onClick = { showLimitReachedDialog = false }
+                    ) {
+                        Text("Cerrar", color = NoirColors.TextMuted)
+                    }
                 }
             }
         )

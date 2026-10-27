@@ -212,9 +212,7 @@ object LicenseManager {
         val updatedConsumed = consumedTokens.toMutableSet().apply { add(token) }
 
         // Si la clave autoriza N sucursales, actualizar el cupo en el dispositivo
-        if (maxBranches > 1) {
-            setMaxBranchesAllowed(context, maxBranches)
-        }
+        setMaxBranchesAllowed(context, maxBranches)
 
         prefs.edit()
             .putString(KEY_STATE, LicenseStatus.ACTIVE.name)
@@ -256,7 +254,22 @@ object LicenseManager {
 
         val tier = tierCode?.let { LicenseTier.fromCode(it) }
 
-        val allowedBranches = getMaxBranchesAllowed(context)
+        var allowedBranches = getMaxBranchesAllowed(context)
+        if (activeKey.isNotBlank()) {
+            val cleanKey = activeKey.trim().uppercase(Locale.US).replace(" ", "").replace("-", "")
+            if (cleanKey.startsWith("SGN")) {
+                val withoutPrefix = cleanKey.removePrefix("SGN")
+                val rest = if (withoutPrefix.startsWith("LIFE")) withoutPrefix.removePrefix("LIFE") else withoutPrefix.drop(3)
+                val branchMatch = Regex("^([0-9]{1,3})B").find(rest)
+                if (branchMatch != null) {
+                    val keyBranches = branchMatch.groupValues[1].toIntOrNull() ?: 1
+                    if (keyBranches > 0 && keyBranches != allowedBranches) {
+                        setMaxBranchesAllowed(context, keyBranches)
+                        allowedBranches = keyBranches
+                    }
+                }
+            }
+        }
 
         if (stateStr == null || tier == null) {
             return LicenseInfo(
